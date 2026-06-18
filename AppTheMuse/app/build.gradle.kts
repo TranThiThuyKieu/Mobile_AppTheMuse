@@ -10,12 +10,12 @@ plugins {
 
 android {
     namespace = "com.example.appthemuse"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.example.appthemuse"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -59,6 +59,9 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+
+    //thư viện Navigation Compose Quản lý việc chuyển đổi qua lại giữa các màn hình trong ứng dụng
+    implementation(libs.androidx.navigation.compose)
 
     // FIREBASE SDK (Đã đồng bộ qua BOM)
     implementation(platform(libs.firebase.bom))
