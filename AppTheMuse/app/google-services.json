@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "479660421086",
+    "project_id": "the-muse-23t08",
+    "storage_bucket": "the-muse-23t08.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:479660421086:android:e9e68302a80f2b4bd9374f",
+        "android_client_info": {
+          "package_name": "com.example.appthemuse"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCwk_AyfNcDPqaBI8GCfwaf7oX5PqowsEk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
