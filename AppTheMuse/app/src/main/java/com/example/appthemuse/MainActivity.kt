@@ -114,13 +114,15 @@ class MainActivity : ComponentActivity() {
 
                         // Trang chủ chính thức ( Jan trang chủ)
                         composable("home") {
-                            Surface(modifier = Modifier.fillMaxSize()) {
-                                Text(
-                                    text = "Chào mừng bạn đến với trang chủ The Muse!",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    modifier = Modifier.padding(24.dp)
-                                )
+                            val homeViewModel = androidx.lifecycle.viewmodel.compose.viewModel {
+                                com.example.appthemuse.ui.viewmodel.HomeViewModel(firestoreService = firestoreService)
                             }
+                            com.example.appthemuse.ui.screens.HomeScreen(
+                                viewModel = homeViewModel,
+                                onBookClick = { bookId ->
+
+                                }
+                            )
                         }
                     }
                 }
