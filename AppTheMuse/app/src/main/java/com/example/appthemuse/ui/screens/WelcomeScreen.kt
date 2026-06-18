@@ -27,7 +27,6 @@ fun WelcomeScreen(onNavigateToLogin: () -> Unit) {
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 1. LOGO TRÊN CÙNG
             Image(
                 painter = painterResource(id = R.drawable.ic_logo_the_muse),
                 contentDescription = "Logo The Muse",
@@ -36,26 +35,23 @@ fun WelcomeScreen(onNavigateToLogin: () -> Unit) {
                     .padding(bottom = 16.dp)
             )
 
-            // 2. TÊN THƯƠNG HIỆU - Gọi displayLarge đã định nghĩa trong Type.kt
             Text(
                 text = "THE MUSE",
-                style = MaterialTheme.typography.displayLarge,
+                style = MaterialTheme.typography.displayLarge, // Chuẩn Type.kt
                 color = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // 3. SLOGAN - Gọi bodyLarge đã định nghĩa trong Type.kt
             Text(
                 text = "Khơi nguồn cảm hứng đọc sách trong bạn",
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyLarge, // Chuẩn Type.kt
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center
             )
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // 4. NÚT BẤM DÙNG CHUNG TỪ COMPONENTS
             PrimaryButton(
                 text = "Bắt đầu khám phá",
                 onClick = onNavigateToLogin
