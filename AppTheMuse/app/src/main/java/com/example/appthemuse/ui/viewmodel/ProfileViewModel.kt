@@ -49,8 +49,6 @@ class ProfileViewModel : ViewModel() {
             _uiState.update {
                 it.copy(username = "", email = email)
             }
-
-            // Gọi thẳng Firestore để lấy thông tin thực tế
             fetchUserData(currentUser.uid)
         } else {
             _uiState.update {
@@ -66,19 +64,15 @@ class ProfileViewModel : ViewModel() {
                 if (document != null && document.exists()) {
                     val firestoreName = document.getString("username")
                     if (!firestoreName.isNullOrEmpty()) {
-                        // Tải thành công từ Firestore -> Cập nhật tên thực tế lên UI
                         _uiState.update { it.copy(username = firestoreName) }
                     } else {
-                        // Trường hợp tài khoản tồn tại nhưng document trống/không có trường username
                         _uiState.update { it.copy(username = "Người dùng") }
                     }
                 } else {
-                    // Document không tồn tại
                     _uiState.update { it.copy(username = "Người dùng") }
                 }
             }
             .addOnFailureListener {
-                // Thất bại do mất mạng hoặc lỗi truy vấn -> Hiển thị thông báo lỗi thay vì treo "Đang tải..."
                 _uiState.update { it.copy(username = "Lỗi tải dữ liệu") }
             }
     }

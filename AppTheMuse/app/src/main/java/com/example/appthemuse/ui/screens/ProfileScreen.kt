@@ -1,6 +1,5 @@
 package com.example.appthemuse.ui.screens
 
-import android.app.Activity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -11,14 +10,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.HelpOutline
-import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -37,15 +36,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.appthemuse.ui.viewmodel.ProfileViewModel
 
-// Định nghĩa cấu trúc bảng màu
-data class ProfileThemeColors(
-    val backgroundColor: Color,
-    val cardColor: Color,
-    val titleTextColor: Color,
-    val contentTextColor: Color,
-    val accentColor: Color
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
@@ -57,46 +47,24 @@ fun ProfileScreen(
         profileViewModel.refreshUserProfile()
     }
     val uiState by profileViewModel.uiState.collectAsState()
-
-    // 🌟 ĐỒNG BỘ THEME TOÀN CỤC: Kiểm tra xem màu nền thực tế của hệ thống lúc này là Sáng hay Tối
-    // Hàm .luminance() là extension function của Color, trả về độ sáng từ 0.0 (Tối nhất) đến 1.0 (Sáng nhất)
     val isAppInDarkMode = MaterialTheme.colorScheme.background.luminance() < 0.5f
-
-    // ĐỊNH NGHĨA BẢNG MÀU ĐỘNG THEO TRẠNG THÁI THỰC TẾ CỦA HỆ THỐNG
-    val themeColors = if (!isAppInDarkMode) {
-        ProfileThemeColors(
-            backgroundColor = Color(0xFFF4F6FA), // Nền chính Trắng Xanh
-            cardColor = Color(0xFFFFFFFF),       // Thẻ trắng tinh nổi bật trên nền
-            titleTextColor = Color(0xFF1A2536),  // Chữ tiêu đề Xanh đen đậm
-            contentTextColor = Color(0xFF5A677D),// Chữ phụ Xám xanh
-            accentColor = Color(0xFF5D5FEF)      // Màu Tím nhấn chủ đạo
-        )
-    } else {
-        ProfileThemeColors(
-            backgroundColor = Color(0xFF0F1524), // Nền tối sâu
-            cardColor = Color(0xFF1E2638),       // Ô thẻ tối trùng bộ
-            titleTextColor = Color.White,        // Chữ tiêu đề trắng tương phản
-            contentTextColor = Color.LightGray,  // Chữ phụ xám sáng
-            accentColor = Color(0xFF5D5FEF)      // Màu tím Neon nổi bật
-        )
-    }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Hồ sơ", color = themeColors.titleTextColor, fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = themeColors.backgroundColor),
+                title = { Text("Hồ sơ", color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                 actions = {
-                    IconButton(onClick = { /* Tìm kiếm */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = themeColors.titleTextColor)
+                    IconButton(onClick = { }) {
+                        Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onBackground)
                     }
-                    IconButton(onClick = { /* Thông báo */ }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Alerts", tint = themeColors.titleTextColor)
+                    IconButton(onClick = { }) {
+                        Icon(Icons.Default.Notifications, contentDescription = "Alerts", tint = MaterialTheme.colorScheme.onBackground)
                     }
                 }
             )
         },
-        containerColor = themeColors.backgroundColor
+        containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
         Column(
             modifier = Modifier
@@ -108,69 +76,74 @@ fun ProfileScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- THÔNG TIN USER (AVATAR & NAME) ---
             Box(contentAlignment = Alignment.BottomEnd) {
                 Box(
                     modifier = Modifier
                         .size(100.dp)
                         .clip(CircleShape)
-                        // 🌟 SỬA: Đồng bộ Avatar theo trạng thái Dark Mode thực tế của hệ thống
-                        .background(if (isAppInDarkMode) Color.Gray else themeColors.contentTextColor.copy(alpha = 0.2f))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.fillMaxSize().padding(16.dp), tint = themeColors.titleTextColor)
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize().padding(16.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 Box(
                     modifier = Modifier
                         .size(28.dp)
                         .clip(CircleShape)
-                        .background(themeColors.accentColor)
-                        .clickable { /* Edit avatar */ },
+                        .background(MaterialTheme.colorScheme.primary)
+                        .clickable { },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.White)
+                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onPrimary)
                 }
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(text = uiState.username, color = themeColors.titleTextColor, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text(text = uiState.email, color = themeColors.contentTextColor, fontSize = 14.sp)
+            Text(text = uiState.username, color = MaterialTheme.colorScheme.onBackground, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(text = uiState.email, color = MaterialTheme.colorScheme.outline, fontSize = 14.sp)
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- THÔNG SỐ ĐỌC SÁCH ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                StatCard(modifier = Modifier.weight(1.0f), title = "ĐÃ ĐỌC", value = uiState.readCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
-                StatCard(modifier = Modifier.weight(1.0f), title = "YÊU THÍCH", value = uiState.favoriteCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
-                StatCard(modifier = Modifier.weight(1.0f), title = "ĐÃ TẢI", value = uiState.downloadedCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
+                StatCard(modifier = Modifier.weight(1.0f), title = "ĐÃ ĐỌC", value = uiState.readCount.toString())
+                StatCard(modifier = Modifier.weight(1.0f), title = "YÊU THÍCH", value = uiState.favoriteCount.toString())
+                StatCard(modifier = Modifier.weight(1.0f), title = "ĐÃ TẢI", value = uiState.downloadedCount.toString())
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- TÙY CHỈNH GIAO DIỆN ---
             SectionTitle(title = "TÙY CHỈNH GIAO DIỆN")
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Kích cỡ chữ", color = themeColors.titleTextColor)
-                Text(uiState.fontSize, color = themeColors.accentColor, fontWeight = FontWeight.Bold)
+                Text("Kích cỡ chữ", color = MaterialTheme.colorScheme.onBackground)
+                Text(uiState.fontSize, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("A", color = themeColors.contentTextColor, fontSize = 12.sp)
+                Text("A", color = MaterialTheme.colorScheme.outline, fontSize = 12.sp)
                 Slider(
                     value = uiState.fontSizeValue,
                     onValueChange = { profileViewModel.updateFontSize(it) },
                     modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
-                    colors = SliderDefaults.colors(thumbColor = themeColors.accentColor, activeTrackColor = themeColors.accentColor, inactiveTrackColor = themeColors.cardColor)
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
                 )
-                Text("A", color = themeColors.titleTextColor, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Text("A", color = MaterialTheme.colorScheme.onBackground, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Khoảng cách dòng", color = themeColors.titleTextColor, modifier = Modifier.fillMaxWidth())
+            Text("Khoảng cách dòng", color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -182,18 +155,18 @@ fun ProfileScreen(
                         onClick = { profileViewModel.updateLineSpacing(option) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isSelected) themeColors.accentColor else themeColors.cardColor
+                            containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text(option, color = if (isSelected) Color.White else themeColors.titleTextColor)
+                        Text(option, color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Chế độ hiển thị", color = themeColors.titleTextColor, modifier = Modifier.fillMaxWidth())
+            Text("Chế độ hiển thị", color = MaterialTheme.colorScheme.onBackground, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -204,7 +177,6 @@ fun ProfileScreen(
                     Triple("Dark", Color(0xFF0F1524), Color(0xFFFFFFFF))
                 )
                 themesList.forEach { (name, bg, fg) ->
-                    // 🌟 SỬA: Nút active dựa vào trạng thái thực tại của toàn hệ thống để không bị reset sai lệch dữ liệu
                     val isSelected = (name == "Dark" && isAppInDarkMode) || (name == "Light" && !isAppInDarkMode)
                     Card(
                         modifier = Modifier
@@ -216,7 +188,7 @@ fun ProfileScreen(
                             },
                         shape = RoundedCornerShape(8.dp),
                         colors = CardDefaults.cardColors(containerColor = bg),
-                        border = if (isSelected) BorderStroke(2.dp, themeColors.accentColor) else BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))
+                        border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))
                     ) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text("Aa", color = fg, fontWeight = FontWeight.Bold)
@@ -227,22 +199,19 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- TÀI KHOẢN ---
             SectionTitle(title = "TÀI KHOẢN")
-            MenuItem(icon = Icons.Default.MenuBook, title = "Góc tác giả", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor)
-            MenuItem(icon = Icons.Default.Person, title = "Thông tin cá nhân", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor)
-            MenuItem(icon = Icons.Default.Lock, title = "Mật khẩu & Bảo mật", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor)
+            MenuItem(icon = Icons.Default.MenuBook, title = "Góc tác giả")
+            MenuItem(icon = Icons.Default.Person, title = "Thông tin cá nhân")
+            MenuItem(icon = Icons.Default.Lock, title = "Mật khẩu & Bảo mật")
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- HỖ TRỢ ---
             SectionTitle(title = "HỖ TRỢ")
-            MenuItem(icon = Icons.Default.HelpOutline, title = "Trung tâm hỗ trợ", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor)
-            MenuItem(icon = Icons.Default.Description, title = "Điều khoản sử dụng", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor)
+            MenuItem(icon = Icons.Default.HelpOutline, title = "Trung tâm hỗ trợ")
+            MenuItem(icon = Icons.Default.Description, title = "Điều khoản sử dụng")
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // --- NÚT ĐĂNG XUẤT ---
             OutlinedButton(
                 onClick = {
                     profileViewModel.logout()
@@ -266,52 +235,39 @@ fun ProfileScreen(
 }
 
 @Composable
-fun StatCard(modifier: Modifier, title: String, value: String, cardColor: Color, accentColor: Color, textColor: Color) {
+fun StatCard(modifier: Modifier, title: String, value: String) {
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = cardColor)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
             modifier = Modifier.padding(16.dp).fillMaxWidth(),
             horizontalAlignment = Alignment.Start
         ) {
-            Text(text = title, fontSize = 11.sp, color = accentColor, fontWeight = FontWeight.Bold)
+            Text(text = title, fontSize = 11.sp, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = value, fontSize = 24.sp, color = textColor, fontWeight = FontWeight.Bold)
+            Text(text = value, fontSize = 24.sp, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
         }
     }
 }
 
 @Composable
-fun SectionTitle(title: String) {
-    Text(
-        text = title,
-        color = Color.Gray,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
-    )
-}
-
-@Composable
-fun MenuItem(icon: ImageVector, title: String, cardColor: Color, textColor: Color) {
+fun MenuItem(icon: ImageVector, title: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
-            .background(cardColor, RoundedCornerShape(8.dp))
-            .clickable { /* Điều hướng */ }
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(8.dp))
+            .clickable { }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(imageVector = icon, contentDescription = null, tint = textColor.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
+            Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(12.dp))
-            Text(text = title, color = textColor, fontSize = 15.sp)
+            Text(text = title, color = MaterialTheme.colorScheme.onSurface, fontSize = 15.sp)
         }
         Icon(imageVector = Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
     }

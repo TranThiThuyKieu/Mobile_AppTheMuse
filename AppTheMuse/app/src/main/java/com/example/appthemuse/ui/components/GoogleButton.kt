@@ -7,6 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -25,11 +26,11 @@ fun GoogleButton(
         modifier = modifier
             .fillMaxWidth()
             .height(50.dp),
-        shape = RoundedCornerShape(12.dp) // Thống nhất bo góc 12.dp với PrimaryButton
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             horizontalArrangement = Arrangement.Center,
-            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ic_google),

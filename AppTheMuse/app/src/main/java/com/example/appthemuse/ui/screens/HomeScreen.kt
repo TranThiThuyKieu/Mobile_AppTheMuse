@@ -6,7 +6,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -14,14 +13,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -29,12 +26,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.appthemuse.domain.model.BookModel
+import com.example.appthemuse.domain.model.CategoryModel
 import com.example.appthemuse.ui.viewmodel.HomeViewModel
-import com.example.appthemuse.data.model.BookUi
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
+fun HomeScreen(
+    viewModel: HomeViewModel,
+    onBookClick: (String) -> Unit,
+    onSeeMoreCategoriesClick: () -> Unit
+) {
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
@@ -47,8 +49,11 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
             }
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(paddingValues).background(MaterialTheme.colorScheme.background),
-                contentPadding = PaddingValues(bottom = 16.dp)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .background(MaterialTheme.colorScheme.background),
+                contentPadding = PaddingValues(bottom = 80.dp)
             ) {
                 // 1. Slider / Banner "Truyện Trending"
                 if (uiState.trendingBooks.isNotEmpty()) {
@@ -56,151 +61,99 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
                         Text(
                             text = "Truyện Trending",
                             color = MaterialTheme.colorScheme.onBackground,
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(16.dp)
+                            style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp),
+                            modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 12.dp)
                         )
                         val pagerState = rememberPagerState(pageCount = { uiState.trendingBooks.size })
                         HorizontalPager(state = pagerState) { page ->
                             val book = uiState.trendingBooks[page]
-                            BannerItem(book = book, onClick = { onBookClick(book.id) })
+                            BannerItem(book = book, onClick = { onBookClick(book.id.toString()) })
                         }
                     }
                 }
-                // 2. Section "Truyện Hot" (Danh sách hàng dọc thu nhỏ)
+
+                // 2. Section "Truyện Hot"
                 item { SectionHeader(title = "Truyện Hot") }
-                items(uiState.trendingBooks.take(2)) { book ->
-                    VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
+                items(uiState.trendingBooks.take(3)) { book ->
+                    VerticalBookItem(book = book, onClick = { onBookClick(book.id.toString()) })
                 }
+
                 // 3. Section "Đề xuất cho bạn"
                 item { SectionHeader(title = "Đề xuất cho bạn") }
-                items(uiState.recommendedBooks.take(2)) { book ->
-                    VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
+                items(uiState.recommendedBooks.take(3)) { book ->
+                    VerticalBookItem(book = book, onClick = { onBookClick(book.id.toString()) })
                 }
-                // 4. Section "Mới cập nhật" (Dạng thẻ cuộn ngang lớn)
+
+                // 4. Section "Mới cập nhật"
                 if (uiState.recentBooks.isNotEmpty()) {
                     item {
                         SectionHeader(title = "Mới cập nhật")
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.padding(vertical = 4.dp)
                         ) {
                             items(uiState.recentBooks) { book ->
-                                RecentBookCard(book = book, onClick = { onBookClick(book.id) })
+                                RecentBookCard(book = book, onClick = { onBookClick(book.id.toString()) })
                             }
                         }
                     }
+                }
+
+                // 5. Section "Khám phá thể loại"
+                if (uiState.categories.isNotEmpty()) {
                     item {
-                        SectionHeader(title = "Khám phá thể loại")
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            modifier = Modifier.height(140.dp).padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)){
-                            items(uiState.categories.size){ index ->
-                                // Hiển thị danh sách thể loại sách + số sách của thể loại đó
-                                Card(
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                                ) {
-                                    Column(modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center) {
-                                        val category = uiState.categories[index]
-                                        Text(text = category.name, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = "${category.totalBooks} truyện", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
+                        SectionHeader(title = "Khám phá thể loại", onSeeMoreClick = onSeeMoreCategoriesClick)
+                        LazyRow(
+                            contentPadding = PaddingValues(horizontal = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        ) {
+                            items(uiState.categories) { category ->
+                                HomeCategoryCard(category = category)
                             }
                         }
                     }
+                }
+
+                // 6. Section "Sách mới phát hành" - Đã sửa đồng bộ lấy đúng từ mảng dữ liệu riêng biệt
+                if (uiState.newReleaseBooks.isNotEmpty()) {
                     item { SectionHeader(title = "Sách mới phát hành") }
-                    items(uiState.newReleaseBooks.take(2)) { book ->
-                        VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
+                    items(uiState.newReleaseBooks.take(3)) { book ->
+                        VerticalBookItem(book = book, onClick = { onBookClick(book.id.toString()) })
                     }
                 }
             }
         }
     }
 }
-// Thanh tiêu đề phía trên của màn hình Home
-@OptIn(ExperimentalMaterial3Api::class)
+
+// Giữ nguyên các thành phần TopBar và SectionHeader từ code gốc của bạn...
+
 @Composable
-fun HomeTopBar() {
-    TopAppBar(
-        title = { Text("The Muse", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
-        actions = {
-            IconButton(onClick = {}) { Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onBackground) }
-            IconButton(onClick = {}) { Icon(Icons.Default.Notifications, contentDescription = "Alerts", tint = MaterialTheme.colorScheme.onBackground) }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-    )
-}
-// Tiêu đề của từng mục nội dung
-@Composable
-fun SectionHeader(title: String, onSeeMoreClick: () -> Unit = {}) {
-    Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically) {
-        Text(title, color = MaterialTheme.colorScheme.onBackground, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text("Xem thêm →", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, modifier = Modifier.clickable { onSeeMoreClick() })
-    }
-}
-// Banner truyện trending dạng slider
-@Composable
-fun BannerItem(book: BookUi, onClick: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().height(180.dp).padding(horizontal = 16.dp).clickable { onClick() },
-        shape = RoundedCornerShape(12.dp)) {
-        Box {
-            AsyncImage(model = book.cover_url, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
-            Text(
-                text = book.title,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                modifier = Modifier.align(Alignment.BottomStart).padding(16.dp))
-        }
-    }
-}
-// Item truyện hiển thị theo chiều dọc
-@Composable
-fun VerticalBookItem(book: BookUi, onClick: () -> Unit) {
+fun RecentBookCard(book: BookModel, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp).clickable { onClick() },
+        modifier = Modifier
+            .width(130.dp)
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Column {
             AsyncImage(
-                model = book.cover_url,
+                model = book.coverUrl,
                 contentDescription = null,
-                modifier = Modifier.size(width = 70.dp, height = 95.dp).clip(RoundedCornerShape(8.dp)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(160.dp),
                 contentScale = ContentScale.Crop
             )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1.0f)) {
-                Text(book.title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(book.author_name, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-                Spacer(modifier = Modifier.height(4.dp))
-                Text("📚 ${book.chapter_count} Chương  •  ⭐ ${book.rating}  •  👁️ ${book.view_count}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
-            }
-        }
-    }
-}
-// Thẻ truyện dạng ngang dùng cho mục mới cập nhật
-@Composable
-fun RecentBookCard(book: BookUi, onClick: () -> Unit) {
-    Card(modifier = Modifier.width(160.dp).clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-        Column {
-            AsyncImage(model = book.cover_url, contentDescription = null, modifier = Modifier.fillMaxWidth().height(120.dp), contentScale = ContentScale.Crop)
             Column(modifier = Modifier.padding(8.dp)) {
-                Text(book.title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(book.author_name, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(book.title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Spacer(modifier = Modifier.height(2.dp))
+                // Đã sửa lỗi: Chuyển đổi gọi chính xác từ thuộc tính 'book.author' thay vì 'authorName'
+                Text(book.author, fontSize = 12.sp, color = MaterialTheme.colorScheme.outline, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }

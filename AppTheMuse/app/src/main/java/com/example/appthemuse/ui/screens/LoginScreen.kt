@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -58,7 +59,9 @@ fun LoginScreen(
             }
         } else {
             Column(
-                modifier = Modifier.fillMaxSize().padding(28.dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(28.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -69,21 +72,23 @@ fun LoginScreen(
                         modifier = Modifier.size(32.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "The Muse", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(text = "The Muse", style = MaterialTheme.typography.titleLarge.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold))
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
-                Text(text = "Chào mừng trở lại", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                Text(text = "Đăng nhập để tiếp tục đọc truyện", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+                Text(text = "Chào mừng trở lại", style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp))
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = "Đăng nhập để tiếp tục đọc truyện", style = MaterialTheme.typography.bodyLarge.copy(fontSize = 14.sp), color = MaterialTheme.colorScheme.outline)
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("Email hoặc tên đăng nhập") },
+                    label = { Text("Email của bạn") },
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
@@ -95,10 +100,11 @@ fun LoginScreen(
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp)
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
                 PrimaryButton(
                     text = "Đăng nhập",
@@ -107,13 +113,12 @@ fun LoginScreen(
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
-                Text(text = "Hoặc đăng nhập với", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
+                Text(text = "Hoặc đăng nhập với", color = MaterialTheme.colorScheme.outline, fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(16.dp))
 
                 GoogleButton(
                     onClick = {
                         coroutineScope.launch {
-                            // Gọi từ File tiện ích dùng chung (autoSelect = false để ép người dùng chọn tài khoản)
                             AuthUtils.triggerGoogleSignIn(context, autoSelect = false) { idToken ->
                                 viewModel.loginWithGoogle(idToken)
                             }
@@ -121,10 +126,10 @@ fun LoginScreen(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
                 Row {
-                    Text(text = "Chưa có tài khoản? ")
+                    Text(text = "Chưa có tài khoản? ", color = MaterialTheme.colorScheme.onBackground)
                     Text(
                         text = "Đăng ký ngay",
                         color = MaterialTheme.colorScheme.primary,

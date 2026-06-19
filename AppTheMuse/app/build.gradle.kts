@@ -79,5 +79,6 @@ dependencies {
     implementation(libs.room.ktx)
     ksp(libs.room.compiler) // Dùng bộ biên dịch KSP thay cho Kapt cũ
     implementation("io.coil-kt:coil-compose:2.6.0")
+    //icon
     implementation("androidx.compose.material:material-icons-extended")
 }

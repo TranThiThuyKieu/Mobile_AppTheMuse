@@ -4,8 +4,6 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.appthemuse.data.model.CategoryUi
-import com.example.appthemuse.data.remote.FirestoreService
 import com.example.appthemuse.data.repository.AuthRepository
 import kotlinx.coroutines.launch
 

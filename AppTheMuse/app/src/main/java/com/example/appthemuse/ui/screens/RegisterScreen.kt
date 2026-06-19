@@ -55,6 +55,7 @@ fun RegisterScreen(
             else -> {}
         }
     }
+
     DisposableEffect(Unit) {
         onDispose {
             viewModel.resetState()
@@ -69,7 +70,7 @@ fun RegisterScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(28.dp)
-                .verticalScroll(scrollState), // Hỗ trợ cuộn khi hiện bàn phím
+                .verticalScroll(scrollState),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.Start
         ) {
@@ -185,12 +186,15 @@ fun RegisterScreen(
                     PrimaryButton(
                         text = "Đăng ký",
                         onClick = {
-                            if (password != confirmPassword) {
+                            if (username.isBlank() || email.isBlank() || password.isBlank()) {
+                                Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show()
+                            } else if (password != confirmPassword) {
                                 Toast.makeText(context, "Mật khẩu xác nhận không trùng khớp!", Toast.LENGTH_SHORT).show()
                             } else {
                                 viewModel.register(email, password, username)
                             }
-                        }
+                        },
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
