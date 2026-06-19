@@ -4,6 +4,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
+import com.google.firebase.auth.GoogleAuthProvider
 
 class AuthService {
     private val firebaseAuth = FirebaseAuth.getInstance()
@@ -31,6 +32,31 @@ class AuthService {
                 "created_at" to com.google.firebase.Timestamp.now()
             )
             firestore.collection("users").document(user.uid).set(userData).await()
+        }
+        return user
+    }
+    // Hàm đăng nhập bằng Google Token
+    suspend fun loginWithGoogle(idToken: String): FirebaseUser? {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        val result = firebaseAuth.signInWithCredential(credential).await()
+        val user = result.user
+
+        if (user != null) {
+            // Kiểm tra xem User đã tồn tại trên Firestore chưa (tránh ghi đè dữ liệu cũ)
+            val userDoc = firestore.collection("users").document(user.uid).get().await()
+            if (!userDoc.exists()) {
+                // Nếu là tài khoản mới hoàn toàn, khởi tạo thông tin cơ bản
+                val userData = hashMapOf(
+                    "id" to user.uid,
+                    "username" to (user.displayName ?: "Người dùng Google"),
+                    "email" to (user.email ?: ""),
+                    "role" to "user",
+                    "is_blocked" to false,
+                    "favorite_genres" to emptyList<String>(),
+                    "created_at" to com.google.firebase.Timestamp.now()
+                )
+                firestore.collection("users").document(user.uid).set(userData).await()
+            }
         }
         return user
     }

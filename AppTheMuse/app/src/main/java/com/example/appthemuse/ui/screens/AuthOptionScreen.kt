@@ -1,13 +1,13 @@
 package com.example.appthemuse.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -20,83 +20,111 @@ import com.example.appthemuse.R
 import com.example.appthemuse.ui.components.GoogleButton
 import com.example.appthemuse.ui.components.PrimaryButton
 import com.example.appthemuse.ui.components.SecondaryButton
+import com.example.appthemuse.ui.viewmodel.AuthState
+import com.example.appthemuse.ui.viewmodel.AuthViewModel
+import com.example.appthemuse.ui.util.AuthUtils
+import kotlinx.coroutines.launch
 
 @Composable
 fun AuthOptionScreen(
-    onNavigateToGoogleLogin: () -> Unit,
+    viewModel: AuthViewModel,
+    onNavigateToHome: (Boolean) -> Unit,
     onNavigateToLoginEmail: () -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val authState by viewModel.authState
+
+    LaunchedEffect(authState) {
+        when (authState) {
+            is AuthState.LoginSuccess -> {
+                val hasGenres = (authState as AuthState.LoginSuccess).hasGenres
+                Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                viewModel.resetState()
+                onNavigateToHome(hasGenres)
+            }
+            is AuthState.Error -> {
+                Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_LONG).show()
+                viewModel.resetState()
+            }
+            else -> {}
+        }
+    }
+
     Surface(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(28.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // 1. LOGO CUỐN SÁCH NHỎ
-            Image(
-                painter = painterResource(id = R.drawable.ic_logo_the_muse),
-                contentDescription = "Logo The Muse",
-                modifier = Modifier.size(50.dp)
-            )
+        if (authState is AuthState.Loading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(28.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_logo_the_muse),
+                    contentDescription = "Logo The Muse",
+                    modifier = Modifier.size(50.dp)
+                )
 
-            Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            // 2. TIÊU ĐỀ ĐƯỢC ĐỔI MÀU CHỮ "THE MUSE" CHUẨN FIGMA
-            Text(
-                text = buildAnnotatedString {
-                    append("Chào mừng bạn\nđến với ")
-                    withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
-                        append("The Muse")
+                Text(
+                    text = buildAnnotatedString {
+                        append("Chào mừng bạn\nđến với ")
+                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
+                            append("The Muse")
+                        }
+                    },
+                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp),
+                    color = MaterialTheme.colorScheme.onBackground,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 36.sp
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Hành trình vào thế giới ngôn từ của bạn bắt đầu tại đây.",
+                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 22.sp
+                )
+
+                Spacer(modifier = Modifier.height(40.dp))
+
+                GoogleButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            // Gọi từ File tiện ích dùng chung (Bật autoSelect = true cho màn hình Welcome/Options)
+                            AuthUtils.triggerGoogleSignIn(context, autoSelect = true) { idToken ->
+                                viewModel.loginWithGoogle(idToken)
+                            }
+                        }
                     }
-                },
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
-                textAlign = TextAlign.Center,
-                lineHeight = 36.sp
-            )
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // 3. MÔ TẢ PHỤ (SLOGAN)
-            Text(
-                text = "Hành trình vào thế giới ngôn từ của bạn bắt đầu tại đây.",
-                fontSize = 15.sp,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                textAlign = TextAlign.Center,
-                lineHeight = 22.sp
-            )
+                PrimaryButton(
+                    text = "ĐĂNG NHẬP",
+                    onClick = onNavigateToLoginEmail,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
-            Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. NÚT TIẾP TỤC VỚI GOOGLE
-            GoogleButton(
-                text = "Tiếp tục với Google",
-                onClick = onNavigateToGoogleLogin
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 5. NÚT ĐĂNG NHẬP
-            PrimaryButton(
-                text = "ĐĂNG NHẬP",
-                onClick = onNavigateToLoginEmail,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 6. NÚT TẠO TÀI KHOẢN
-            SecondaryButton(
-                text = "TẠO TÀI KHOẢN",
-                onClick = onNavigateToRegister
-            )
+                SecondaryButton(
+                    text = "TẠO TÀI KHOẢN",
+                    onClick = onNavigateToRegister
+                )
+            }
         }
     }
 }
