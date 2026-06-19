@@ -46,7 +46,6 @@ fun RegisterScreen(
         when (authState) {
             is AuthState.RegisterSuccess -> {
                 Toast.makeText(context, "Đăng ký tài khoản thành công!", Toast.LENGTH_SHORT).show()
-                viewModel.resetState()
                 onRegisterSuccess()
             }
             is AuthState.Error -> {
@@ -54,6 +53,11 @@ fun RegisterScreen(
                 viewModel.resetState()
             }
             else -> {}
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.resetState()
         }
     }
 

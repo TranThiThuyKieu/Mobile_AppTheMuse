@@ -54,7 +54,7 @@ fun AuthOptionScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = MaterialTheme.colorScheme.background // ĐỔI MÀU NỀN MÀN CHỜ
     ) {
         if (authState is AuthState.Loading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
