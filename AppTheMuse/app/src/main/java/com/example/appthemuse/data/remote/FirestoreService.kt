@@ -1,5 +1,6 @@
 package com.example.appthemuse.data.remote
 
+import com.example.appthemuse.domain.model.CategoryModel
 import android.util.Log
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -13,6 +14,16 @@ import kotlin.collections.emptyList
 
 class FirestoreService {
     private val firestore = FirebaseFirestore.getInstance()
+
+    // ĐỔI TỪ List<String> SANG List<CategoryModel>
+    suspend fun getCategoriesList(): List<CategoryModel> {
+        return try {
+            val snapshot = firestore.collection("categories").get().await()
+            snapshot.documents.map { document ->
+                CategoryModel(
+                    id = document.id,
+                    name = document.getString("name") ?: "Chưa đặt tên"
+                )
     // Lấy danh sách truyện có lượt xem cao nhất
     suspend fun getTrendingBooks(limit: Long = 5): List<BookUi> {
         val snapshot = firestore.collection("books").orderBy("view_count", Query.Direction.DESCENDING)
@@ -96,18 +107,7 @@ class FirestoreService {
     private fun toCategoryUi(category: Category, totalBooks:Int): CategoryUi {
         return CategoryUi(id = category.id, name = category.name, totalBooks = totalBooks)
     }
-    // Lấy danh sách thể loại
-    suspend fun getCategoriesList(): List<CategoryUi> {
-        return try {
-            val categorySnapshot = firestore.collection("categories").get().await()
-            val bookSnapshot = firestore.collection("books").get().await()
-            categorySnapshot.documents.map { doc ->
-                val category =
-                    doc.toObject(Category::class.java)!!
-                val totalBooks = bookSnapshot.documents.count {
-                        it.getLong("category_id")?.toInt() == category.id
-                }
-                toCategoryUi(category = category, totalBooks = totalBooks)
+   
             }
         } catch (e: Exception) {
             Log.e("FirestoreService", "Error getCategoriesList: ${e.message}", e)

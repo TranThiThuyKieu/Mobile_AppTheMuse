@@ -69,6 +69,11 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.auth)
 
+    // Thư viện Credential Manager mới của Google
+    implementation("androidx.credentials:credentials:1.3.0")
+    implementation("androidx.credentials:credentials-play-services-auth:1.3.0")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.1.1")
+
     // ROOM DATABASE (Lưu Offline)
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
