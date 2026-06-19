@@ -36,8 +36,10 @@ import com.example.appthemuse.data.model.BookUi
 @Composable
 fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
+
     Scaffold(
-        topBar = { HomeTopBar() }
+        topBar = { HomeTopBar() },
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         if (uiState.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -53,7 +55,9 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
                     item {
                         Text(
                             text = "Truyện Trending",
-                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(16.dp)
                         )
                         val pagerState = rememberPagerState(pageCount = { uiState.trendingBooks.size })
@@ -87,22 +91,22 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
                         }
                     }
                     item {
-                        SectionHeader(
-                            title = "Khám phá thể loại"
-                        )
+                        SectionHeader(title = "Khám phá thể loại")
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(2),
                             modifier = Modifier.height(140.dp).padding(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)){
                             items(uiState.categories.size){ index ->
-                                Card {
-                                    // Hiển thị danh sách thể loại sách + số sách của thể loại đó
+                                // Hiển thị danh sách thể loại sách + số sách của thể loại đó
+                                Card(
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                                ) {
                                     Column(modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                           horizontalAlignment = Alignment.CenterHorizontally,
-                                           verticalArrangement = Arrangement.Center) {
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center) {
                                         val category = uiState.categories[index]
-                                        Text(text = category.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Text(text = category.name, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         Spacer(modifier = Modifier.height(4.dp))
                                         Text(text = "${category.totalBooks} truyện", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
@@ -110,18 +114,9 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
                             }
                         }
                     }
-                    item {
-                        SectionHeader(
-                            title = "Sách mới phát hành"
-                        )
-                    }
+                    item { SectionHeader(title = "Sách mới phát hành") }
                     items(uiState.newReleaseBooks.take(2)) { book ->
-                        VerticalBookItem(
-                            book = book,
-                            onClick = {
-                                onBookClick(book.id)
-                            }
-                        )
+                        VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
                     }
                 }
             }
@@ -135,10 +130,10 @@ fun HomeTopBar() {
     TopAppBar(
         title = { Text("The Muse", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
         actions = {
-            IconButton(onClick = {}) { Icon(Icons.Default.Search, contentDescription = "Search") }
-            IconButton(onClick = {}) { Icon(Icons.Default.Notifications, contentDescription = "Alerts") }
+            IconButton(onClick = {}) { Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onBackground) }
+            IconButton(onClick = {}) { Icon(Icons.Default.Notifications, contentDescription = "Alerts", tint = MaterialTheme.colorScheme.onBackground) }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     )
 }
 // Tiêu đề của từng mục nội dung
@@ -147,7 +142,7 @@ fun SectionHeader(title: String, onSeeMoreClick: () -> Unit = {}) {
     Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically) {
-        Text(title, style = MaterialTheme.typography.titleLarge)
+        Text(title, color = MaterialTheme.colorScheme.onBackground, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Text("Xem thêm →", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, modifier = Modifier.clickable { onSeeMoreClick() })
     }
 }
@@ -171,19 +166,28 @@ fun BannerItem(book: BookUi, onClick: () -> Unit) {
 // Item truyện hiển thị theo chiều dọc
 @Composable
 fun VerticalBookItem(book: BookUi, onClick: () -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp).clickable { onClick() },
-        verticalAlignment = Alignment.CenterVertically
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp).clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        AsyncImage(
-            model = book.cover_url,
-            contentDescription = null,
-            modifier = Modifier.size(width = 80.dp, height = 110.dp).clip(RoundedCornerShape(8.dp)),
-            contentScale = ContentScale.Crop)
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1.0f)) {
-            Text(book.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(book.author_name, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
-            Text("📚 ${book.chapter_count} Chương  •  ⭐ ${book.rating}  •  👁️ ${book.view_count}", fontSize = 12.sp, color = Color.Gray)
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AsyncImage(
+                model = book.cover_url,
+                contentDescription = null,
+                modifier = Modifier.size(width = 70.dp, height = 95.dp).clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1.0f)) {
+                Text(book.title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(book.author_name, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text("📚 ${book.chapter_count} Chương  •  ⭐ ${book.rating}  •  👁️ ${book.view_count}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
+            }
         }
     }
 }
@@ -195,8 +199,8 @@ fun RecentBookCard(book: BookUi, onClick: () -> Unit) {
         Column {
             AsyncImage(model = book.cover_url, contentDescription = null, modifier = Modifier.fillMaxWidth().height(120.dp), contentScale = ContentScale.Crop)
             Column(modifier = Modifier.padding(8.dp)) {
-                Text(book.title, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(book.author_name, fontSize = 12.sp, color = Color.Gray)
+                Text(book.title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(book.author_name, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
