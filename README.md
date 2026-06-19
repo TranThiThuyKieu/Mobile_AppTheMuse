@@ -66,6 +66,10 @@ app/src/main/java/com/example/appthemuse/
     │   ├── CreatorViewModel.kt (Quản lý góc sáng tác: Đăng truyện, Thêm chương, Thống kê cá nhân)
     │   └── AdminViewModel.kt (Quản lý biểu đồ tổng quan, duyệt bài, ẩn bình luận, khóa tài khoản)
     │
+    ├── 📂 model/
+    │   ├── BookUi.kt                  └── Chứa các model đã gọt giũa riêng cho UI
+    │   └── CategoryUi.kt              └── (Ví dụ: có thêm trường số lượng chương, số sao)
+    │
     └── 📂 screens/ (Giao diện các màn hình chính - Chia nhỏ theo cụm vai trò chuyên biệt)
         │
         ├── 📂 auth/ (Cụm chức năng Xác thực & Tài khoản)
