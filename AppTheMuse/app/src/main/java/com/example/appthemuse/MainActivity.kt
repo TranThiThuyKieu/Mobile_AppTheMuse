@@ -9,7 +9,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Scaffold
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.appthemuse.ui.components.AppBottomBar
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -23,6 +25,8 @@ import com.example.appthemuse.ui.screens.RegisterScreen
 import com.example.appthemuse.ui.screens.WelcomeScreen
 import com.example.appthemuse.ui.theme.AppTheMuseTheme
 import com.example.appthemuse.ui.viewmodel.AuthViewModel
+import com.example.appthemuse.ui.viewmodel.HomeViewModel
+import com.example.appthemuse.ui.screens.ExploreScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,7 +34,8 @@ class MainActivity : ComponentActivity() {
 
         // 1. KHỞI TẠO CÁC DEPENDENCY CHUẨN KIẾN TRÚC MỚI
         val authService = AuthService()
-        val firestoreService = FirestoreService() // Khởi tạo thêm service quản lý danh mục sách/thể loại
+        val firestoreService =
+            FirestoreService() // Khởi tạo thêm service quản lý danh mục sách/thể loại
 
         val authRepository = AuthRepository(authService)
 
@@ -47,14 +52,25 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-
-                    NavHost(navController = navController, startDestination = "welcome") {
-
+                    val homeViewModel = androidx.lifecycle.viewmodel.compose.viewModel {
+                        HomeViewModel(firestoreService = firestoreService)
+                    }
+                    // Lấy route hiện tại của Navigation Stack
+                    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+                    Scaffold(
+                        bottomBar = {
+                            // Chỉ hiển thị BottomBar ở các màn chính,
+                            if (currentRoute != "welcome" && currentRoute != "auth_options" &&
+                                currentRoute != "login" && currentRoute != "register" && currentRoute != "genre_selection") {
+                                AppBottomBar(navController = navController, currentRoute = currentRoute)
+                            }
+                        }
+                    ) { paddingValues ->
+                        NavHost(navController = navController, startDestination = "welcome", modifier = Modifier.padding(paddingValues)) {
                         // Màn hình chào mừng
                         composable("welcome") {
                             WelcomeScreen(onNavigateToLogin = { navController.navigate("auth_options") })
                         }
-
                         // Màn hình chọn Đăng nhập / Đăng ký tổng quan
                         composable("auth_options") {
                             AuthOptionScreen(
@@ -99,7 +115,6 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
-
                         // Màn hình chọn thể loại (Chỉ xuất hiện 1 lần đầu)
                         composable("genre_selection") {
                             GenreSelectionScreen(
@@ -111,12 +126,8 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
-
                         // Trang chủ chính thức ( Jan trang chủ)
                         composable("home") {
-                            val homeViewModel = androidx.lifecycle.viewmodel.compose.viewModel {
-                                com.example.appthemuse.ui.viewmodel.HomeViewModel(firestoreService = firestoreService)
-                            }
                             com.example.appthemuse.ui.screens.HomeScreen(
                                 viewModel = homeViewModel,
                                 onBookClick = { bookId ->
@@ -124,9 +135,15 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
+                         // Trang khám phá
+                         composable("explore") {
+                                ExploreScreen(viewModel = homeViewModel, onBookClick = {})
+                            }
+                        }
                     }
                 }
             }
         }
     }
 }
+

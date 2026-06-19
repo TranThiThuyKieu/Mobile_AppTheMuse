@@ -31,18 +31,13 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.appthemuse.ui.viewmodel.HomeViewModel
 import com.example.appthemuse.data.model.BookUi
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Explore
-import androidx.compose.material.icons.filled.Person
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
     Scaffold(
-        topBar = { HomeTopBar() },
-        bottomBar = { HomeBottomBar() }
+        topBar = { HomeTopBar() }
     ) { paddingValues ->
         if (uiState.isLoading) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -102,12 +97,14 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
                             verticalArrangement = Arrangement.spacedBy(8.dp)){
                             items(uiState.categories.size){ index ->
                                 Card {
-                                    Box(
-                                        modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                        contentAlignment = Alignment.Center){
-                                        Text(
-                                            uiState.categories[index]
-                                        )
+                                    // Hiển thị danh sách thể loại sách + số sách của thể loại đó
+                                    Column(modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                           horizontalAlignment = Alignment.CenterHorizontally,
+                                           verticalArrangement = Arrangement.Center) {
+                                        val category = uiState.categories[index]
+                                        Text(text = category.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(text = "${category.totalBooks} truyện", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             }
@@ -143,36 +140,6 @@ fun HomeTopBar() {
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
     )
-}
-// Thanh điều hướng dưới cùng
-@Composable
-fun HomeBottomBar() {
-    NavigationBar {
-        NavigationBarItem(
-            selected = true,
-            onClick = {},
-            icon = { Icon(Icons.Default.Home, null) },
-            label = { Text("Trang chủ") }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = {},
-            icon = { Icon(Icons.Default.Explore, null) },
-            label = { Text("Khám phá") }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = {},
-            icon = { Icon(Icons.Default.Book, null) },
-            label = { Text("Tủ sách") }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = {},
-            icon = { Icon(Icons.Default.Person, null) },
-            label = { Text("Hồ sơ") }
-        )
-    }
 }
 // Tiêu đề của từng mục nội dung
 @Composable

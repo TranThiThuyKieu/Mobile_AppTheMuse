@@ -4,6 +4,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.appthemuse.data.model.CategoryUi
 import com.example.appthemuse.data.remote.FirestoreService
 import com.example.appthemuse.data.repository.AuthRepository
 import com.google.firebase.auth.FirebaseAuth
@@ -27,8 +28,8 @@ class AuthViewModel(
     private val _authState = mutableStateOf<AuthState>(AuthState.Idle)
     val authState: State<AuthState> = _authState
 
-    private val _categories = mutableStateOf<List<String>>(emptyList())
-    val categories: State<List<String>> = _categories
+    private val _categories = mutableStateOf<List<CategoryUi>>(emptyList())
+    val categories: State<List<CategoryUi>> = _categories
 
     // 1. Tải thể loại từ FirestoreService
     fun fetchCategories() {

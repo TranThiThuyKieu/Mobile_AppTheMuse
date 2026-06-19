@@ -6,21 +6,13 @@ import kotlinx.coroutines.tasks.await
 import com.example.appthemuse.data.model.Book
 import com.google.firebase.firestore.Query
 import com.example.appthemuse.data.model.BookUi
+import com.example.appthemuse.data.model.Category
+import com.example.appthemuse.data.model.CategoryUi
 import com.google.firebase.firestore.DocumentSnapshot
+import kotlin.collections.emptyList
+
 class FirestoreService {
     private val firestore = FirebaseFirestore.getInstance()
-
-    // Lấy danh sách tên thể loại từ Collection "categories"
-    suspend fun getCategoriesList(): List<String> {
-        return try {
-            val snapshot = firestore.collection("categories").get().await()
-            snapshot.documents.map { document ->
-                document.getString("name") ?: document.id
-            }
-        } catch (e: Exception) {
-            emptyList()
-        }
-    }
     // Lấy danh sách truyện có lượt xem cao nhất
     suspend fun getTrendingBooks(limit: Long = 5): List<BookUi> {
         val snapshot = firestore.collection("books").orderBy("view_count", Query.Direction.DESCENDING)
@@ -93,6 +85,32 @@ class FirestoreService {
             }
         } catch (e: Exception) {
             Log.e("FirestoreService", "Error getNewReleaseBooks: ${e.message}", e)
+            emptyList()
+        }
+    }
+    suspend fun getAllBooks(limit: Long = 50): List<BookUi> {
+        val snapshot = firestore.collection("books").limit(limit).get().await()
+        return snapshot.documents.map { toBookUi(it) }
+    }
+    // Chuyển đổi dữ liệu Firestore thành đối tượng BookUi đồng thời lấy tên thể loại, số tác phẩm của thế loại đó
+    private fun toCategoryUi(category: Category, totalBooks:Int): CategoryUi {
+        return CategoryUi(id = category.id, name = category.name, totalBooks = totalBooks)
+    }
+    // Lấy danh sách thể loại
+    suspend fun getCategoriesList(): List<CategoryUi> {
+        return try {
+            val categorySnapshot = firestore.collection("categories").get().await()
+            val bookSnapshot = firestore.collection("books").get().await()
+            categorySnapshot.documents.map { doc ->
+                val category =
+                    doc.toObject(Category::class.java)!!
+                val totalBooks = bookSnapshot.documents.count {
+                        it.getLong("category_id")?.toInt() == category.id
+                }
+                toCategoryUi(category = category, totalBooks = totalBooks)
+            }
+        } catch (e: Exception) {
+            Log.e("FirestoreService", "Error getCategoriesList: ${e.message}", e)
             emptyList()
         }
     }

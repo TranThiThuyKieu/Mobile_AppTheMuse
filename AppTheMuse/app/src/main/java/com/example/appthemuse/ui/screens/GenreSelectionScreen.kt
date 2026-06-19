@@ -26,7 +26,7 @@ fun GenreSelectionScreen(
     viewModel: AuthViewModel,
     onNavigateToHome: () -> Unit
 ) {
-    val genresList by viewModel.categories
+    val genresList = viewModel.categories.value
 
     // Tối ưu hóa: Dùng rememberSaveable kết hợp với bộ convert list để tránh mất dữ liệu khi xoay màn hình
     val selectedGenres = rememberSaveable { mutableStateListOf<String>() }
@@ -68,8 +68,8 @@ fun GenreSelectionScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(genresList) { genre ->
-                        val isSelected = selectedGenres.contains(genre)
+                    items(genresList) { category ->
+                        val isSelected = selectedGenres.contains(category.name)
                         val boxBg = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                         val textColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
 
@@ -79,11 +79,11 @@ fun GenreSelectionScreen(
                                 .height(60.dp)
                                 .background(boxBg, shape = RoundedCornerShape(12.dp))
                                 .clickable {
-                                    if (isSelected) selectedGenres.remove(genre) else selectedGenres.add(genre)
+                                    if (isSelected) selectedGenres.remove(category.name) else selectedGenres.add(category.name)
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = genre, color = textColor, fontWeight = FontWeight.Medium)
+                            Text(text = category.name, color = textColor, fontWeight = FontWeight.Medium)
                         }
                     }
                 }
