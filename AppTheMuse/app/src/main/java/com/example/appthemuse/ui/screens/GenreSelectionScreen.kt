@@ -52,7 +52,7 @@ fun GenreSelectionScreen(
             Text(
                 text = "Chọn ít nhất 3 thể loại để chúng mình gợi ý sách chuẩn gu bạn nhé.",
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 14.sp),
-                color = MaterialTheme.colorScheme.outline
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(24.dp))

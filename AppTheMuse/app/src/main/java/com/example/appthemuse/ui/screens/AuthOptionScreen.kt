@@ -29,12 +29,10 @@ fun AuthOptionScreen(
 ) {
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        color = MaterialTheme.colorScheme.background // ĐỔI MÀU NỀN MÀN CHỜ
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(28.dp),
+            modifier = Modifier.fillMaxSize().padding(28.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -57,7 +55,7 @@ fun AuthOptionScreen(
                 },
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = MaterialTheme.colorScheme.onBackground, // ĐỔI MÀU CHỮ TIÊU ĐỀ
                 textAlign = TextAlign.Center,
                 lineHeight = 36.sp
             )
@@ -68,7 +66,7 @@ fun AuthOptionScreen(
             Text(
                 text = "Hành trình vào thế giới ngôn từ của bạn bắt đầu tại đây.",
                 fontSize = 15.sp,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant, // ĐỔI MÀU CHỮ MÔ TẢ PHỤ
                 textAlign = TextAlign.Center,
                 lineHeight = 22.sp
             )
@@ -76,27 +74,15 @@ fun AuthOptionScreen(
             Spacer(modifier = Modifier.height(40.dp))
 
             // 4. NÚT TIẾP TỤC VỚI GOOGLE
-            GoogleButton(
-                text = "Tiếp tục với Google",
-                onClick = onNavigateToGoogleLogin
-            )
-
+            GoogleButton(text = "Tiếp tục với Google", onClick = onNavigateToGoogleLogin)
             Spacer(modifier = Modifier.height(16.dp))
 
             // 5. NÚT ĐĂNG NHẬP
-            PrimaryButton(
-                text = "ĐĂNG NHẬP",
-                onClick = onNavigateToLoginEmail,
-                modifier = Modifier.fillMaxWidth()
-            )
-
+            PrimaryButton(text = "ĐĂNG NHẬP", onClick = onNavigateToLoginEmail, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(16.dp))
 
             // 6. NÚT TẠO TÀI KHOẢN
-            SecondaryButton(
-                text = "TẠO TÀI KHOẢN",
-                onClick = onNavigateToRegister
-            )
+            SecondaryButton(text = "TẠO TÀI KHOẢN", onClick = onNavigateToRegister)
         }
     }
 }
