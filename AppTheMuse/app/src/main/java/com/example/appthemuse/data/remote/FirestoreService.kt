@@ -12,9 +12,6 @@ class FirestoreService {
     // --- 1. CÁC HÀM VỀ USER (GIỮ NGUYÊN CỦA BẠN) ---
     suspend fun getUserDocument(userId: String): DocumentSnapshot {
         var doc = firestore.collection("users").document(userId).get().await()
-        if (!doc.exists()) {
-            doc = firestore.collection("người dùng").document(userId).get().await()
-        }
         return doc
     }
 
@@ -22,7 +19,6 @@ class FirestoreService {
         try {
             firestore.collection("users").document(userId).set(userData).await()
         } catch (e: Exception) {
-            firestore.collection("người dùng").document(userId).set(userData).await()
         }
     }
 
@@ -30,7 +26,6 @@ class FirestoreService {
         try {
             firestore.collection("users").document(userId).update("favorite_genres", genres).await()
         } catch (e: Exception) {
-            firestore.collection("người dùng").document(userId).update("favorite_genres", genres).await()
         }
     }
 

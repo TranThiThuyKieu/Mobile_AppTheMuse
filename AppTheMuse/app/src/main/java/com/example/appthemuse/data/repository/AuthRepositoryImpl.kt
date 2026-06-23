@@ -97,10 +97,10 @@ class AuthRepositoryImpl(
 
     // Hàm tiện ích nội bộ để chuyển Document của Firebase thành Model của Domain
     private fun mapDocumentToUser(userId: String, doc: com.google.firebase.firestore.DocumentSnapshot, backupEmail: String): User {
-        val genresRaw = (doc.get("favorite_genres") ?: doc.get("thể_loại_yêu_thích")) as? List<*>
+        val genresRaw = (doc.get("favorite_genres")) as? List<*>
         return User(
             id = userId,
-            username = doc.getString("username") ?: doc.getString("tên_người_dùng") ?: "Người dùng",
+            username = doc.getString("username")  ?: "Người dùng",
             email = doc.getString("email") ?: backupEmail,
             role = doc.getString("role") ?: "user",
             isBlocked = doc.getBoolean("is_blocked") ?: doc.getBoolean("bị_khóa") ?: false,

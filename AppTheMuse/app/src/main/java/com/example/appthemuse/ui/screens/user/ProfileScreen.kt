@@ -48,6 +48,7 @@ data class ProfileThemeColors(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
+    onEditProfileClick: () -> Unit,
     viewModel: ProfileViewModel,
     onThemeChanged: (String) -> Unit = {},
     onLogout: () -> Unit
@@ -130,8 +131,8 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(text = uiState.user?.username ?: "", color = themeColors.titleTextColor, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text(text = uiState.user?.email ?: "", color = themeColors.contentTextColor, fontSize = 14.sp)
+            Text(text = uiState.user.username, color = themeColors.titleTextColor, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(text = uiState.user.email, color = themeColors.contentTextColor, fontSize = 14.sp)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -140,9 +141,9 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                StatCard(modifier = Modifier.weight(1.0f), title = "ĐÃ ĐỌC", value = uiState.readCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
-                StatCard(modifier = Modifier.weight(1.0f), title = "YÊU THÍCH", value = uiState.favoriteCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
-                StatCard(modifier = Modifier.weight(1.0f), title = "ĐÃ TẢI", value = uiState.downloadedCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
+                StatCard(modifier = Modifier.weight(1.0f), title = "ĐÃ ĐỌC", value = uiState.user.readCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
+                StatCard(modifier = Modifier.weight(1.0f), title = "YÊU THÍCH", value = uiState.user.favoriteCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
+                StatCard(modifier = Modifier.weight(1.0f), title = "ĐÃ TẢI", value = uiState.user.downloadedCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -225,16 +226,22 @@ fun ProfileScreen(
 
             // --- TÀI KHOẢN ---
             SectionTitle(title = "TÀI KHOẢN")
-            MenuItem(icon = Icons.Default.MenuBook, title = "Góc tác giả", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor)
-            MenuItem(icon = Icons.Default.Person, title = "Thông tin cá nhân", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor)
-            MenuItem(icon = Icons.Default.Lock, title = "Mật khẩu & Bảo mật", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor)
+            MenuItem(icon = Icons.Default.MenuBook, title = "Góc tác giả", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor, onClick = { /* Góc tác giả */ })
+            MenuItem(
+                icon = Icons.Default.Person,
+                title = "Thông tin cá nhân",
+                cardColor = themeColors.cardColor,
+                textColor = themeColors.titleTextColor,
+                onClick = onEditProfileClick // Chạy mượt mà ngay lập tức!
+            )
+            MenuItem(icon = Icons.Default.Lock, title = "Mật khẩu & Bảo mật", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor, onClick = { /* Mật khẩu */ })
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // --- HỖ TRỢ ---
             SectionTitle(title = "HỖ TRỢ")
-            MenuItem(icon = Icons.Default.HelpOutline, title = "Trung tâm hỗ trợ", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor)
-            MenuItem(icon = Icons.Default.Description, title = "Điều khoản sử dụng", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor)
+            MenuItem(icon = Icons.Default.HelpOutline, title = "Trung tâm hỗ trợ", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor, onClick = { })
+            MenuItem(icon = Icons.Default.Description, title = "Điều khoản sử dụng", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor, onClick = { })
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -293,13 +300,13 @@ fun SectionTitle(title: String) {
 }
 
 @Composable
-fun MenuItem(icon: ImageVector, title: String, cardColor: Color, textColor: Color) {
+fun MenuItem(icon: ImageVector, title: String, cardColor: Color, textColor: Color, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
             .background(cardColor, RoundedCornerShape(8.dp))
-            .clickable { /* Điều hướng */ }
+            .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
