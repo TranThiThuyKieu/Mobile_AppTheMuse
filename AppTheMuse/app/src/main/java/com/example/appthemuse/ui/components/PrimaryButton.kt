@@ -26,8 +26,8 @@ fun PrimaryButton(
             .height(50.dp),
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,       // theo PrimaryIndigo
-            contentColor = MaterialTheme.colorScheme.onPrimary        // Tự động theo màu chữ trên nút
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
         )
     ) {
         Text(

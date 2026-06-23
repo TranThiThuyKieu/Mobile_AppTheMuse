@@ -1,4 +1,4 @@
-package com.example.appthemuse.ui.screens
+package com.example.appthemuse.ui.screens.auth
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -10,7 +10,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable // IMPORT ĐỂ GIỮ STATE
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -18,30 +18,35 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.appthemuse.ui.components.PrimaryButton
-import com.example.appthemuse.ui.viewmodel.AuthState
-import com.example.appthemuse.ui.viewmodel.AuthViewModel
+import com.example.appthemuse.ui.viewmodel.GenreState
+import com.example.appthemuse.ui.viewmodel.GenreViewModel
 
 @Composable
 fun GenreSelectionScreen(
-    viewModel: AuthViewModel,
+    viewModel: GenreViewModel,
     onNavigateToHome: () -> Unit
 ) {
     val genresList by viewModel.categories
-
-    // Tối ưu hóa: Dùng rememberSaveable kết hợp với bộ convert list để tránh mất dữ liệu khi xoay màn hình
+    val genreState by viewModel.genreState
     val selectedGenres = rememberSaveable { mutableStateListOf<String>() }
     val context = LocalContext.current
-    val authState by viewModel.authState
 
     LaunchedEffect(Unit) {
         viewModel.fetchCategories()
     }
 
-    LaunchedEffect(authState) {
-        if (authState is AuthState.GenresUpdated) {
-            Toast.makeText(context, "Chào mừng bạn đến với thế giới sách!", Toast.LENGTH_SHORT).show()
-            viewModel.resetState()
-            onNavigateToHome()
+    LaunchedEffect(genreState) {
+        when (genreState) {
+            is GenreState.Success -> {
+                Toast.makeText(context, "Chào mừng bạn đến với thế giới sách!", Toast.LENGTH_SHORT).show()
+                viewModel.resetState()
+                onNavigateToHome()
+            }
+            is GenreState.Error -> {
+                Toast.makeText(context, (genreState as GenreState.Error).message, Toast.LENGTH_LONG).show()
+                viewModel.resetState()
+            }
+            else -> {}
         }
     }
 
@@ -52,12 +57,12 @@ fun GenreSelectionScreen(
             Text(
                 text = "Chọn ít nhất 3 thể loại để chúng mình gợi ý sách chuẩn gu bạn nhé.",
                 style = MaterialTheme.typography.bodyLarge.copy(fontSize = 14.sp),
-                color = MaterialTheme.colorScheme.outline
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            if (genresList.isEmpty()) {
+            if (genresList.isEmpty() || genreState is GenreState.Loading) {
                 Box(modifier = Modifier.weight(1.0f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
@@ -69,7 +74,7 @@ fun GenreSelectionScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(genresList) { genre ->
-                        val isSelected = selectedGenres.contains(genre)
+                        val isSelected = selectedGenres.contains(genre.name)
                         val boxBg = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant
                         val textColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant
 
@@ -79,15 +84,21 @@ fun GenreSelectionScreen(
                                 .height(60.dp)
                                 .background(boxBg, shape = RoundedCornerShape(12.dp))
                                 .clickable {
-                                    if (isSelected) selectedGenres.remove(genre) else selectedGenres.add(genre)
+                                    if (isSelected) {
+                                        selectedGenres.remove(genre.name)
+                                    } else {
+                                        selectedGenres.add(genre.name)
+                                    }
                                 },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = genre, color = textColor, fontWeight = FontWeight.Medium)
+                            Text(text = genre.name, color = textColor, fontWeight = FontWeight.Medium)
                         }
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             PrimaryButton(
                 text = "Tiếp tục (${selectedGenres.size}/3)",
@@ -97,7 +108,8 @@ fun GenreSelectionScreen(
                     } else {
                         Toast.makeText(context, "Vui lòng chọn tối thiểu 3 thể loại!", Toast.LENGTH_SHORT).show()
                     }
-                }
+                },
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }
