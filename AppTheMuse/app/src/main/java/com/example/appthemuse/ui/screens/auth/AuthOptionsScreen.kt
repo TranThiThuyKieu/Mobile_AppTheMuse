@@ -1,4 +1,4 @@
-package com.example.appthemuse.ui.screens
+package com.example.appthemuse.ui.screens.auth
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -22,11 +22,11 @@ import com.example.appthemuse.ui.components.PrimaryButton
 import com.example.appthemuse.ui.components.SecondaryButton
 import com.example.appthemuse.ui.viewmodel.AuthState
 import com.example.appthemuse.ui.viewmodel.AuthViewModel
-import com.example.appthemuse.ui.util.AuthUtils
+import com.example.appthemuse.utils.AuthUtils
 import kotlinx.coroutines.launch
 
 @Composable
-fun AuthOptionScreen(
+fun AuthOptionsScreen(
     viewModel: AuthViewModel,
     onNavigateToHome: (Boolean) -> Unit,
     onNavigateToLoginEmail: () -> Unit,
@@ -54,7 +54,7 @@ fun AuthOptionScreen(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background // ĐỔI MÀU NỀN MÀN CHỜ
+        color = MaterialTheme.colorScheme.background
     ) {
         if (authState is AuthState.Loading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -102,7 +102,6 @@ fun AuthOptionScreen(
                 GoogleButton(
                     onClick = {
                         coroutineScope.launch {
-                            // Gọi từ File tiện ích dùng chung (Bật autoSelect = true cho màn hình Welcome/Options)
                             AuthUtils.triggerGoogleSignIn(context, autoSelect = true) { idToken ->
                                 viewModel.loginWithGoogle(idToken)
                             }

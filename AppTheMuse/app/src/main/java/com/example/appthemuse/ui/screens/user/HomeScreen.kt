@@ -1,4 +1,4 @@
-package com.example.appthemuse.ui.screens
+package com.example.appthemuse.ui.screens.user
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -30,12 +30,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.appthemuse.ui.viewmodel.HomeViewModel
-import com.example.appthemuse.data.model.BookUi
+import com.example.appthemuse.ui.model.BookUi
+import android.widget.Toast
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { error ->
+            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+        }
+    }
 
     Scaffold(
         topBar = { HomeTopBar() },
@@ -50,7 +60,6 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
                 modifier = Modifier.fillMaxSize().padding(paddingValues).background(MaterialTheme.colorScheme.background),
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
-                // 1. Slider / Banner "Truyện Trending"
                 if (uiState.trendingBooks.isNotEmpty()) {
                     item {
                         Text(
@@ -67,17 +76,14 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
                         }
                     }
                 }
-                // 2. Section "Truyện Hot" (Danh sách hàng dọc thu nhỏ)
                 item { SectionHeader(title = "Truyện Hot") }
                 items(uiState.trendingBooks.take(2)) { book ->
                     VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
                 }
-                // 3. Section "Đề xuất cho bạn"
                 item { SectionHeader(title = "Đề xuất cho bạn") }
                 items(uiState.recommendedBooks.take(2)) { book ->
                     VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
                 }
-                // 4. Section "Mới cập nhật" (Dạng thẻ cuộn ngang lớn)
                 if (uiState.recentBooks.isNotEmpty()) {
                     item {
                         SectionHeader(title = "Mới cập nhật")
@@ -98,7 +104,6 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)){
                             items(uiState.categories.size){ index ->
-                                // Hiển thị danh sách thể loại sách + số sách của thể loại đó
                                 Card(
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                                 ) {
@@ -123,7 +128,7 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
         }
     }
 }
-// Thanh tiêu đề phía trên của màn hình Home
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeTopBar() {
@@ -136,7 +141,7 @@ fun HomeTopBar() {
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     )
 }
-// Tiêu đề của từng mục nội dung
+
 @Composable
 fun SectionHeader(title: String, onSeeMoreClick: () -> Unit = {}) {
     Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
@@ -146,7 +151,7 @@ fun SectionHeader(title: String, onSeeMoreClick: () -> Unit = {}) {
         Text("Xem thêm →", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, modifier = Modifier.clickable { onSeeMoreClick() })
     }
 }
-// Banner truyện trending dạng slider
+
 @Composable
 fun BannerItem(book: BookUi, onClick: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().height(180.dp).padding(horizontal = 16.dp).clickable { onClick() },
@@ -163,7 +168,7 @@ fun BannerItem(book: BookUi, onClick: () -> Unit) {
         }
     }
 }
-// Item truyện hiển thị theo chiều dọc
+
 @Composable
 fun VerticalBookItem(book: BookUi, onClick: () -> Unit) {
     Card(
@@ -191,7 +196,7 @@ fun VerticalBookItem(book: BookUi, onClick: () -> Unit) {
         }
     }
 }
-// Thẻ truyện dạng ngang dùng cho mục mới cập nhật
+
 @Composable
 fun RecentBookCard(book: BookUi, onClick: () -> Unit) {
     Card(modifier = Modifier.width(160.dp).clickable { onClick() },

@@ -1,4 +1,4 @@
-package com.example.appthemuse.ui.screens
+package com.example.appthemuse.ui.screens.auth
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -21,7 +21,7 @@ import com.example.appthemuse.ui.components.GoogleButton
 import com.example.appthemuse.ui.components.PrimaryButton
 import com.example.appthemuse.ui.viewmodel.AuthState
 import com.example.appthemuse.ui.viewmodel.AuthViewModel
-import com.example.appthemuse.ui.util.AuthUtils
+import com.example.appthemuse.utils.AuthUtils
 import kotlinx.coroutines.launch
 
 @Composable
@@ -113,7 +113,6 @@ fun LoginScreen(
                 GoogleButton(
                     onClick = {
                         coroutineScope.launch {
-                            // Gọi từ File tiện ích dùng chung (autoSelect = false để ép người dùng chọn tài khoản)
                             AuthUtils.triggerGoogleSignIn(context, autoSelect = false) { idToken ->
                                 viewModel.loginWithGoogle(idToken)
                             }

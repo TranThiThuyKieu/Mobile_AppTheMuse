@@ -60,25 +60,41 @@ class ProfileViewModel : ViewModel() {
     }
 
     private fun fetchUserData(uid: String) {
+        firestore.collection("người dùng").document(uid)
+            .get()
+            .addOnSuccessListener { document ->
+                if (document != null && document.exists()) {
+                    val firestoreName = document.getString("username") ?: document.getString("tên_người_dùng")
+                    if (!firestoreName.isNullOrEmpty()) {
+                        _uiState.update { it.copy(username = firestoreName) }
+                    } else {
+                        _uiState.update { it.copy(username = "Người dùng") }
+                    }
+                } else {
+                    fetchUserDataFallback(uid)
+                }
+            }
+            .addOnFailureListener {
+                fetchUserDataFallback(uid)
+            }
+    }
+
+    private fun fetchUserDataFallback(uid: String) {
         firestore.collection("users").document(uid)
             .get()
             .addOnSuccessListener { document ->
                 if (document != null && document.exists()) {
                     val firestoreName = document.getString("username")
                     if (!firestoreName.isNullOrEmpty()) {
-                        // Tải thành công từ Firestore -> Cập nhật tên thực tế lên UI
                         _uiState.update { it.copy(username = firestoreName) }
                     } else {
-                        // Trường hợp tài khoản tồn tại nhưng document trống/không có trường username
                         _uiState.update { it.copy(username = "Người dùng") }
                     }
                 } else {
-                    // Document không tồn tại
                     _uiState.update { it.copy(username = "Người dùng") }
                 }
             }
             .addOnFailureListener {
-                // Thất bại do mất mạng hoặc lỗi truy vấn -> Hiển thị thông báo lỗi thay vì treo "Đang tải..."
                 _uiState.update { it.copy(username = "Lỗi tải dữ liệu") }
             }
     }

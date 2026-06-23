@@ -80,4 +80,8 @@ dependencies {
     ksp(libs.room.compiler) // Dùng bộ biên dịch KSP thay cho Kapt cũ
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("androidx.compose.material:material-icons-extended")
+
+    // Hilt Dependency Injection
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
 }

@@ -31,10 +31,15 @@ class AuthService {
                 "favorite_genres" to emptyList<String>(),
                 "created_at" to com.google.firebase.Timestamp.now()
             )
-            firestore.collection("users").document(user.uid).set(userData).await()
+            try {
+                firestore.collection("người dùng").document(user.uid).set(userData).await()
+            } catch (e: Exception) {
+                firestore.collection("users").document(user.uid).set(userData).await()
+            }
         }
         return user
     }
+
     // Hàm đăng nhập bằng Google Token
     suspend fun loginWithGoogle(idToken: String): FirebaseUser? {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
@@ -42,10 +47,11 @@ class AuthService {
         val user = result.user
 
         if (user != null) {
-            // Kiểm tra xem User đã tồn tại trên Firestore chưa (tránh ghi đè dữ liệu cũ)
-            val userDoc = firestore.collection("users").document(user.uid).get().await()
+            var userDoc = firestore.collection("người dùng").document(user.uid).get().await()
             if (!userDoc.exists()) {
-                // Nếu là tài khoản mới hoàn toàn, khởi tạo thông tin cơ bản
+                userDoc = firestore.collection("users").document(user.uid).get().await()
+            }
+            if (!userDoc.exists()) {
                 val userData = hashMapOf(
                     "id" to user.uid,
                     "username" to (user.displayName ?: "Người dùng Google"),
@@ -55,7 +61,11 @@ class AuthService {
                     "favorite_genres" to emptyList<String>(),
                     "created_at" to com.google.firebase.Timestamp.now()
                 )
-                firestore.collection("users").document(user.uid).set(userData).await()
+                try {
+                    firestore.collection("người dùng").document(user.uid).set(userData).await()
+                } catch (e: Exception) {
+                    firestore.collection("users").document(user.uid).set(userData).await()
+                }
             }
         }
         return user
@@ -63,15 +73,24 @@ class AuthService {
 
     // 3. Kiểm tra xem đã chọn thể loại chưa
     suspend fun hasSelectedGenres(userId: String): Boolean {
-        val document = firestore.collection("users").document(userId).get().await()
-        val genres = document.get("favorite_genres") as? List<*>
+        var document = firestore.collection("người dùng").document(userId).get().await()
+        if (!document.exists()) {
+            document = firestore.collection("users").document(userId).get().await()
+        }
+        val genres = (document.get("favorite_genres") ?: document.get("thể_loại_yêu_thích")) as? List<*>
         return !genres.isNullOrEmpty()
     }
 
     // 4. Cập nhật thể loại yêu thích
     suspend fun updateFavoriteGenres(userId: String, genres: List<String>) {
-        firestore.collection("users").document(userId)
-            .update("favorite_genres", genres)
-            .await()
+        try {
+            firestore.collection("người dùng").document(userId)
+                .update("favorite_genres", genres)
+                .await()
+        } catch (e: Exception) {
+            firestore.collection("users").document(userId)
+                .update("favorite_genres", genres)
+                .await()
+        }
     }
 }

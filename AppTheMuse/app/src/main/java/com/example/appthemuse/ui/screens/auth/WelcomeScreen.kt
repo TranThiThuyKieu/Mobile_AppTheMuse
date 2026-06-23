@@ -1,4 +1,4 @@
-package com.example.appthemuse.ui.screens
+package com.example.appthemuse.ui.screens.auth
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -37,7 +37,7 @@ fun WelcomeScreen(onNavigateToLogin: () -> Unit) {
 
             Text(
                 text = "THE MUSE",
-                style = MaterialTheme.typography.displayLarge, // Chuẩn Type.kt
+                style = MaterialTheme.typography.displayLarge,
                 color = MaterialTheme.colorScheme.primary
             )
 
@@ -45,7 +45,7 @@ fun WelcomeScreen(onNavigateToLogin: () -> Unit) {
 
             Text(
                 text = "Khơi nguồn cảm hứng đọc sách trong bạn",
-                style = MaterialTheme.typography.bodyLarge, // Chuẩn Type.kt
+                style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center
             )
