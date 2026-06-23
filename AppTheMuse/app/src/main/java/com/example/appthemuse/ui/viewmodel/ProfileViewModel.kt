@@ -40,7 +40,7 @@ class ProfileViewModel(
             _uiState.update { currentState ->
                 currentState.copy(
                     isLoading = true,
-                    user = currentState.user.copy(email = email, username = "Đang tải...")
+                    user = currentState.user.copy(email = email, username = "")
                 )
             }
 

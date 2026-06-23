@@ -28,13 +28,8 @@ class FirebaseUserService {
 
     suspend fun fetchUserName(uid: String): String {
         return try {
-            // Thử kiểm tra collection bằng tiếng Việt trước
-            var userDoc = firestore.collection("người dùng").document(uid).get().await()
+            var userDoc = firestore.collection("users").document(uid).get().await()
 
-            // Nếu không tồn tại, thực hiện fallback sang tiếng Anh
-            if (!userDoc.exists()) {
-                userDoc = firestore.collection("users").document(uid).get().await()
-            }
 
             if (userDoc.exists()) {
                 userDoc.getString("username")
@@ -50,10 +45,7 @@ class FirebaseUserService {
     }
     suspend fun fetchFullUserProfile(uid: String): Map<String, Any>? {
         return try {
-            var userDoc = firestore.collection("người dùng").document(uid).get().await()
-            if (!userDoc.exists()) {
-                userDoc = firestore.collection("users").document(uid).get().await()
-            }
+            var userDoc = firestore.collection("users").document(uid).get().await()
             userDoc.data
         } catch (e: Exception) {
             Log.e("FirebaseUserService", "Error fetchFullUserProfile: ${e.message}", e)
@@ -64,14 +56,11 @@ class FirebaseUserService {
     // 🌟 Lưu thông tin thay đổi lên Firestore
     suspend fun updateUserProfile(uid: String, data: Map<String, Any>): Boolean {
         return try {
-            // Cập nhật cả 2 collection đề phòng cấu trúc cũ/mới của bạn
-            firestore.collection("người dùng").document(uid).update(data).await()
             firestore.collection("users").document(uid).update(data).await()
             true
         } catch (e: Exception) {
             // Nếu update báo lỗi do document chưa có thì dùng set(merge)
             try {
-                firestore.collection("người dùng").document(uid).set(data, com.google.firebase.firestore.SetOptions.merge()).await()
                 firestore.collection("users").document(uid).set(data, com.google.firebase.firestore.SetOptions.merge()).await()
                 true
             } catch (ex: Exception) {
