@@ -2,8 +2,10 @@ package com.example.appthemuse.ui.mapper
 
 import com.example.appthemuse.domain.model.Book
 import com.example.appthemuse.domain.model.Category
+import com.example.appthemuse.domain.model.User
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.model.CategoryUi
+import com.example.appthemuse.ui.model.UserUi
 
 fun Book.toBookUi(): BookUi {
     return BookUi(
@@ -23,5 +25,16 @@ fun Category.toCategoryUi(): CategoryUi {
         id = this.id.toIntOrNull() ?: this.id.hashCode(),
         name = this.name,
         totalBooks = this.totalBooks
+    )
+}
+
+fun User.toUserUi(): UserUi {
+    return UserUi(
+        id = this.id,
+        username = this.username,
+        email = this.email,
+        role = this.role,
+        isBlocked = this.isBlocked,
+        favoriteGenres = this.favoriteGenres
     )
 }

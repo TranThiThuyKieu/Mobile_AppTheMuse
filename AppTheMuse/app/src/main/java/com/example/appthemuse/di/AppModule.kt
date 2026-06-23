@@ -3,9 +3,9 @@ package com.example.appthemuse.di
 import com.example.appthemuse.data.remote.AuthService
 import com.example.appthemuse.data.remote.FirestoreService
 import com.example.appthemuse.data.repository.AuthRepositoryImpl
-import com.example.appthemuse.data.repository.BookRepositoryImpl
+import com.example.appthemuse.data.repository.UserRepositoryImpl
 import com.example.appthemuse.domain.repository.AuthRepository
-import com.example.appthemuse.domain.repository.BookRepository
+import com.example.appthemuse.domain.repository.UserRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -26,13 +26,18 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideAuthRepository(authService: AuthService): AuthRepository {
-        return AuthRepositoryImpl(authService)
+    fun provideAuthRepository(
+        authService: AuthService,
+        firestoreService: FirestoreService // 👉 Đã thêm
+    ): AuthRepository {
+        return AuthRepositoryImpl(authService, firestoreService) // 👉 Đã sửa: Truyền đủ 2 service
     }
 
     @Provides
     @Singleton
-    fun provideBookRepository(firestoreService: FirestoreService): BookRepository {
-        return BookRepositoryImpl(firestoreService)
+    fun provideUserRepository(
+        firestoreService: FirestoreService // 👉 Đã sửa: Truyền FirestoreService vào đây
+    ): UserRepository {
+        return UserRepositoryImpl(firestoreService)
     }
 }
