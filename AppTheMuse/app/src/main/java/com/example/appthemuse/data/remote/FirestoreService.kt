@@ -1,116 +1,162 @@
 package com.example.appthemuse.data.remote
 
-import com.example.appthemuse.domain.model.CategoryModel
 import android.util.Log
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
-import com.example.appthemuse.data.model.Book
-import com.google.firebase.firestore.Query
-import com.example.appthemuse.data.model.BookUi
-import com.example.appthemuse.data.model.Category
-import com.example.appthemuse.data.model.CategoryUi
+import com.example.appthemuse.domain.model.Book
+import com.example.appthemuse.domain.model.Category
 import com.google.firebase.firestore.DocumentSnapshot
-import kotlin.collections.emptyList
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import kotlinx.coroutines.tasks.await
 
 class FirestoreService {
     private val firestore = FirebaseFirestore.getInstance()
 
-    // ĐỔI TỪ List<String> SANG List<CategoryModel>
-    suspend fun getCategoriesList(): List<CategoryModel> {
+    suspend fun getCategoriesList(): List<Category> {
         return try {
-            val snapshot = firestore.collection("categories").get().await()
+            var snapshot = firestore.collection("Thể loại").get().await()
+            if (snapshot.isEmpty) {
+                snapshot = firestore.collection("categories").get().await()
+            }
             snapshot.documents.map { document ->
-                CategoryModel(
+                Category(
                     id = document.id,
-                    name = document.getString("name") ?: "Chưa đặt tên"
+                    name = document.getString("tên") ?: document.getString("name") ?: "Chưa đặt tên",
+                    imageUrl = document.getString("ảnh_bìa") ?: document.getString("imageUrl") ?: "",
+                    totalBooks = ((document.get("tổng_số_sách") ?: document.get("totalBooks") ?: 0L) as? Long)?.toInt() ?: 0
                 )
-    // Lấy danh sách truyện có lượt xem cao nhất
-    suspend fun getTrendingBooks(limit: Long = 5): List<BookUi> {
-        val snapshot = firestore.collection("books").orderBy("view_count", Query.Direction.DESCENDING)
-                .limit(limit).get().await()
-        return snapshot.documents.map {
-            toBookUi(it)
+            }
+        } catch (e: Exception) {
+            Log.e("FirestoreService", "Error getCategoriesList: ${e.message}", e)
+            emptyList()
         }
     }
-    // Lấy danh sách truyện mới cập nhật gần đây
-    suspend fun getRecentBooks(limit: Long = 5): List<BookUi> {
+
+    suspend fun getTrendingBooks(limit: Long = 5): List<Book> {
         return try {
-            val snapshot = firestore.collection("books").orderBy("created_at", Query.Direction.DESCENDING)
+            var snapshot = firestore.collection("sách").orderBy("số lượt xem", Query.Direction.DESCENDING)
                 .limit(limit).get().await()
-            snapshot.documents.map {
-                toBookUi(it)
+            if (snapshot.isEmpty) {
+                snapshot = firestore.collection("books").orderBy("view_count", Query.Direction.DESCENDING)
+                    .limit(limit).get().await()
             }
+            snapshot.documents.map { toBook(it) }
+        } catch (e: Exception) {
+            Log.e("FirestoreService", "Error getTrendingBooks: ${e.message}", e)
+            emptyList()
+        }
+    }
+
+    suspend fun getRecentBooks(limit: Long = 5): List<Book> {
+        return try {
+            var snapshot = firestore.collection("sách").orderBy("created_at", Query.Direction.DESCENDING)
+                .limit(limit).get().await()
+            if (snapshot.isEmpty) {
+                snapshot = firestore.collection("books").orderBy("created_at", Query.Direction.DESCENDING)
+                    .limit(limit).get().await()
+            }
+            snapshot.documents.map { toBook(it) }
         } catch (e: Exception) {
             Log.e("FirestoreService", "Error getRecentBooks: ${e.message}", e)
             emptyList()
         }
     }
-    // Lấy danh sách truyện đề xuất cho người dùng
-    suspend fun getRecommendedBooks(favoriteGenres: List<String>, limit: Long = 5): List<BookUi> {
+
+    suspend fun getRecommendedBooks(favoriteGenres: List<String>, limit: Long = 5): List<Book> {
         return try {
-            val snapshot = firestore.collection("books").orderBy("view_count", Query.Direction.DESCENDING)
+            var snapshot = firestore.collection("sách").orderBy("số lượt xem", Query.Direction.DESCENDING)
                 .limit(limit).get().await()
-            snapshot.documents.map {
-                toBookUi(it)
+            if (snapshot.isEmpty) {
+                snapshot = firestore.collection("books").orderBy("view_count", Query.Direction.DESCENDING)
+                    .limit(limit).get().await()
             }
+            snapshot.documents.map { toBook(it) }
         } catch (e: Exception) {
             Log.e("FirestoreService", "Error getRecommendedBooks: ${e.message}", e)
             emptyList()
         }
     }
-    // Chuyển đổi dữ liệu Firestore thành đối tượng BookUi đồng thời lấy thêm tên tác giả, số chương và đánh giá trung bình
-    private suspend fun toBookUi(doc: DocumentSnapshot): BookUi {
-        val book = doc.toObject(Book::class.java)!!
-        // author
-        val userDoc = firestore.collection("users").document(book.author_id).get().await()
-        val authorName = userDoc.getString("username") ?: ""
-        // chapter count
-        val chapterSnapshot = firestore.collection("chapters").whereEqualTo("book_id", book.id).get().await()
-        val chapterCount = chapterSnapshot.size()
-        // rating
-        val reviewSnapshot = firestore.collection("reviews").whereEqualTo("book_id", book.id).get().await()
-        val rating =
-            if (reviewSnapshot.isEmpty)
-                0.0
-            else
-                reviewSnapshot.documents.map {
-                        (it.getLong("rating") ?: 0).toDouble()
-                    }.average()
-        return BookUi(
+
+    private suspend fun toBook(doc: DocumentSnapshot): Book {
+        val title = doc.getString("tiêu đề") ?: doc.getString("title") ?: ""
+        val slug = doc.getString("sên") ?: doc.getString("slug") ?: ""
+        val authorId = doc.getString("author_id") ?: doc.getString("tác_giả_id") ?: ""
+        val categoryId = (doc.get("category_id") ?: doc.get("thể_loại_id"))?.toString() ?: ""
+        val coverUrl = doc.getString("URL bìa") ?: doc.getString("cover_url") ?: ""
+        val description = doc.getString("Sự miêu tả") ?: doc.getString("description") ?: ""
+        val isPremium = doc.getBoolean("là cao cấp") ?: doc.getBoolean("is_premium") ?: false
+        val viewCount = doc.getLong("số lượt xem") ?: doc.getLong("view_count") ?: 0L
+        val status = doc.getString("trạng thái") ?: doc.getString("status") ?: ""
+        val createdAt = doc.getTimestamp("created_at")
+
+        // Fetch author name from "người dùng" / "users"
+        var authorName = ""
+        if (authorId.isNotEmpty()) {
+            var userDoc = firestore.collection("người dùng").document(authorId).get().await()
+            if (!userDoc.exists()) {
+                userDoc = firestore.collection("users").document(authorId).get().await()
+            }
+            authorName = userDoc.getString("username") ?: userDoc.getString("tên_người_dùng") ?: ""
+        }
+
+        // Fetch chapter count from "chương" / "chapters"
+        var chapterCount = 0
+        var chapterSnapshot = firestore.collection("chương").whereEqualTo("book_id", doc.id).get().await()
+        if (chapterSnapshot.isEmpty) {
+            chapterSnapshot = firestore.collection("chapters").whereEqualTo("book_id", doc.id).get().await()
+        }
+        chapterCount = chapterSnapshot.size()
+
+        // Fetch rating from "đánh giá" / "reviews"
+        var reviewSnapshot = firestore.collection("đánh giá").whereEqualTo("book_id", doc.id).get().await()
+        if (reviewSnapshot.isEmpty) {
+            reviewSnapshot = firestore.collection("reviews").whereEqualTo("book_id", doc.id).get().await()
+        }
+        val rating = if (reviewSnapshot.isEmpty) 0.0 else reviewSnapshot.documents.map { 
+            (it.getLong("rating") ?: it.getLong("đánh_giá") ?: 0L).toDouble() 
+        }.average()
+
+        return Book(
             id = doc.id,
-            title = book.title,
-            cover_url = book.cover_url,
+            title = title,
+            slug = slug,
+            author_id = authorId,
             author_name = authorName,
             chapter_count = chapterCount,
             rating = rating,
-            view_count = book.view_count,
-            status = book.status)
+            category_id = categoryId,
+            cover_url = coverUrl,
+            description = description,
+            is_premium = isPremium,
+            view_count = viewCount,
+            status = status,
+            created_at = createdAt
+        )
     }
-    // Danh sách sách mới phát hành
-    suspend fun getNewReleaseBooks(limit: Long = 5): List<BookUi> {
+
+    suspend fun getNewReleaseBooks(limit: Long = 5): List<Book> {
         return try {
-            val snapshot = firestore.collection("books").orderBy("created_at", Query.Direction.DESCENDING)
+            var snapshot = firestore.collection("sách").orderBy("created_at", Query.Direction.DESCENDING)
                 .limit(limit).get().await()
-            snapshot.documents.map {
-                toBookUi(it)
+            if (snapshot.isEmpty) {
+                snapshot = firestore.collection("books").orderBy("created_at", Query.Direction.DESCENDING)
+                    .limit(limit).get().await()
             }
+            snapshot.documents.map { toBook(it) }
         } catch (e: Exception) {
             Log.e("FirestoreService", "Error getNewReleaseBooks: ${e.message}", e)
             emptyList()
         }
     }
-    suspend fun getAllBooks(limit: Long = 50): List<BookUi> {
-        val snapshot = firestore.collection("books").limit(limit).get().await()
-        return snapshot.documents.map { toBookUi(it) }
-    }
-    // Chuyển đổi dữ liệu Firestore thành đối tượng BookUi đồng thời lấy tên thể loại, số tác phẩm của thế loại đó
-    private fun toCategoryUi(category: Category, totalBooks:Int): CategoryUi {
-        return CategoryUi(id = category.id, name = category.name, totalBooks = totalBooks)
-    }
-   
+
+    suspend fun getAllBooks(limit: Long = 50): List<Book> {
+        return try {
+            var snapshot = firestore.collection("sách").limit(limit).get().await()
+            if (snapshot.isEmpty) {
+                snapshot = firestore.collection("books").limit(limit).get().await()
             }
+            snapshot.documents.map { toBook(it) }
         } catch (e: Exception) {
-            Log.e("FirestoreService", "Error getCategoriesList: ${e.message}", e)
+            Log.e("FirestoreService", "Error getAllBooks: ${e.message}", e)
             emptyList()
         }
     }

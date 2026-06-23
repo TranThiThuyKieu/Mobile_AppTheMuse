@@ -7,4 +7,5 @@ plugins {
     // Khai báo để Toàn bộ Project nhận diện được Plugin Firebase và KSP (Room)
     alias(libs.plugins.google.services) apply false
     alias(libs.plugins.id.ksp) apply false
+    alias(libs.plugins.hilt) apply false
 }

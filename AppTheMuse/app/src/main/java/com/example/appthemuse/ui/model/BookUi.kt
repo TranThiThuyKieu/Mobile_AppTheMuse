@@ -1,4 +1,4 @@
-package com.example.appthemuse.data.model
+package com.example.appthemuse.ui.model
 
 data class BookUi(
     val id: String,

@@ -4,9 +4,9 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.appthemuse.data.remote.FirestoreService
-import com.example.appthemuse.data.repository.AuthRepository
-import com.example.appthemuse.domain.model.CategoryModel
+import com.example.appthemuse.domain.model.Category
+import com.example.appthemuse.domain.repository.AuthRepository
+import com.example.appthemuse.domain.repository.BookRepository
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
@@ -19,23 +19,26 @@ sealed interface GenreState {
 
 class GenreViewModel(
     private val authRepository: AuthRepository,
-    private val firestoreService: FirestoreService
+    private val bookRepository: BookRepository
 ) : ViewModel() {
 
     private val _genreState = mutableStateOf<GenreState>(GenreState.Idle)
     val genreState: State<GenreState> = _genreState
 
-    private val _categories = mutableStateOf<List<CategoryModel>>(emptyList())
-    val categories: State<List<CategoryModel>> = _categories
+    private val _categories = mutableStateOf<List<Category>>(emptyList())
+    val categories: State<List<Category>> = _categories
 
-    // 1. Tải danh sách thể loại
     fun fetchCategories() {
         viewModelScope.launch {
-            _categories.value = firestoreService.getCategoriesList()
+            try {
+                val categoryList = bookRepository.getCategories()
+                _categories.value = categoryList
+            } catch (e: Exception) {
+                _genreState.value = GenreState.Error(e.localizedMessage ?: "Lỗi tải thể loại")
+            }
         }
     }
 
-    // 2. Lưu thể loại đã chọn
     fun saveFavoriteGenres(genres: List<String>) {
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
         _genreState.value = GenreState.Loading

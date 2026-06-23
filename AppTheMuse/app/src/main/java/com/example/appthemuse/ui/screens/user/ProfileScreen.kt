@@ -1,4 +1,4 @@
-package com.example.appthemuse.ui.screens
+package com.example.appthemuse.ui.screens.user
 
 import android.app.Activity
 import androidx.compose.foundation.BorderStroke
@@ -34,7 +34,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.appthemuse.ui.viewmodel.ProfileViewModel
 
 // Định nghĩa cấu trúc bảng màu
@@ -49,17 +48,16 @@ data class ProfileThemeColors(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    profileViewModel: ProfileViewModel = viewModel(),
-    onThemeChanged: (String) -> Unit,
-    onLogoutClick: () -> Unit
+    viewModel: ProfileViewModel,
+    onThemeChanged: (String) -> Unit = {},
+    onLogout: () -> Unit
 ) {
     LaunchedEffect(Unit) {
-        profileViewModel.refreshUserProfile()
+        viewModel.refreshUserProfile()
     }
-    val uiState by profileViewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
 
     // 🌟 ĐỒNG BỘ THEME TOÀN CỤC: Kiểm tra xem màu nền thực tế của hệ thống lúc này là Sáng hay Tối
-    // Hàm .luminance() là extension function của Color, trả về độ sáng từ 0.0 (Tối nhất) đến 1.0 (Sáng nhất)
     val isAppInDarkMode = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
     // ĐỊNH NGHĨA BẢNG MÀU ĐỘNG THEO TRẠNG THÁI THỰC TẾ CỦA HỆ THỐNG
@@ -114,7 +112,6 @@ fun ProfileScreen(
                     modifier = Modifier
                         .size(100.dp)
                         .clip(CircleShape)
-                        // 🌟 SỬA: Đồng bộ Avatar theo trạng thái Dark Mode thực tế của hệ thống
                         .background(if (isAppInDarkMode) Color.Gray else themeColors.contentTextColor.copy(alpha = 0.2f))
                 ) {
                     Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.fillMaxSize().padding(16.dp), tint = themeColors.titleTextColor)
@@ -161,7 +158,7 @@ fun ProfileScreen(
                 Text("A", color = themeColors.contentTextColor, fontSize = 12.sp)
                 Slider(
                     value = uiState.fontSizeValue,
-                    onValueChange = { profileViewModel.updateFontSize(it) },
+                    onValueChange = { viewModel.updateFontSize(it) },
                     modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
                     colors = SliderDefaults.colors(thumbColor = themeColors.accentColor, activeTrackColor = themeColors.accentColor, inactiveTrackColor = themeColors.cardColor)
                 )
@@ -179,7 +176,7 @@ fun ProfileScreen(
                 listOf("Dày", "Vừa", "Thưa").forEach { option ->
                     val isSelected = uiState.lineSpacing == option
                     Button(
-                        onClick = { profileViewModel.updateLineSpacing(option) },
+                        onClick = { viewModel.updateLineSpacing(option) },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (isSelected) themeColors.accentColor else themeColors.cardColor
@@ -204,14 +201,13 @@ fun ProfileScreen(
                     Triple("Dark", Color(0xFF0F1524), Color(0xFFFFFFFF))
                 )
                 themesList.forEach { (name, bg, fg) ->
-                    // 🌟 SỬA: Nút active dựa vào trạng thái thực tại của toàn hệ thống để không bị reset sai lệch dữ liệu
                     val isSelected = (name == "Dark" && isAppInDarkMode) || (name == "Light" && !isAppInDarkMode)
                     Card(
                         modifier = Modifier
                             .weight(1f)
                             .height(50.dp)
                             .clickable {
-                                profileViewModel.updateThemeMode(name)
+                                viewModel.updateThemeMode(name)
                                 onThemeChanged(name)
                             },
                         shape = RoundedCornerShape(8.dp),
@@ -245,8 +241,8 @@ fun ProfileScreen(
             // --- NÚT ĐĂNG XUẤT ---
             OutlinedButton(
                 onClick = {
-                    profileViewModel.logout()
-                    onLogoutClick()
+                    viewModel.logout()
+                    onLogout()
                 },
                 modifier = Modifier
                     .fillMaxWidth()

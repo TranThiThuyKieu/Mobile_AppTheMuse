@@ -1,4 +1,4 @@
-package com.example.appthemuse.ui.screens
+package com.example.appthemuse.ui.screens.auth
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -23,23 +23,18 @@ import com.example.appthemuse.ui.viewmodel.GenreViewModel
 
 @Composable
 fun GenreSelectionScreen(
-    viewModel: GenreViewModel, // ĐỒNG BỘ: Chuyển sang dùng GenreViewModel chuyên trách
+    viewModel: GenreViewModel,
     onNavigateToHome: () -> Unit
 ) {
-    // Tải danh sách thể loại sách từ ViewModel (Kiểu List<CategoryModel>)
     val genresList by viewModel.categories
     val genreState by viewModel.genreState
-
-    // Lưu trữ danh sách ID hoặc Tên thể loại được chọn dưới dạng String
     val selectedGenres = rememberSaveable { mutableStateListOf<String>() }
     val context = LocalContext.current
 
-    // Kích hoạt tải dữ liệu khi màn hình được khởi tạo
     LaunchedEffect(Unit) {
         viewModel.fetchCategories()
     }
 
-    // Lắng nghe trạng thái cập nhật sở thích để điều hướng
     LaunchedEffect(genreState) {
         when (genreState) {
             is GenreState.Success -> {
@@ -67,7 +62,6 @@ fun GenreSelectionScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Hiển thị trạng thái Loading khi danh sách trống hoặc đang gửi dữ liệu lên Firebase
             if (genresList.isEmpty() || genreState is GenreState.Loading) {
                 Box(modifier = Modifier.weight(1.0f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -106,13 +100,10 @@ fun GenreSelectionScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Nút bấm xác nhận lựa chọn
             PrimaryButton(
                 text = "Tiếp tục (${selectedGenres.size}/3)",
                 onClick = {
                     if (selectedGenres.size >= 3) {
-                        // CHUẨN KIẾN TRÚC: Không gọi FirebaseAuth trực tiếp tại đây,
-                        // logic lấy UID đã được xử lý gọn gàng bên trong GenreViewModel của bạn rồi!
                         viewModel.saveFavoriteGenres(selectedGenres.toList())
                     } else {
                         Toast.makeText(context, "Vui lòng chọn tối thiểu 3 thể loại!", Toast.LENGTH_SHORT).show()

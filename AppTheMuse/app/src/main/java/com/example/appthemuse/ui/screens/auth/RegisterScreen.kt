@@ -1,4 +1,4 @@
-package com.example.appthemuse.ui.screens
+package com.example.appthemuse.ui.screens.auth
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -69,7 +69,7 @@ fun RegisterScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(28.dp)
-                .verticalScroll(scrollState), // Hỗ trợ cuộn khi hiện bàn phím
+                .verticalScroll(scrollState),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.Start
         ) {
