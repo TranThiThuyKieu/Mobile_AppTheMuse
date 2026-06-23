@@ -49,6 +49,7 @@ data class ProfileThemeColors(
 @Composable
 fun ProfileScreen(
     onEditProfileClick: () -> Unit,
+    onSecurityClick: () -> Unit,
     viewModel: ProfileViewModel,
     onThemeChanged: (String) -> Unit = {},
     onLogout: () -> Unit
@@ -234,7 +235,7 @@ fun ProfileScreen(
                 textColor = themeColors.titleTextColor,
                 onClick = onEditProfileClick // Chạy mượt mà ngay lập tức!
             )
-            MenuItem(icon = Icons.Default.Lock, title = "Mật khẩu & Bảo mật", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor, onClick = { /* Mật khẩu */ })
+            MenuItem(icon = Icons.Default.Lock, title = "Mật khẩu & Bảo mật", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor, onClick = onSecurityClick)
 
             Spacer(modifier = Modifier.height(16.dp))
 

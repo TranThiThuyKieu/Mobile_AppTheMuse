@@ -37,6 +37,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.example.appthemuse.ui.viewmodel.EditProfileViewModel
+import com.example.appthemuse.ui.viewmodel.SecurityViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
@@ -68,6 +69,8 @@ class MainActivity : ComponentActivity() {
                         ProfileViewModel(userRepository) as T
                     modelClass.isAssignableFrom(EditProfileViewModel::class.java) ->
                         EditProfileViewModel(userRepository) as T
+                    modelClass.isAssignableFrom(SecurityViewModel::class.java) -> // 🌟 Nạp SecurityViewModel vào Factory
+                        SecurityViewModel() as T
                     else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                 }
             }
@@ -78,6 +81,7 @@ class MainActivity : ComponentActivity() {
         val homeViewModel by viewModels<HomeViewModel> { viewModelFactory }
         val profileViewModel by viewModels<ProfileViewModel> { viewModelFactory }
         val editProfileViewModel by viewModels<EditProfileViewModel> { viewModelFactory }
+        val securityViewModel by viewModels<SecurityViewModel> { viewModelFactory }
 
         setContent {
             val systemInDarkTheme = isSystemInDarkTheme()
@@ -183,6 +187,7 @@ class MainActivity : ComponentActivity() {
                                 onEditProfileClick = {
                                     navController.navigate("edit_profile")
                                 },
+                                onSecurityClick = { navController.navigate("security_route") },
                                 onLogout = {
                                     navController.navigate("welcome") {
                                         popUpTo(0) { inclusive = true }
@@ -193,6 +198,12 @@ class MainActivity : ComponentActivity() {
                         composable("edit_profile") {
                             EditProfileScreen(
                                 viewModel = editProfileViewModel,
+                                onBackClick = { navController.popBackStack() }
+                            )
+                        }
+                        composable("security_route") {
+                            SecurityScreen(
+                                viewModel = securityViewModel,
                                 onBackClick = { navController.popBackStack() }
                             )
                         }
