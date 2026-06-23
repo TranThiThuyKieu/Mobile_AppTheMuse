@@ -2,8 +2,10 @@ package com.example.appthemuse.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.appthemuse.domain.repository.UserRepository
+import com.example.appthemuse.ui.model.UserUi
+import com.example.appthemuse.ui.mapper.toUserUi
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,8 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class ProfileUiState(
-    val username: String = "",
-    val email: String = "",
+    val user: UserUi? = null,
     val readCount: Int = 12,
     val favoriteCount: Int = 48,
     val downloadedCount: Int = 5,
@@ -22,19 +23,24 @@ data class ProfileUiState(
     val themeMode: String = "Dark"
 )
 
-class ProfileViewModel : ViewModel() {
+class ProfileViewModel(
+    private val userRepository: UserRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val firebaseAuth: FirebaseAuth = firebaseAuthInstance()
+
+    private fun firebaseAuthInstance(): FirebaseAuth {
+        return FirebaseAuth.getInstance()
+    }
 
     init {
         firebaseAuth.addAuthStateListener { auth ->
             if (auth.currentUser == null) {
                 _uiState.update {
-                    it.copy(username = "Chưa đăng nhập", email = "Vui lòng đăng nhập lại")
+                    it.copy(user = UserUi(id = "", username = "Chưa đăng nhập", email = "Vui lòng đăng nhập lại", role = "user", isBlocked = false, favoriteGenres = emptyList()))
                 }
             }
         }
@@ -44,59 +50,24 @@ class ProfileViewModel : ViewModel() {
     fun refreshUserProfile() {
         val currentUser = firebaseAuth.currentUser
         if (currentUser != null) {
-            val email = currentUser.email ?: "Chưa cập nhật email"
-
-            _uiState.update {
-                it.copy(username = "", email = email)
+            viewModelScope.launch {
+                userRepository.getUserProfile(currentUser.uid)
+                    .onSuccess { userDomain ->
+                        _uiState.update {
+                            it.copy(user = userDomain.toUserUi())
+                        }
+                    }
+                    .onFailure {
+                        _uiState.update {
+                            it.copy(user = UserUi(id = currentUser.uid, username = "Lỗi tải dữ liệu", email = currentUser.email ?: "", role = "user", isBlocked = false, favoriteGenres = emptyList()))
+                        }
+                    }
             }
-
-            // Gọi thẳng Firestore để lấy thông tin thực tế
-            fetchUserData(currentUser.uid)
         } else {
             _uiState.update {
-                it.copy(username = "Chưa đăng nhập", email = "Vui lòng đăng nhập lại")
+                it.copy(user = UserUi(id = "", username = "Chưa đăng nhập", email = "Vui lòng đăng nhập lại", role = "user", isBlocked = false, favoriteGenres = emptyList()))
             }
         }
-    }
-
-    private fun fetchUserData(uid: String) {
-        firestore.collection("người dùng").document(uid)
-            .get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    val firestoreName = document.getString("username") ?: document.getString("tên_người_dùng")
-                    if (!firestoreName.isNullOrEmpty()) {
-                        _uiState.update { it.copy(username = firestoreName) }
-                    } else {
-                        _uiState.update { it.copy(username = "Người dùng") }
-                    }
-                } else {
-                    fetchUserDataFallback(uid)
-                }
-            }
-            .addOnFailureListener {
-                fetchUserDataFallback(uid)
-            }
-    }
-
-    private fun fetchUserDataFallback(uid: String) {
-        firestore.collection("users").document(uid)
-            .get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    val firestoreName = document.getString("username")
-                    if (!firestoreName.isNullOrEmpty()) {
-                        _uiState.update { it.copy(username = firestoreName) }
-                    } else {
-                        _uiState.update { it.copy(username = "Người dùng") }
-                    }
-                } else {
-                    _uiState.update { it.copy(username = "Người dùng") }
-                }
-            }
-            .addOnFailureListener {
-                _uiState.update { it.copy(username = "Lỗi tải dữ liệu") }
-            }
     }
 
     fun updateFontSize(value: Float) {

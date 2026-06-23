@@ -130,8 +130,8 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(text = uiState.username, color = themeColors.titleTextColor, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text(text = uiState.email, color = themeColors.contentTextColor, fontSize = 14.sp)
+            Text(text = uiState.user?.username ?: "", color = themeColors.titleTextColor, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(text = uiState.user?.email ?: "", color = themeColors.contentTextColor, fontSize = 14.sp)
 
             Spacer(modifier = Modifier.height(24.dp))
 
