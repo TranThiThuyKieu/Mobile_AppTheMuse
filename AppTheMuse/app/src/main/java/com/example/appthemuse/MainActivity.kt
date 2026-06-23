@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.compose.material3.Scaffold
@@ -20,9 +21,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.appthemuse.data.remote.AuthService
 import com.example.appthemuse.data.remote.FirestoreService
+import com.example.appthemuse.data.remote.FirebaseUserService // 🌟 Thêm import này
 import com.example.appthemuse.data.repository.AuthRepositoryImpl
 import com.example.appthemuse.data.repository.BookRepositoryImpl
-import com.example.appthemuse.data.repository.UserRepositoryImpl
+import com.example.appthemuse.data.repository.UserRepositoryImpl // 🌟 Thêm import này
 import com.example.appthemuse.ui.screens.auth.*
 import com.example.appthemuse.ui.screens.user.*
 import com.example.appthemuse.ui.theme.AppTheMuseTheme
@@ -34,21 +36,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
+import com.example.appthemuse.ui.viewmodel.EditProfileViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // 1. Khởi tạo các Service tầng Remote
         val authService = AuthService()
         val firestoreService = FirestoreService()
+        val firebaseUserService = FirebaseUserService() // 🌟 Khởi tạo Service User mới
 
-        // 👉 ĐÃ SỬA: Truyền đúng và đủ các Service theo cấu trúc mới cấu hình ở bước trước
+        // 2. Khởi tạo các Repository Implementation
         val authRepository = AuthRepositoryImpl(authService, firestoreService)
         val bookRepository = BookRepositoryImpl(firestoreService)
-        val userRepository = UserRepositoryImpl(firestoreService) // Dùng firestoreService lấy profile
+        val userRepository = UserRepositoryImpl(firebaseUserService) // 🌟 Khởi tạo Repo User mới
 
+        // 3. Khai báo Factory để tạo ViewModel có tham số truyền vào
         val viewModelFactory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -59,8 +64,10 @@ class MainActivity : ComponentActivity() {
                         GenreViewModel(authRepository, bookRepository) as T
                     modelClass.isAssignableFrom(HomeViewModel::class.java) ->
                         HomeViewModel(bookRepository) as T
-                    modelClass.isAssignableFrom(ProfileViewModel::class.java) ->
+                    modelClass.isAssignableFrom(ProfileViewModel::class.java) -> // 🌟 Nạp ProfileViewModel vào Factory
                         ProfileViewModel(userRepository) as T
+                    modelClass.isAssignableFrom(EditProfileViewModel::class.java) ->
+                        EditProfileViewModel(userRepository) as T
                     else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                 }
             }
@@ -70,6 +77,7 @@ class MainActivity : ComponentActivity() {
         val genreViewModel by viewModels<GenreViewModel> { viewModelFactory }
         val homeViewModel by viewModels<HomeViewModel> { viewModelFactory }
         val profileViewModel by viewModels<ProfileViewModel> { viewModelFactory }
+        val editProfileViewModel by viewModels<EditProfileViewModel> { viewModelFactory }
 
         setContent {
             val systemInDarkTheme = isSystemInDarkTheme()
@@ -78,8 +86,6 @@ class MainActivity : ComponentActivity() {
             AppTheMuseTheme(darkTheme = isDarkTheme) {
                 val navController = rememberNavController()
                 val currentUser = FirebaseAuth.getInstance().currentUser
-
-                // 👉 ĐÃ SỬA: Điều hướng động dựa trên việc user đã login hay chưa
                 val startDestination = if (currentUser != null) "home" else "welcome"
 
                 Scaffold(
@@ -93,7 +99,7 @@ class MainActivity : ComponentActivity() {
                 ) { paddingValues ->
                     NavHost(
                         navController = navController,
-                        startDestination = startDestination, // Sửa lại biến động ở đây thay vì fix cứng "welcome"
+                        startDestination = startDestination, // 🌟 Nên dùng startDestination động này để mở app vào thẳng Home nếu đã login
                         modifier = Modifier.padding(paddingValues)
                     ) {
                         composable("welcome") {
@@ -133,8 +139,7 @@ class MainActivity : ComponentActivity() {
                             RegisterScreen(
                                 viewModel = authViewModel,
                                 onRegisterSuccess = {
-                                    // Sau khi đăng ký xong, chuyển sang màn chọn thể loại
-                                    navController.navigate("genre_selection") { popUpTo("register") { inclusive = true } }
+                                    navController.navigate("genre_selection") { popUpTo("welcome") { inclusive = true } }
                                 },
                                 onNavigateToLogin = {
                                     navController.navigate("login") { popUpTo("auth_options") }
@@ -152,7 +157,10 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("home") {
-                            HomeScreen(viewModel = homeViewModel, onBookClick = { })
+                            HomeScreen(
+                                viewModel = homeViewModel,
+                                onBookClick = { bookId -> }
+                            )
                         }
 
                         composable("explore") {
@@ -166,12 +174,26 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable("profile") {
+                            // 🌟 SỬA ĐỔI: Sử dụng thẳng profileViewModel đã được Factory tạo an toàn ở phía trên
                             ProfileScreen(
                                 viewModel = profileViewModel,
-                                onThemeChanged = { themeName -> isDarkTheme = (themeName == "Dark") },
+                                onThemeChanged = { themeName ->
+                                    isDarkTheme = (themeName == "Dark")
+                                },
+                                onEditProfileClick = {
+                                    navController.navigate("edit_profile")
+                                },
                                 onLogout = {
-                                    navController.navigate("welcome") { popUpTo(0) { inclusive = true } }
+                                    navController.navigate("welcome") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
                                 }
+                            )
+                        }
+                        composable("edit_profile") {
+                            EditProfileScreen(
+                                viewModel = editProfileViewModel,
+                                onBackClick = { navController.popBackStack() }
                             )
                         }
                     }

@@ -1,6 +1,7 @@
 package com.example.appthemuse.di
 
 import com.example.appthemuse.data.remote.AuthService
+import com.example.appthemuse.data.remote.FirebaseUserService
 import com.example.appthemuse.data.remote.FirestoreService
 import com.example.appthemuse.data.repository.AuthRepositoryImpl
 import com.example.appthemuse.data.repository.UserRepositoryImpl
@@ -36,8 +37,8 @@ object AppModule {
     @Provides
     @Singleton
     fun provideUserRepository(
-        firestoreService: FirestoreService // 👉 Đã sửa: Truyền FirestoreService vào đây
+        firebaseUserService: FirebaseUserService
     ): UserRepository {
-        return UserRepositoryImpl(firestoreService)
+        return UserRepositoryImpl(firebaseUserService)
     }
 }
