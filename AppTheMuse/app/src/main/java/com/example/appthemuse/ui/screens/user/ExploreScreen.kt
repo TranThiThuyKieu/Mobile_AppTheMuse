@@ -1,5 +1,6 @@
 package com.example.appthemuse.ui.screens.user
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -8,29 +9,31 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.appthemuse.ui.model.CategoryUi
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.viewmodel.HomeViewModel
 
 @Composable
-fun ExploreScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
+fun ExploreScreen(viewModel: HomeViewModel, navController: NavController, onBookClick: (String) -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
-    
+    val books = uiState.allBooks
     // Tab đang được chọn: mặc định là "Tất cả"
     var selectedTab by remember {
         mutableStateOf("Tất cả")
     }
-    
+
     // Lọc danh sách sách theo tab
     val displayBooks = when (selectedTab) {
         "Hot" -> uiState.trendingBooks   // sách hot
         "Mới" -> uiState.recentBooks     // sách mới
         else -> uiState.allBooks          // tất cả sách
     }
-    
+    val limitedBooks = displayBooks.take(5)
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         // Thể loại
         item {
@@ -44,7 +47,10 @@ fun ExploreScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 contentPadding = PaddingValues(16.dp)) {
                 items(uiState.categories) { category ->
-                    CategoryCard(category)
+                    CategoryCard(category = category, books = uiState.allBooks, onClick = {
+                            navController.navigate("book/${category.name}/${category.id.removePrefix("cate")}")
+                        }
+                    )
                 }
             }
         }
@@ -57,20 +63,28 @@ fun ExploreScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
         
         // Tab chọn loại sách
         item {
-            Row(modifier = Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // 3 tab lọc
-                listOf("Tất cả", "Hot", "Mới").forEach { tab ->
-                    FilterChip(
-                        selected = selectedTab == tab, // trạng thái chọn tab
-                        onClick = { selectedTab = tab },// đổi tab
-                        label = { Text(tab) }
-                    )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("Tất cả", "Hot", "Mới").forEach { tab ->
+                        FilterChip(selected = selectedTab == tab, onClick = { selectedTab = tab },
+                            label = { Text(tab) }
+                        )
+                    }
                 }
+                Text(text = "Xem thêm →", color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable {
+                        navController.navigate("categories")
+                    }
+                )
             }
         }
-        
         // hiển thị sách theo tab
-        items(displayBooks) { book ->
+        items(limitedBooks) { book ->
             VerticalBookItem(
                 book = book,
                 onClick = {
@@ -80,16 +94,21 @@ fun ExploreScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
         }
     }
 }
-
 // Hiển thị các thể loại sách
 @Composable
-fun CategoryCard(category: CategoryUi) {
-    Card(modifier = Modifier.height(90.dp)) {
+fun CategoryCard(category: CategoryUi, books: List<BookUi>, onClick: () -> Unit) {
+    Card(modifier = Modifier.height(90.dp).clickable {
+            onClick()
+        }) {
         Column(modifier = Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.Center) {
             // Tên thể loại
             Text(text = category.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Spacer(modifier = Modifier.height(8.dp))
-            Text(text = "${category.totalBooks} tác phẩm") // số lượng sách trong category
+            // Đếm số lượng sách của một thể loại
+            val count = books.count {
+                it.category_id == category.id.removePrefix("cate")
+            }
+            Text(text = "$count tác phẩm")
         }
     }
 }

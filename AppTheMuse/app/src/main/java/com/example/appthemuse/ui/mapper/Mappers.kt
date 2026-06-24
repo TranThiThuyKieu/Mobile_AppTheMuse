@@ -16,13 +16,14 @@ fun Book.toBookUi(): BookUi {
         chapter_count = this.chapter_count,
         rating = this.rating,
         view_count = this.view_count,
-        status = this.status
+        status = this.status ,
+        category_id = this.category_id
     )
 }
 
 fun Category.toCategoryUi(): CategoryUi {
     return CategoryUi(
-        id = this.id.toIntOrNull() ?: this.id.hashCode(),
+        id = this.id,
         name = this.name,
         totalBooks = this.totalBooks
     )

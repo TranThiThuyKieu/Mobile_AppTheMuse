@@ -36,6 +36,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.appthemuse.ui.viewmodel.EditProfileViewModel
 import com.example.appthemuse.ui.viewmodel.SecurityViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -163,12 +164,13 @@ class MainActivity : ComponentActivity() {
                         composable("home") {
                             HomeScreen(
                                 viewModel = homeViewModel,
+                                navController = navController,
                                 onBookClick = { bookId -> }
                             )
                         }
 
                         composable("explore") {
-                            ExploreScreen(viewModel = homeViewModel, onBookClick = { })
+                            ExploreScreen(viewModel = homeViewModel,navController = navController, onBookClick = { })
                         }
 
                         composable("bookshelf") {
@@ -194,6 +196,20 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             )
+                        }
+                        // route hiển thị danh sách sách
+                        composable("book/{title}/{type}") { backStack ->
+                            BookListScreen(
+                                title = backStack.arguments?.getString("title") ?: "",
+                                type = backStack.arguments?.getString("type") ?: "",
+                                viewModel = homeViewModel,
+                                navController = navController,
+                                onBookClick = {}
+                            )
+                        }
+                        // route hiển thị danh sách thể loại
+                        composable("categories"){
+                            CategoryListScreen(viewModel= homeViewModel, navController = navController)
                         }
                         composable("edit_profile") {
                             EditProfileScreen(
