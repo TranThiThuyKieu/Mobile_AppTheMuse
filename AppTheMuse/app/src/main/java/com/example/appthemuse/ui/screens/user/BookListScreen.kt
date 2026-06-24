@@ -28,6 +28,7 @@ fun BookListScreen(title: String, type: String, viewModel: HomeViewModel,
     val currentRoute = navBackStackEntry?.destination?.route ?: ""
     // Chọn danh sách sách tùy theo loại truyền vào
     val books = when (type) {
+        "tatca" -> uiState.allBooks
         // Sách nổi bật
         "hot" -> uiState.trendingBooks
         // Sách mới phát hành

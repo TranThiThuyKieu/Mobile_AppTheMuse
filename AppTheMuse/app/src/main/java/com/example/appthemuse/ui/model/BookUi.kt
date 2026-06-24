@@ -9,5 +9,7 @@ data class BookUi(
     val rating: Double,
     val view_count: Long,
     val status: String,
-    val category_id: String
+    val category_id: String,
+    val readingProgress: Float = 0f,
+    val lastReadChapter: Int = 0
 )
