@@ -42,6 +42,7 @@ android {
 
 dependencies {
     implementation(libs.androidx.compose.runtime)
+    implementation(libs.androidx.compose.ui.text)
     // Các thư viện mặc định của Jetpack Compose UI
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

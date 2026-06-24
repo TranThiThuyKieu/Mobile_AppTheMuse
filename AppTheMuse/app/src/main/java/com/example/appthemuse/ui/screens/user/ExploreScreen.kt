@@ -77,8 +77,22 @@ fun ExploreScreen(viewModel: HomeViewModel, navController: NavController, onBook
                         )
                     }
                 }
-                Text(text = "Xem thêm →", color = MaterialTheme.colorScheme.primary, modifier = Modifier.clickable {
-                        navController.navigate("categories")
+                // Chuyển sang trang danh sách thể loại
+                Text(
+                    text = "Xem thêm →",
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable {
+                        when (selectedTab) {
+                            "Hot" -> {
+                                navController.navigate("book/Truyện Hot/hot")
+                            }
+                            "Mới" -> {
+                                navController.navigate("book/Sách mới/new")
+                            }
+                            else -> {
+                                navController.navigate("book/Tất cả/tatca")
+                            }
+                        }
                     }
                 )
             }
