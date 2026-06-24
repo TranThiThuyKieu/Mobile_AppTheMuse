@@ -56,6 +56,7 @@ class BookRepositoryImpl(
         val authorDoc = firestoreService.getUserById(authorId)
         val chapterCount = firestoreService.getChapterCount(doc.id)
         val rating = firestoreService.getAverageRating(doc.id)
+        val categoryId = doc.getLong("category_id")?.toString() ?: ""
         return Book(
             id = doc.id,
             title = doc.getString("title") ?: "",
@@ -64,7 +65,8 @@ class BookRepositoryImpl(
             chapter_count = chapterCount,
             rating = rating,
             view_count = doc.getLong("view_count") ?: 0L,
-            status = doc.getString("status") ?: ""
+            status = doc.getString("status") ?: "",
+            category_id = categoryId
         )
     }
     // Hàm lưu lịch sử tìm kiếm
