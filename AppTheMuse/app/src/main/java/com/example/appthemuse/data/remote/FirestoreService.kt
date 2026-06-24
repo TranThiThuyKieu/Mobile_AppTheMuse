@@ -122,4 +122,39 @@ class FirestoreService {
             snapshot.documents
         }
     }
+    // Lấy người dùng qua Id người dùng
+    suspend fun getUserById(userId: String): DocumentSnapshot? {
+        return firestore.collection("users").document(userId).get().await()
+    }
+    // Đếm số chương của một quyển sách
+    suspend fun getChapterCount(bookId: String): Int {
+        return firestore.collection("chapters").whereEqualTo("book_id",
+                bookId.removePrefix("book").toInt()).get().await().size()
+    }
+    // Tính Rating
+    suspend fun getAverageRating(bookId: String): Double {
+        val snapshot = firestore.collection("reviews").whereEqualTo("book_id",
+                bookId.removePrefix("book").toInt()).get().await()
+        if(snapshot.isEmpty){
+            return 0.0
+        }
+        return snapshot.documents.map {
+                it.getLong("rating")?.toDouble() ?: 0.0
+            }.average()
+    }
+    // Thêm lịch sử tìm kiếm
+    suspend fun addSearchHistory(userId: String, keyword: String) {
+        if (keyword.isBlank()) return
+        firestore.collection("users").document(userId)
+            .collection("search_history").document(keyword)
+            .set(mapOf("keyword" to keyword,
+                    "timestamp" to com.google.firebase.Timestamp.now()))
+    }
+    // Lấy lịch sử tìm kiếm
+    suspend fun getSearchHistory(userId: String): List<String> {
+        return firestore.collection("users").document(userId)
+            .collection("search_history").orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .limit(7).get()
+            .await().documents.mapNotNull { it.getString("keyword") }
+    }
 }

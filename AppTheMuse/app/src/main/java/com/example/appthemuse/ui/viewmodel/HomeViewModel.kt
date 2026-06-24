@@ -19,6 +19,8 @@ data class HomeUiState(
     val categories: List<CategoryUi> = emptyList(),
     val newReleaseBooks: List<BookUi> = emptyList(),
     val allBooks: List<BookUi> = emptyList(),
+    val searchResults:List<BookUi> = emptyList(),
+    val searchHistory: List<String> = emptyList(),
     val errorMessage: String? = null
 )
 
@@ -57,6 +59,58 @@ class HomeViewModel(
                     errorMessage = e.localizedMessage ?: "Đã xảy ra lỗi khi tải dữ liệu."
                 )
             }
+        }
+    }
+    // hàm tìm kiếm
+    fun searchBooks(keyword: String, filterType: String, status: String?, star: Int?) {
+        // lấy toàn bộ sách đã load từ Firestore về trước đó
+        val source = _uiState.value.allBooks
+        // nếu chưa có data thì không search
+        if (source.isEmpty()) return
+        // bắt đầu từ full list
+        var results = source
+        // filter theo keyword
+        if (keyword.isNotBlank()) {
+            results = when (filterType) {
+                // search theo tác giả
+                "author" -> results.filter {
+                    it.author_name.contains(keyword, true)
+                }
+                // search theo title
+                else -> results.filter {
+                    it.title.contains(keyword, true)
+                }
+            }
+        }
+        // filter theo status
+        status?.let { selectedStatus ->
+            results = results.filter { book ->
+                book.status.equals(selectedStatus, true)
+            }
+        }
+        // filter theo rating
+        star?.let { selectedStar ->
+            results = results.filter { book ->
+                book.rating.toInt() >= selectedStar
+            }
+        }
+        _uiState.value = _uiState.value.copy(searchResults = results)
+    }
+    // hàm clear search result
+    fun clearSearch(){
+        _uiState.value = _uiState.value.copy(searchResults = emptyList())
+    }
+    // hàm gọi lịch sử tìm kiếm khi mở màn hình search
+    fun loadSearchHistory(userId: String) {
+        viewModelScope.launch {
+            val history = bookRepository.getSearchHistory(userId)
+            _uiState.value = _uiState.value.copy(searchHistory = history)
+        }
+    }
+    // hàm lưu lịch sử tìm kiếm khi user tìm kiếm
+    fun saveSearchHistory(userId: String, keyword: String) {
+        viewModelScope.launch {
+            bookRepository.saveSearchHistory(userId, keyword)
         }
     }
 }
