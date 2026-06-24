@@ -33,6 +33,9 @@ import com.example.appthemuse.ui.viewmodel.HomeViewModel
 import com.example.appthemuse.ui.model.BookUi
 import android.widget.Toast
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -40,7 +43,9 @@ import androidx.compose.ui.platform.LocalContext
 fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-
+    var showSearch by remember {
+        mutableStateOf(false)
+    }
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { error ->
             Toast.makeText(context, error, Toast.LENGTH_LONG).show()
@@ -48,7 +53,9 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
     }
 
     Scaffold(
-        topBar = { HomeTopBar() },
+        topBar = { HomeTopBar(onSearchClick = {
+            showSearch = true
+        }) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         if (uiState.isLoading) {
@@ -96,46 +103,59 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
                             }
                         }
                     }
-                    item {
-                        SectionHeader(title = "Khám phá thể loại")
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            modifier = Modifier.height(140.dp).padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)){
-                            items(uiState.categories.size){ index ->
-                                Card(
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                                ) {
-                                    Column(modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center) {
-                                        val category = uiState.categories[index]
-                                        Text(text = category.name, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = "${category.totalBooks} truyện", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    item { SectionHeader(title = "Sách mới phát hành") }
                     items(uiState.newReleaseBooks.take(2)) { book ->
                         VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
                     }
                 }
+                item {
+                    SectionHeader(title = "Khám phá thể loại")
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier.height(140.dp).padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)){
+                        items(uiState.categories.size){ index ->
+                            Card(
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                            ) {
+                                Column(modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center) {
+                                    val category = uiState.categories[index]
+                                    Text(text = category.name, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(text = "${category.totalBooks} truyện", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
+                item { SectionHeader(title = "Sách mới phát hành") }
+                items(uiState.newReleaseBooks.take(2)) { book ->
+                    VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
+                }
+
             }
         }
+    }
+    // Hiển thị kết quả tìm kiếm
+    if (showSearch) {
+        SearchScreen(
+            viewModel = viewModel,
+            onClose = {
+                showSearch = false
+            }
+        )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopBar() {
+fun HomeTopBar(onSearchClick: () -> Unit) {
     TopAppBar(
         title = { Text("The Muse", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
         actions = {
-            IconButton(onClick = {}) { Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onBackground) }
+            IconButton(onClick = onSearchClick) { Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onBackground) }
             IconButton(onClick = {}) { Icon(Icons.Default.Notifications, contentDescription = "Alerts", tint = MaterialTheme.colorScheme.onBackground) }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)

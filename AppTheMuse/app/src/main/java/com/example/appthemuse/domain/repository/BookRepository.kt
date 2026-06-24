@@ -11,4 +11,6 @@ interface BookRepository {
     suspend fun getCategories(): List<Category>
     suspend fun getNewReleaseBooks(limit: Long = 5): List<Book>
     suspend fun getAllBooks(limit: Long = 50): List<Book>
+    suspend fun saveSearchHistory(userId: String, keyword: String)
+    suspend fun getSearchHistory(userId: String): List<String>
 }

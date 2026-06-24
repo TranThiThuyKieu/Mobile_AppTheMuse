@@ -1,5 +1,6 @@
 package com.example.appthemuse.data.repository
 
+import android.util.Log
 import com.example.appthemuse.data.remote.FirestoreService
 import com.example.appthemuse.domain.model.Book
 import com.example.appthemuse.domain.model.Category
@@ -48,23 +49,30 @@ class BookRepositoryImpl(
     }
 
     // 👉 Hàm tiện ích nội bộ tách biệt hoàn toàn cấu trúc Firebase Database và Domain Model
-    private fun mapDocumentToBook(doc: DocumentSnapshot): Book {
+    private suspend fun mapDocumentToBook(doc: DocumentSnapshot): Book {
+        Log.d("BOOK_ID",doc.id)
+        println(doc.id)
+        val authorId = doc.getString("author_id") ?: ""
+        val authorDoc = firestoreService.getUserById(authorId)
+        val chapterCount = firestoreService.getChapterCount(doc.id)
+        val rating = firestoreService.getAverageRating(doc.id)
         return Book(
             id = doc.id,
-            title = doc.getString("title") ?: doc.getString("tên_sách") ?: "Không có tiêu đề",
-            cover_url = doc.getString("cover_url") ?: doc.getString("ảnh_bìa") ?: "",
-            author_name = doc.getString("author_name") ?: doc.getString("tác_giả") ?: "Ẩn danh",
-
-            // 1. Giữ nguyên .toInt() vì chapter_count trong Book là Int
-            chapter_count = doc.getLong("chapter_count")?.toInt() ?: doc.getLong("số_chương")?.toInt() ?: 0,
-
-            // 2. 👉 SỬA TẠI ĐÂY: Xóa .toFloat() đi vì rating trong Book là Double
-            rating = doc.getDouble("rating") ?: doc.getDouble("đánh_giá") ?: 0.0,
-
-            // 3. 👉 SỬA TẠI ĐÂY: Xóa .toInt() đi vì view_count trong Book là Long
-            view_count = doc.getLong("view_count") ?: doc.getLong("lượt_xem") ?: 0L,
-
-            status = doc.getString("status") ?: doc.getString("trạng_thái") ?: "Đang tiến hành"
+            title = doc.getString("title") ?: "",
+            cover_url = doc.getString("cover_url") ?: "",
+            author_name = authorDoc?.getString("username") ?: "Ẩn danh",
+            chapter_count = chapterCount,
+            rating = rating,
+            view_count = doc.getLong("view_count") ?: 0L,
+            status = doc.getString("status") ?: ""
         )
+    }
+    // Hàm lưu lịch sử tìm kiếm
+    override suspend fun saveSearchHistory(userId: String, keyword: String) {
+        firestoreService.addSearchHistory(userId, keyword)
+    }
+    // Hàm lấy lịch sử tìm kiếm
+    override suspend fun getSearchHistory(userId: String): List<String> {
+        return firestoreService.getSearchHistory(userId)
     }
 }
