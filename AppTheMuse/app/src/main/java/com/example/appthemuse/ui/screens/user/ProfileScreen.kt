@@ -49,6 +49,8 @@ data class ProfileThemeColors(
 @Composable
 fun ProfileScreen(
     onEditProfileClick: () -> Unit,
+
+    onCreatorStudioClick: () -> Unit,
     onSecurityClick: () -> Unit,
     viewModel: ProfileViewModel,
     onThemeChanged: (String) -> Unit = {},
@@ -227,7 +229,7 @@ fun ProfileScreen(
 
             // --- TÀI KHOẢN ---
             SectionTitle(title = "TÀI KHOẢN")
-            MenuItem(icon = Icons.Default.MenuBook, title = "Góc tác giả", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor, onClick = { /* Góc tác giả */ })
+            MenuItem(icon = Icons.Default.MenuBook, title = "Góc tác giả", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor, onClick = onCreatorStudioClick)
             MenuItem(
                 icon = Icons.Default.Person,
                 title = "Thông tin cá nhân",
