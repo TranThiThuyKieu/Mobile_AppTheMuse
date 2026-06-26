@@ -56,6 +56,7 @@ class FirestoreService {
         firestore.collection("security_logs").document(email).set(data, com.google.firebase.firestore.SetOptions.merge()).await()
     }
 
+       // Lấy tất cả sách
     suspend fun getAllBooksRaw(limit: Long): List<DocumentSnapshot> {
         return try {
             val snapshot = firestore.collection("books")
@@ -71,7 +72,7 @@ class FirestoreService {
             snapshot.documents
         }
     }
-
+    // Lấy sách mới phát hành (Sắp xếp theo thời gian created_at giảm dần)
     suspend fun getNewReleaseBooksRaw(limit: Long): List<DocumentSnapshot> {
         return try {
             val snapshot = firestore.collection("books")
@@ -89,7 +90,7 @@ class FirestoreService {
             snapshot.documents
         }
     }
-
+    // Lấy sách đang thịnh hành (Sắp xếp theo lượt xem giảm dần)
     suspend fun getTrendingBooksRaw(limit: Long): List<DocumentSnapshot> {
         return try {
             val snapshot = firestore.collection("books")
@@ -107,11 +108,11 @@ class FirestoreService {
             snapshot.documents
         }
     }
-
+    // Lấy sách đọc gần đây (Tạm thời lấy danh sách tổng quát, bạn có thể custom theo bảng lịch sử sau)
     suspend fun getRecentBooksRaw(limit: Long): List<DocumentSnapshot> {
         return getAllBooksRaw(limit)
     }
-
+    // Gợi ý sách dựa trên danh sách thể loại yêu thích của người dùng
     suspend fun getRecommendedBooksRaw(favoriteGenres: List<String>, limit: Long): List<DocumentSnapshot> {
         return try {
             if (favoriteGenres.isEmpty()) return getAllBooksRaw(limit)
@@ -131,7 +132,7 @@ class FirestoreService {
             snapshot.documents
         }
     }
-
+    // Lấy danh sách danh mục / thể loại sách hiện có trên hệ thống
     suspend fun getCategoriesListRaw(): List<DocumentSnapshot> {
         return try {
             val snapshot = firestore.collection("categories").get().await()
@@ -141,7 +142,7 @@ class FirestoreService {
             snapshot.documents
         }
     }
-
+    // Lấy người dùng qua Id người dùng
     suspend fun getUserById(userId: String): DocumentSnapshot? {
         userCache[userId]?.let {
             return it
@@ -150,7 +151,7 @@ class FirestoreService {
         userCache[userId] = user
         return user
     }
-
+    // Đếm số chương của một quyển sách
     suspend fun getChapterCount(bookId: String): Int {
         chapterCache[bookId]?.let {
             return it
@@ -159,7 +160,7 @@ class FirestoreService {
         chapterCache[bookId] = count
         return count
     }
-
+    // Tính Rating
     suspend fun getAverageRating(bookId: String): Double {
         ratingCache[bookId]?.let {
             return it
@@ -175,7 +176,7 @@ class FirestoreService {
         ratingCache[bookId] = rating
         return rating
     }
-
+    // Đếm số lượt bình chọn (favorites)
     suspend fun getVoteCount(bookId: String): Int {
         return try {
             val snapshot = firestore.collection("favorites")
@@ -187,7 +188,7 @@ class FirestoreService {
             0
         }
     }
-
+    // Đếm số lượt bình luận (reviews)
     suspend fun getCommentCount(bookId: String): Int {
         return try {
             val snapshot = firestore.collection("reviews")
@@ -199,7 +200,7 @@ class FirestoreService {
             0
         }
     }
-
+    // Lấy danh sách chương của một tác phẩm (không dùng orderBy để tránh cần Composite Index)
     suspend fun getChaptersRaw(bookId: String): List<DocumentSnapshot> {
         return try {
             val snapshot = firestore.collection("chapters")
@@ -213,12 +214,15 @@ class FirestoreService {
         }
     }
 
+    // Tạo chương mới cho một tác phẩm
     suspend fun createChapterRaw(bookId: String, chapterData: Map<String, Any>): String {
         val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: return ""
+        // Đếm số chương hiện tại để xác định chapter_number tiếp theo
         val existingCount = firestore.collection("chapters")
             .whereEqualTo("book_id", bookNumId)
             .get().await().size()
         val nextChapterNumber = existingCount + 1
+        // 🆔 Tạo document ID theo định dạng: book{N}-chapter{N} (vd: book1-chapter1)
         val documentId = "${bookId}_chapter$nextChapterNumber"
         val dataWithNumber = chapterData.toMutableMap()
         dataWithNumber["chapter_number"] = nextChapterNumber
@@ -226,37 +230,43 @@ class FirestoreService {
         dataWithNumber["created_at"] = com.google.firebase.Timestamp.now()
         dataWithNumber["view_count"] = 0L
         dataWithNumber["status"] = "đã đăng"
+        // Dùng set() với document ID tùy chỉnh thay vì add() tạo ID ngẫu nhiên
         firestore.collection("chapters").document(documentId).set(dataWithNumber).await()
+        // Cập nhật chapter_count trong document sách
         firestore.collection("books").document(bookId)
             .update("chapter_count", nextChapterNumber).await()
+        // Xóa cache để lần sau load sẽ lấy dữ liệu mới
         chapterCache.remove(bookId)
         return documentId
     }
 
+    // Thêm lịch sử tìm kiếm
     suspend fun addSearchHistory(userId: String, keyword: String) {
         if (keyword.isBlank()) return
         firestore.collection("users").document(userId)
             .collection("search_history").document(keyword)
             .set(mapOf("keyword" to keyword,
-                    "timestamp" to com.google.firebase.Timestamp.now()))
+                "timestamp" to com.google.firebase.Timestamp.now()))
     }
-
+    // Lấy lịch sử tìm kiếm
     suspend fun getSearchHistory(userId: String): List<String> {
         return firestore.collection("users").document(userId)
             .collection("search_history").orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
             .limit(7).get()
             .await().documents.mapNotNull { it.getString("keyword") }
     }
+    // Lấy tất cả document favorite của user
 
     suspend fun getFavoriteDocuments(userId: String): List<DocumentSnapshot> {
         return firestore.collection("favorites").whereEqualTo("user_id", userId)
             .get().await().documents
     }
 
+    // Lấy 1 quyển sách theo document id (book1, book2,...)
     suspend fun getBookByDocumentId(bookId: String): DocumentSnapshot? {
         return firestore.collection("books").document(bookId).get().await()
     }
-
+    // lấy lịch sử đọc sách
     suspend fun getHistoryDocuments(userId: String): List<DocumentSnapshot> {
         return firestore.collection("history").whereEqualTo("user_id", userId)
             .get().await().documents
