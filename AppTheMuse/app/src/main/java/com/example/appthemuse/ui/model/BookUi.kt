@@ -1,5 +1,7 @@
 package com.example.appthemuse.ui.model
 
+import com.google.firebase.Timestamp
+
 data class BookUi(
     val id: String,
     val title: String,
@@ -10,6 +12,6 @@ data class BookUi(
     val view_count: Long,
     val status: String,
     val category_id: String,
-    val readingProgress: Float = 0f,
-    val lastReadChapter: Int = 0
+    val progressPercent: Int,
+    val lastReadAt: Timestamp?
 )

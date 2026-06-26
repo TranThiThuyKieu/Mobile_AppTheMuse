@@ -2,15 +2,11 @@ package com.example.appthemuse.data.remote
 
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import com.google.firebase.firestore.AggregateSource
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.AggregateSource
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
@@ -264,6 +260,20 @@ class FirestoreService {
     suspend fun getHistoryDocuments(userId: String): List<DocumentSnapshot> {
         return firestore.collection("history").whereEqualTo("user_id", userId)
             .get().await().documents
+    }
+    suspend fun getReadingProgress(
+        userId: String,
+        bookId: Int
+    ): DocumentSnapshot? {
+
+        return firestore
+            .collection("reading_progress")
+            .whereEqualTo("user_id", userId)
+            .whereEqualTo("book_id", bookId)
+            .get()
+            .await()
+            .documents
+            .firstOrNull()
     }
     // Lấy sách dựa theo author_id (Dành cho Góc tác giả)
     suspend fun getBooksByAuthorRaw(authorId: String): List<DocumentSnapshot> {
