@@ -38,8 +38,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.room.Room
+import com.example.appthemuse.data.local.database.AppDatabase
+import com.example.appthemuse.data.repository.DownloadRepositoryImpl
 import com.example.appthemuse.data.repository.LibraryRepositoryImpl
-import com.example.appthemuse.ui.screen.auth.VerifyScreen
 import com.example.appthemuse.ui.screens.user.creator_studio.CreateBookScreen
 import com.example.appthemuse.ui.screens.user.creator_studio.CreatorStudioScreen
 import com.example.appthemuse.ui.viewmodel.EditProfileViewModel
@@ -66,6 +68,8 @@ class MainActivity : ComponentActivity() {
         val authRepository = AuthRepositoryImpl(authService, firestoreService)
         val bookRepository = BookRepositoryImpl(firestoreService)
         val libraryRepository = LibraryRepositoryImpl(firestoreService)
+        val database = Room.databaseBuilder(applicationContext, AppDatabase::class.java, "app_database").build()
+        val downloadRepository = DownloadRepositoryImpl(database.downloadedBookDao())
         val userRepository = UserRepositoryImpl(firebaseUserService) // 🌟 Khởi tạo Repo User mới
 
         // 3. Khai báo Factory để tạo ViewModel có tham số truyền vào
@@ -80,7 +84,7 @@ class MainActivity : ComponentActivity() {
                     modelClass.isAssignableFrom(HomeViewModel::class.java) ->
                         HomeViewModel(bookRepository) as T
                     modelClass.isAssignableFrom(LibraryViewModel::class.java) ->
-                        LibraryViewModel(libraryRepository) as T
+                        LibraryViewModel(libraryRepository,downloadRepository,bookRepository) as T
                     modelClass.isAssignableFrom(ProfileViewModel::class.java) -> // 🌟 Nạp ProfileViewModel vào Factory
                         ProfileViewModel(userRepository) as T
                     modelClass.isAssignableFrom(EditProfileViewModel::class.java) ->
@@ -168,27 +172,35 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // Màn hình Đăng Ký
                         composable("register") {
                             RegisterScreen(
                                 viewModel = authViewModel,
                                 onRegisterSuccess = {
-                                    navController.navigate("verify_email")
+                                    // Khi đăng ký thành công, lập tức đưa sang màn hình chờ verify_email
+                                    navController.navigate("verify_email") {
+                                        popUpTo("register") { inclusive = true }
+                                    }
                                 },
                                 onNavigateToLogin = {
                                     navController.navigate("login") { popUpTo("auth_options") }
                                 }
                             )
                         }
+
+// Gọi đúng VerificationWaitScreen đã sửa logic dọn dẹp tài khoản rác
                         composable("verify_email") {
-                            VerifyScreen(
+                            VerificationWaitScreen(
                                 viewModel = authViewModel,
-                                onVerified = {
+                                onNavigateToGenres = {
+                                    // Xác minh xong -> Vào màn chọn thể loại truyện
                                     navController.navigate("genre_selection") {
                                         popUpTo("welcome") { inclusive = true }
                                     }
                                 },
-                                onExpired = {
-                                    navController.navigate("welcome") {
+                                onCancelVerification = {
+                                    // Bấm Hủy hoặc bấm nút Back vật lý -> Xóa acc rác và quay về Auth Options
+                                    navController.navigate("auth_options") {
                                         popUpTo(0) { inclusive = true }
                                     }
                                 }

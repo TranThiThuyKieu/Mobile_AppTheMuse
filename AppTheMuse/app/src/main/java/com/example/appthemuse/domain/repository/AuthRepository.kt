@@ -13,7 +13,14 @@ interface AuthRepository {
     suspend fun getCurrentUserId(): String?
 
     // ✅ VERIFY FLOW
-    suspend fun sendEmailVerification()
+    suspend fun sendEmailVerification(): Result<Unit>
     suspend fun isEmailVerified(): Boolean
     suspend fun deleteUnverifiedAccount(userId: String)
+    suspend fun updateUserBlockStatus(userId: String, isBlocked: Boolean): Result<Unit>
+
+    // ✅ NEW SECURITY FEATURES
+    suspend fun sendPasswordResetEmail(email: String): Result<Unit>
+    suspend fun checkPasswordResetLimit(email: String): Result<Boolean>
+    suspend fun checkResendVerificationLimit(email: String): Result<Boolean>
+    suspend fun isAccountLocked(email: String): Result<Boolean>
 }
