@@ -12,6 +12,7 @@ import com.example.appthemuse.ui.mapper.toUserUi // 👉 ĐÃ THÊM: Import hàm
 sealed interface AuthState {
     object Idle : AuthState
     object Loading : AuthState
+    object WaitingForVerification : AuthState
     // 👉 ĐÃ SỬA: Chuyển từ chứa Boolean đơn thuần sang chứa đầy đủ thông tin UserUi để hiển thị ở UI
     data class LoginSuccess(val user: UserUi, val hasGenres: Boolean) : AuthState
     object RegisterSuccess : AuthState
@@ -85,4 +86,24 @@ class AuthViewModel(
     fun resetState() {
         _authState.value = AuthState.Idle
     }
+    fun sendVerifyEmail() {
+        viewModelScope.launch {
+            authRepository.sendEmailVerification()
+        }
+    }
+
+    fun checkEmailVerified(onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val result = authRepository.isEmailVerified()
+            onResult(result)
+        }
+    }
+
+    fun deleteAccountIfExpired() {
+        viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+            authRepository.deleteUnverifiedAccount(userId)
+        }
+    }
+
 }
