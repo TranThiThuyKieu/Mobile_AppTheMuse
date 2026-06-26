@@ -40,9 +40,11 @@ class GenreViewModel(
     }
 
     fun saveFavoriteGenres(genres: List<String>) {
-        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
         _genreState.value = GenreState.Loading
         viewModelScope.launch {
+
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+
             authRepository.saveFavoriteGenres(userId, genres)
                 .onSuccess {
                     _genreState.value = GenreState.Success

@@ -5,6 +5,7 @@ import com.example.appthemuse.data.remote.FirestoreService
 import com.example.appthemuse.domain.model.User
 import com.example.appthemuse.domain.repository.AuthRepository
 import com.google.firebase.Timestamp
+import com.example.appthemuse.ui.mapper.mapDocumentToUser
 
 class AuthRepositoryImpl(
     private val authService: AuthService,
@@ -35,7 +36,7 @@ class AuthRepositoryImpl(
                     "username" to username,
                     "email" to email,
                     "role" to "user",
-                    "is_blocked" to false,
+                    "is_blocked" to true,
                     "favorite_genres" to emptyList<String>(),
                     "created_at" to Timestamp.now()
                 )
@@ -94,17 +95,20 @@ class AuthRepositoryImpl(
             Result.failure(e)
         }
     }
-
-    // Hàm tiện ích nội bộ để chuyển Document của Firebase thành Model của Domain
-    private fun mapDocumentToUser(userId: String, doc: com.google.firebase.firestore.DocumentSnapshot, backupEmail: String): User {
-        val genresRaw = (doc.get("favorite_genres")) as? List<*>
-        return User(
-            id = userId,
-            username = doc.getString("username")  ?: "Người dùng",
-            email = doc.getString("email") ?: backupEmail,
-            role = doc.getString("role") ?: "user",
-            isBlocked = doc.getBoolean("is_blocked") ?: doc.getBoolean("bị_khóa") ?: false,
-            favoriteGenres = genresRaw?.map { it.toString() } ?: emptyList()
-        )
+    override suspend fun getCurrentUserId(): String? {
+        return authService.getCurrentUserId()
     }
+    override suspend fun sendEmailVerification() {
+        authService.sendEmailVerification()
+    }
+
+    override suspend fun isEmailVerified(): Boolean {
+        return authService.isEmailVerified()
+    }
+
+    override suspend fun deleteUnverifiedAccount(userId: String) {
+        firestoreService.deleteUserDocument(userId)
+        authService.deleteCurrentUser()
+    }
+
 }

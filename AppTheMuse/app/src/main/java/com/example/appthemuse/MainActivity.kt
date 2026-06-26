@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.appthemuse.data.repository.LibraryRepositoryImpl
+import com.example.appthemuse.ui.screen.auth.VerifyScreen
 import com.example.appthemuse.ui.screens.user.creator_studio.CreateBookScreen
 import com.example.appthemuse.ui.screens.user.creator_studio.CreatorStudioScreen
 import com.example.appthemuse.ui.viewmodel.EditProfileViewModel
@@ -171,10 +172,25 @@ class MainActivity : ComponentActivity() {
                             RegisterScreen(
                                 viewModel = authViewModel,
                                 onRegisterSuccess = {
-                                    navController.navigate("genre_selection") { popUpTo("welcome") { inclusive = true } }
+                                    navController.navigate("verify_email")
                                 },
                                 onNavigateToLogin = {
                                     navController.navigate("login") { popUpTo("auth_options") }
+                                }
+                            )
+                        }
+                        composable("verify_email") {
+                            VerifyScreen(
+                                viewModel = authViewModel,
+                                onVerified = {
+                                    navController.navigate("genre_selection") {
+                                        popUpTo("welcome") { inclusive = true }
+                                    }
+                                },
+                                onExpired = {
+                                    navController.navigate("welcome") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
                                 }
                             )
                         }

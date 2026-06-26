@@ -352,5 +352,12 @@ class FirestoreService {
             newId // Trả về ID vừa tạo
         }.await()
     }
-
+    suspend fun deleteUserDocument(userId: String) {
+        try {
+            firestore.collection("users").document(userId).delete().await()
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Lỗi xóa user document: ${e.message}")
+            throw e
+        }
+    }
 }
