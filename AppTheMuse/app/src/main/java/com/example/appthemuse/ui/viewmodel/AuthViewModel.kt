@@ -48,7 +48,8 @@ class AuthViewModel(
         viewModelScope.launch {
             authRepository.register(email, password, username)
                 .onSuccess {
-                    _authState.value = AuthState.RegisterSuccess
+                    // Chuyển sang trạng thái chờ xác nhận email ngay lập tức
+                    _authState.value = AuthState.WaitingForVerification
                 }
                 .onFailure { error ->
                     _authState.value = AuthState.Error(error.message ?: "Đăng ký thất bại")
@@ -83,15 +84,6 @@ class AuthViewModel(
             }
     }
 
-    fun resetState() {
-        _authState.value = AuthState.Idle
-    }
-    fun sendVerifyEmail() {
-        viewModelScope.launch {
-            authRepository.sendEmailVerification()
-        }
-    }
-
     fun checkEmailVerified(onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             val result = authRepository.isEmailVerified()
@@ -104,6 +96,55 @@ class AuthViewModel(
             val userId = authRepository.getCurrentUserId() ?: return@launch
             authRepository.deleteUnverifiedAccount(userId)
         }
+    }
+    // Gửi lại email kích hoạt nếu người dùng bấm nút "Gửi lại"
+    fun sendVerifyEmail() {
+        viewModelScope.launch {
+            authRepository.sendEmailVerification()
+        }
+    }
+
+    // Kiểm tra định kỳ xem cơ sở dữ liệu Firebase đã xác minh chưa
+    fun checkEmailVerified(onVerified: () -> Unit) {
+        viewModelScope.launch {
+            val isVerified = authRepository.isEmailVerified()
+            if (isVerified) {
+                val userId = authRepository.getCurrentUserId()
+                if (userId != null) {
+                    authRepository.checkUserGenresSelected(userId)
+                        .onSuccess { hasGenres ->
+                            _authState.value = AuthState.LoginSuccess(
+                                user = com.example.appthemuse.ui.model.UserUi(id = userId),
+                                hasGenres = hasGenres
+                            )
+                            onVerified()
+                        }
+                        .onFailure {
+                            _authState.value = AuthState.LoginSuccess(
+                                user = com.example.appthemuse.ui.model.UserUi(id = userId),
+                                hasGenres = false
+                            )
+                            onVerified()
+                        }
+                }
+            }
+        }
+    }
+
+    // Hàm xóa tài khoản khi người dùng hủy bỏ hoặc thoát ra mà chưa xác minh
+    fun deleteAccountIfExpired(onComplete: () -> Unit = {}) {
+        viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId()
+            if (userId != null) {
+                authRepository.deleteUnverifiedAccount(userId)
+            }
+            _authState.value = AuthState.Idle
+            onComplete()
+        }
+    }
+
+    fun resetState() {
+        _authState.value = AuthState.Idle
     }
 
 }
