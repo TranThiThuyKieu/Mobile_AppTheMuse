@@ -17,7 +17,9 @@ fun Book.toBookUi(): BookUi {
         rating = this.rating,
         view_count = this.view_count,
         status = this.status ,
-        category_id = this.category_id
+        category_id = this.category_id,
+        progressPercent = progressPercent,
+        lastReadAt = lastReadAt
     )
 }
 

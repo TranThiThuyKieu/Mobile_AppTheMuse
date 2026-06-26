@@ -38,6 +38,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
+import com.example.appthemuse.ui.model.HistoryUi
+import java.text.SimpleDateFormat
+import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -253,6 +257,88 @@ fun RecentBookCard(book: BookUi, onClick: () -> Unit) {
             Column(modifier = Modifier.padding(8.dp)) {
                 Text(book.title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(book.author_name, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+@Composable
+fun HistoryBookItem(
+    historyBook: HistoryUi,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            AsyncImage(
+                model = historyBook.book.cover_url,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(width = 70.dp, height = 95.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+
+                Text(
+                    text = historyBook.book.title,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    text = historyBook.book.author_name,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "${historyBook.book.chapter_count} chương",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "Đã đọc ${historyBook.progressPercent}%"
+                )
+
+                LinearProgressIndicator(
+                    progress = {
+                        historyBook.progressPercent / 100f
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                historyBook.lastReadAt?.let {
+
+                    Text(
+                        text = "Cập nhật ${
+                            SimpleDateFormat(
+                                "dd/MM/yyyy",
+                                LocalLocale.current.platformLocale
+                            ).format(it.toDate())
+                        }",
+                        color = Color.Gray
+                    )
+                }
             }
         }
     }

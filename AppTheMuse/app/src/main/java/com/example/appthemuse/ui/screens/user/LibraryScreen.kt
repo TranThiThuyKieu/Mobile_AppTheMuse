@@ -101,10 +101,12 @@ fun LibraryScreen(
                 // Tab Lịch sử
                 1 -> {
                     LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(uiState.historyBooks){ book ->
-                            VerticalBookItem(book = book,
+                        items(uiState.historyBooks){ history ->
+
+                            HistoryBookItem(
+                                historyBook = history,
                                 onClick = {
-                                    onBookClick(book.id)
+                                    onBookClick(history.book.id)
                                 }
                             )
                         }

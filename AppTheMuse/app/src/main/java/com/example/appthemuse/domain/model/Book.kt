@@ -16,5 +16,7 @@ data class Book(
     val is_premium: Boolean = false,
     val view_count: Long = 0L,
     val status: String = "",
-    val created_at: Timestamp? = null
+    val created_at: Timestamp? = null,
+    val progressPercent: Int = 0,
+    val lastReadAt: Timestamp? = null
 )

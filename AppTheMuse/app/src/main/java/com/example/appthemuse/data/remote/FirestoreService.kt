@@ -188,4 +188,18 @@ class FirestoreService {
         return firestore.collection("history").whereEqualTo("user_id", userId)
             .get().await().documents
     }
+    suspend fun getReadingProgress(
+        userId: String,
+        bookId: Int
+    ): DocumentSnapshot? {
+
+        return firestore
+            .collection("reading_progress")
+            .whereEqualTo("user_id", userId)
+            .whereEqualTo("book_id", bookId)
+            .get()
+            .await()
+            .documents
+            .firstOrNull()
+    }
 }
