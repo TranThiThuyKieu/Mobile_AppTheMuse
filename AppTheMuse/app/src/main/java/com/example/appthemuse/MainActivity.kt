@@ -37,6 +37,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.room.Room
+import com.example.appthemuse.data.local.database.AppDatabase
+import com.example.appthemuse.data.repository.DownloadRepositoryImpl
 import com.example.appthemuse.data.repository.LibraryRepositoryImpl
 import com.example.appthemuse.ui.screens.user.creator_studio.CreateBookScreen
 import com.example.appthemuse.ui.screens.user.creator_studio.CreatorStudioScreen
@@ -64,6 +68,8 @@ class MainActivity : ComponentActivity() {
         val authRepository = AuthRepositoryImpl(authService, firestoreService)
         val bookRepository = BookRepositoryImpl(firestoreService)
         val libraryRepository = LibraryRepositoryImpl(firestoreService)
+        val database = Room.databaseBuilder(applicationContext, AppDatabase::class.java, "app_database").build()
+        val downloadRepository = DownloadRepositoryImpl(database.downloadedBookDao())
         val userRepository = UserRepositoryImpl(firebaseUserService) // 🌟 Khởi tạo Repo User mới
 
         // 3. Khai báo Factory để tạo ViewModel có tham số truyền vào
@@ -78,7 +84,7 @@ class MainActivity : ComponentActivity() {
                     modelClass.isAssignableFrom(HomeViewModel::class.java) ->
                         HomeViewModel(bookRepository) as T
                     modelClass.isAssignableFrom(LibraryViewModel::class.java) ->
-                        LibraryViewModel(libraryRepository) as T
+                        LibraryViewModel(libraryRepository,downloadRepository,bookRepository) as T
                     modelClass.isAssignableFrom(ProfileViewModel::class.java) -> // 🌟 Nạp ProfileViewModel vào Factory
                         ProfileViewModel(userRepository) as T
                     modelClass.isAssignableFrom(EditProfileViewModel::class.java) ->

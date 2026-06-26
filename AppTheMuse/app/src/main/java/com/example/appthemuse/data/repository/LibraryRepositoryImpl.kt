@@ -3,6 +3,8 @@ package com.example.appthemuse.data.repository
 import com.example.appthemuse.data.remote.FirestoreService
 import com.example.appthemuse.domain.model.Book
 import com.example.appthemuse.domain.repository.LibraryRepository
+import com.example.appthemuse.ui.mapper.toBookUi
+import com.example.appthemuse.ui.model.HistoryUi
 import com.google.firebase.firestore.DocumentSnapshot
 
 class LibraryRepositoryImpl(
@@ -23,32 +25,53 @@ class LibraryRepositoryImpl(
     }
     override suspend fun getHistoryBooks(
         userId: String
-    ): List<Book> {
+    ): List<HistoryUi> {
 
         val historyDocs =
             firestoreService.getHistoryDocuments(userId)
 
-        val books = mutableListOf<Book>()
+        val result = mutableListOf<HistoryUi>()
 
         for (history in historyDocs) {
 
-            val number =
+            val bookId =
                 history.getLong("book_id")
                     ?.toInt()
                     ?: continue
 
             val bookDoc =
                 firestoreService.getBookByDocumentId(
-                    "book$number"
+                    "book$bookId"
                 ) ?: continue
 
-            books.add(
-                mapDocumentToBook(bookDoc)
-            )
+            val progressDoc =
+                firestoreService.getReadingProgress(
+                    userId,
+                    bookId
+                )
 
+            val scrollPosition =
+                progressDoc
+                    ?.getLong("scroll_position")
+                    ?.toInt()
+                    ?: 0
+
+            val percent =
+                (scrollPosition / 10)
+                    .coerceIn(0,100)
+
+            result.add(
+                HistoryUi(
+                    book = mapDocumentToBook(bookDoc)
+                        .toBookUi(),
+                    progressPercent = percent,
+                    lastReadAt =
+                        history.getTimestamp("read_at")
+                )
+            )
         }
 
-        return books
+        return result
     }
     private suspend fun mapDocumentToBook(doc: DocumentSnapshot): Book {
         val authorId = doc.getString("author_id") ?: ""
