@@ -42,10 +42,11 @@ fun RegisterScreen(
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
+    // ✅ ĐÃ SỬA: Lắng nghe WaitingForVerification để chuyển hướng sang màn hình chờ kịp thời
     LaunchedEffect(authState) {
         when (authState) {
-            is AuthState.RegisterSuccess -> {
-                Toast.makeText(context, "Đăng ký tài khoản thành công!", Toast.LENGTH_SHORT).show()
+            is AuthState.WaitingForVerification -> {
+                Toast.makeText(context, "Mã xác minh đã được gửi đến Email!", Toast.LENGTH_SHORT).show()
                 onRegisterSuccess()
             }
             is AuthState.Error -> {
@@ -55,6 +56,7 @@ fun RegisterScreen(
             else -> {}
         }
     }
+
     DisposableEffect(Unit) {
         onDispose {
             viewModel.resetState()
@@ -176,7 +178,9 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Box(
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (authState is AuthState.Loading) {
@@ -185,12 +189,15 @@ fun RegisterScreen(
                     PrimaryButton(
                         text = "Đăng ký",
                         onClick = {
-                            if (password != confirmPassword) {
+                            if (username.isBlank() || email.isBlank() || password.isBlank()) {
+                                Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show()
+                            } else if (password != confirmPassword) {
                                 Toast.makeText(context, "Mật khẩu xác nhận không trùng khớp!", Toast.LENGTH_SHORT).show()
                             } else {
                                 viewModel.register(email, password, username)
                             }
-                        }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }

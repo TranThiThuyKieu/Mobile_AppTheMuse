@@ -54,7 +54,7 @@ fun WelcomeScreen(onNavigateToLogin: () -> Unit) {
 
             PrimaryButton(
                 text = "Bắt đầu khám phá",
-                onClick = onNavigateToLogin
+                onClick = onNavigateToLogin,
             )
         }
     }

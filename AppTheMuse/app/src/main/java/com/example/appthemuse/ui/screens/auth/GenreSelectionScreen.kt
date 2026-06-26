@@ -109,7 +109,7 @@ fun GenreSelectionScreen(
                         Toast.makeText(context, "Vui lòng chọn tối thiểu 3 thể loại!", Toast.LENGTH_SHORT).show()
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }

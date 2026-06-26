@@ -42,7 +42,6 @@ import androidx.room.Room
 import com.example.appthemuse.data.local.database.AppDatabase
 import com.example.appthemuse.data.repository.DownloadRepositoryImpl
 import com.example.appthemuse.data.repository.LibraryRepositoryImpl
-import com.example.appthemuse.ui.screen.auth.VerifyScreen
 import com.example.appthemuse.ui.screens.user.creator_studio.CreateBookScreen
 import com.example.appthemuse.ui.screens.user.creator_studio.CreatorStudioScreen
 import com.example.appthemuse.ui.viewmodel.EditProfileViewModel
@@ -173,27 +172,35 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // Màn hình Đăng Ký
                         composable("register") {
                             RegisterScreen(
                                 viewModel = authViewModel,
                                 onRegisterSuccess = {
-                                    navController.navigate("verify_email")
+                                    // Khi đăng ký thành công, lập tức đưa sang màn hình chờ verify_email
+                                    navController.navigate("verify_email") {
+                                        popUpTo("register") { inclusive = true }
+                                    }
                                 },
                                 onNavigateToLogin = {
                                     navController.navigate("login") { popUpTo("auth_options") }
                                 }
                             )
                         }
+
+// Gọi đúng VerificationWaitScreen đã sửa logic dọn dẹp tài khoản rác
                         composable("verify_email") {
-                            VerifyScreen(
+                            VerificationWaitScreen(
                                 viewModel = authViewModel,
-                                onVerified = {
+                                onNavigateToGenres = {
+                                    // Xác minh xong -> Vào màn chọn thể loại truyện
                                     navController.navigate("genre_selection") {
                                         popUpTo("welcome") { inclusive = true }
                                     }
                                 },
-                                onExpired = {
-                                    navController.navigate("welcome") {
+                                onCancelVerification = {
+                                    // Bấm Hủy hoặc bấm nút Back vật lý -> Xóa acc rác và quay về Auth Options
+                                    navController.navigate("auth_options") {
                                         popUpTo(0) { inclusive = true }
                                     }
                                 }

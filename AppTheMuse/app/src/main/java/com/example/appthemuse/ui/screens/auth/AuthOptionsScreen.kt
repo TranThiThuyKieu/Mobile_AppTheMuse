@@ -102,7 +102,8 @@ fun AuthOptionsScreen(
                 GoogleButton(
                     onClick = {
                         coroutineScope.launch {
-                            AuthUtils.triggerGoogleSignIn(context, autoSelect = true) { idToken ->
+                            val idToken = AuthUtils.triggerGoogleSignIn(context, autoSelect = true)
+                            if (idToken != null) {
                                 viewModel.loginWithGoogle(idToken)
                             }
                         }
@@ -114,7 +115,7 @@ fun AuthOptionsScreen(
                 PrimaryButton(
                     text = "ĐĂNG NHẬP",
                     onClick = onNavigateToLoginEmail,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
