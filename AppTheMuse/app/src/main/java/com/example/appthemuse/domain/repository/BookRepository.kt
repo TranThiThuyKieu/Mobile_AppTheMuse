@@ -11,4 +11,13 @@ interface BookRepository {
     suspend fun getCategories(): List<Category>
     suspend fun getNewReleaseBooks(limit: Long = 5): List<Book>
     suspend fun getAllBooks(limit: Long = 50): List<Book>
+    suspend fun saveSearchHistory(userId: String, keyword: String)
+    suspend fun getSearchHistory(userId: String): List<String>
+    suspend fun getBooksByAuthor(authorId: String): List<Book>
+    suspend fun createBook(book: Book, imageUriStr: String?): String
+    suspend fun getBookById(bookId: String): Book?
+    suspend fun getChapters(bookId: String): List<com.example.appthemuse.domain.model.Chapter>
+    suspend fun getVoteCount(bookId: String): Int
+    suspend fun getCommentCount(bookId: String): Int
+    suspend fun createChapter(bookId: String, title: String, content: String): String
 }

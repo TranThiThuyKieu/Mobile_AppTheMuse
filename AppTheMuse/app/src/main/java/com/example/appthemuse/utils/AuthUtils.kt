@@ -6,6 +6,7 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
+import android.widget.Toast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,7 +20,7 @@ object AuthUtils {
         val credentialManager = CredentialManager.create(context)
         val googleIdOption = GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(false)
-            .setServerClientId("659976378491-9qj7cshcgejrqb40v37s7unp8qf2v89v.apps.googleusercontent.com")
+            .setServerClientId("479660421086-7574prv9oqu55h5qrbj0vto24kr5abqu.apps.googleusercontent.com")
             .setAutoSelectEnabled(autoSelect)
             .build()
 
@@ -36,6 +37,7 @@ object AuthUtils {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+                Toast.makeText(context, "Lỗi đăng nhập Google: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
             }
         }
     }

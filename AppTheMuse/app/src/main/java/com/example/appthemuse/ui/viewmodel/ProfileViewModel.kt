@@ -2,8 +2,8 @@ package com.example.appthemuse.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
+import com.example.appthemuse.domain.repository.UserRepository
+import com.example.appthemuse.ui.model.UserUi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -11,92 +11,71 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class ProfileUiState(
-    val username: String = "",
-    val email: String = "",
-    val readCount: Int = 12,
-    val favoriteCount: Int = 48,
-    val downloadedCount: Int = 5,
+    val isLoading: Boolean = false,
+    val user: UserUi = UserUi(),
     val fontSize: String = "Trung bình",
     val fontSizeValue: Float = 0.5f,
     val lineSpacing: String = "Vừa",
-    val themeMode: String = "Dark"
+    val themeMode: String = "Dark",
+    val errorMessage: String? = null
 )
 
-class ProfileViewModel : ViewModel() {
+class ProfileViewModel(
+    private val userRepository: UserRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
-
     init {
-        firebaseAuth.addAuthStateListener { auth ->
-            if (auth.currentUser == null) {
-                _uiState.update {
-                    it.copy(username = "Chưa đăng nhập", email = "Vui lòng đăng nhập lại")
-                }
-            }
-        }
         refreshUserProfile()
     }
 
     fun refreshUserProfile() {
-        val currentUser = firebaseAuth.currentUser
-        if (currentUser != null) {
-            val email = currentUser.email ?: "Chưa cập nhật email"
+        if (userRepository.isUserLoggedIn()) {
+            val email = userRepository.getCurrentUserEmail() ?: "Chưa cập nhật email"
+            val uid = userRepository.getCurrentUserUid()
 
-            _uiState.update {
-                it.copy(username = "", email = email)
+            // 🛠️ Sửa lỗi 1: Copy lồng email và trạng thái đang tải vào object user
+            _uiState.update { currentState ->
+                currentState.copy(
+                    isLoading = true,
+                    user = currentState.user.copy(email = email, username = "")
+                )
             }
 
-            // Gọi thẳng Firestore để lấy thông tin thực tế
-            fetchUserData(currentUser.uid)
+            if (uid != null) {
+                viewModelScope.launch {
+                    try {
+                        val name = userRepository.getUserName(uid)
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                isLoading = false,
+                                user = currentState.user.copy(username = name)
+                            )
+                        }
+                    } catch (e: Exception) {
+                        _uiState.update { currentState ->
+                            currentState.copy(
+                                isLoading = false,
+                                errorMessage = e.localizedMessage,
+                                user = currentState.user.copy(username = "Lỗi tải dữ liệu")
+                            )
+                        }
+                    }
+                }
+            }
         } else {
-            _uiState.update {
-                it.copy(username = "Chưa đăng nhập", email = "Vui lòng đăng nhập lại")
+            // 🛠️ Sửa lỗi 2: Copy lồng khi người dùng chưa đăng nhập
+            _uiState.update { currentState ->
+                currentState.copy(
+                    user = currentState.user.copy(
+                        username = "Chưa đăng nhập",
+                        email = "Vui lòng đăng nhập lại"
+                    )
+                )
             }
         }
-    }
-
-    private fun fetchUserData(uid: String) {
-        firestore.collection("người dùng").document(uid)
-            .get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    val firestoreName = document.getString("username") ?: document.getString("tên_người_dùng")
-                    if (!firestoreName.isNullOrEmpty()) {
-                        _uiState.update { it.copy(username = firestoreName) }
-                    } else {
-                        _uiState.update { it.copy(username = "Người dùng") }
-                    }
-                } else {
-                    fetchUserDataFallback(uid)
-                }
-            }
-            .addOnFailureListener {
-                fetchUserDataFallback(uid)
-            }
-    }
-
-    private fun fetchUserDataFallback(uid: String) {
-        firestore.collection("users").document(uid)
-            .get()
-            .addOnSuccessListener { document ->
-                if (document != null && document.exists()) {
-                    val firestoreName = document.getString("username")
-                    if (!firestoreName.isNullOrEmpty()) {
-                        _uiState.update { it.copy(username = firestoreName) }
-                    } else {
-                        _uiState.update { it.copy(username = "Người dùng") }
-                    }
-                } else {
-                    _uiState.update { it.copy(username = "Người dùng") }
-                }
-            }
-            .addOnFailureListener {
-                _uiState.update { it.copy(username = "Lỗi tải dữ liệu") }
-            }
     }
 
     fun updateFontSize(value: Float) {
@@ -117,6 +96,17 @@ class ProfileViewModel : ViewModel() {
     }
 
     fun logout() {
-        firebaseAuth.signOut()
+        viewModelScope.launch {
+            userRepository.logout()
+            // 🛠️ Sửa lỗi 3: Reset thông tin user sau khi đăng xuất thành công
+            _uiState.update { currentState ->
+                currentState.copy(
+                    user = currentState.user.copy(
+                        username = "Chưa đăng nhập",
+                        email = "Vui lòng đăng nhập lại"
+                    )
+                )
+            }
+        }
     }
 }

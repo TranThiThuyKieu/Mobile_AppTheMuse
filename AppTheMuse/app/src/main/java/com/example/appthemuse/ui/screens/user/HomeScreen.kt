@@ -33,14 +33,20 @@ import com.example.appthemuse.ui.viewmodel.HomeViewModel
 import com.example.appthemuse.ui.model.BookUi
 import android.widget.Toast
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
+fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookClick: (String) -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-
+    var showSearch by remember {
+        mutableStateOf(false)
+    }
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { error ->
             Toast.makeText(context, error, Toast.LENGTH_LONG).show()
@@ -48,7 +54,9 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
     }
 
     Scaffold(
-        topBar = { HomeTopBar() },
+        topBar = { HomeTopBar(onSearchClick = {
+            showSearch = true
+        }) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         if (uiState.isLoading) {
@@ -76,17 +84,29 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
                         }
                     }
                 }
-                item { SectionHeader(title = "Truyện Hot") }
+                // Chuyển sang trang hiển thị tất cả truyện hot
+                item { SectionHeader(title = "Truyện Hot", onSeeMoreClick = {
+                        navController.navigate("book/Truyện Hot/hot")
+                    })
+                }
                 items(uiState.trendingBooks.take(2)) { book ->
                     VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
                 }
-                item { SectionHeader(title = "Đề xuất cho bạn") }
+                // Chuyển sang trang hiển thị tất cả truyện được đề xuất
+                item { SectionHeader(title="Đề xuất cho bạn", onSeeMoreClick={
+                        navController.navigate("book/Đề xuất/recommend")
+                    }
+                ) }
                 items(uiState.recommendedBooks.take(2)) { book ->
                     VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
                 }
                 if (uiState.recentBooks.isNotEmpty()) {
+                    // Chuyển sang trang hiển thị tất cả truyện mới cập nhật
                     item {
-                        SectionHeader(title = "Mới cập nhật")
+                        SectionHeader(title="Mới cập nhật", onSeeMoreClick={
+                                navController.navigate("book/Sách mới/new")
+                            }
+                        )
                         LazyRow(
                             contentPadding = PaddingValues(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -96,46 +116,73 @@ fun HomeScreen(viewModel: HomeViewModel, onBookClick: (String) -> Unit) {
                             }
                         }
                     }
-                    item {
-                        SectionHeader(title = "Khám phá thể loại")
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(2),
-                            modifier = Modifier.height(140.dp).padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)){
-                            items(uiState.categories.size){ index ->
-                                Card(
-                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                                ) {
-                                    Column(modifier = Modifier.fillMaxWidth().padding(16.dp),
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center) {
-                                        val category = uiState.categories[index]
-                                        Text(text = category.name, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(text = "${category.totalBooks} truyện", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    item { SectionHeader(title = "Sách mới phát hành") }
                     items(uiState.newReleaseBooks.take(2)) { book ->
                         VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
                     }
                 }
+                // Chuyển sang trang tất cả thể loại
+                item {
+                    SectionHeader(title = "Khám phá thể loại" ,onSeeMoreClick = {
+                        navController.navigate("categories")
+                    })
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        modifier = Modifier.height(140.dp).padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)){
+                        items(uiState.categories.size){ index ->
+                            val category = uiState.categories[index]
+                            Card(
+                                modifier = Modifier.clickable {
+                                    navController.navigate("book/${category.name}/${category.id.removePrefix("cate")}")
+                                },
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                            ) {
+                                Column(modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.Center) {
+                                    val category = uiState.categories[index]
+                                    Text(text = category.name, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    val count = uiState.allBooks.count {
+                                        it.category_id == category.id.removePrefix("cate")
+                                    }
+                                    Text(text = "$count truyện", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                    }
+                }
+                // Chuyển sang trang Sách mới phát hành
+                item { SectionHeader(title="Sách mới phát hành", onSeeMoreClick={
+                        navController.navigate("book/Sách mới/new")
+                    }
+                ) }
+                items(uiState.newReleaseBooks.take(2)) { book ->
+                    VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
+                }
+
             }
         }
+    }
+    // Hiển thị kết quả tìm kiếm
+    if (showSearch) {
+        SearchScreen(
+            viewModel = viewModel,
+            onClose = {
+                showSearch = false
+            }
+        )
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeTopBar() {
+fun HomeTopBar(onSearchClick: () -> Unit) {
     TopAppBar(
         title = { Text("The Muse", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
         actions = {
-            IconButton(onClick = {}) { Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onBackground) }
+            IconButton(onClick = onSearchClick) { Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onBackground) }
             IconButton(onClick = {}) { Icon(Icons.Default.Notifications, contentDescription = "Alerts", tint = MaterialTheme.colorScheme.onBackground) }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)

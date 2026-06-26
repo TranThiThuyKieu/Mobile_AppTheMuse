@@ -38,10 +38,11 @@ fun LoginScreen(
 
     LaunchedEffect(authState) {
         if (authState is AuthState.LoginSuccess) {
-            val hasGenres = (authState as AuthState.LoginSuccess).hasGenres
-            Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+            val successState = authState as AuthState.LoginSuccess
+            // Đọc dữ liệu từ Object UI model truyền ra
+            Toast.makeText(context, "Chào mừng ${successState.user.username} trở lại!", Toast.LENGTH_SHORT).show()
             viewModel.resetState()
-            onNavigateToHome(hasGenres)
+            onNavigateToHome(successState.hasGenres)
         } else if (authState is AuthState.Error) {
             Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_LONG).show()
             viewModel.resetState()
@@ -102,7 +103,13 @@ fun LoginScreen(
 
                 PrimaryButton(
                     text = "Đăng nhập",
-                    onClick = { viewModel.login(email, password) },
+                    onClick = {
+                        if (email.trim().isEmpty() || password.trim().isEmpty()) {
+                            Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            viewModel.login(email.trim(), password.trim())
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth()
                 )
 

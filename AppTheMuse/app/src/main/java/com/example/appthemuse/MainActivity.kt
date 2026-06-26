@@ -21,8 +21,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.appthemuse.data.remote.AuthService
 import com.example.appthemuse.data.remote.FirestoreService
+import com.example.appthemuse.data.remote.FirebaseUserService // 🌟 Thêm import này
 import com.example.appthemuse.data.repository.AuthRepositoryImpl
 import com.example.appthemuse.data.repository.BookRepositoryImpl
+import com.example.appthemuse.data.repository.UserRepositoryImpl // 🌟 Thêm import này
 import com.example.appthemuse.ui.screens.auth.*
 import com.example.appthemuse.ui.screens.user.*
 import com.example.appthemuse.ui.theme.AppTheMuseTheme
@@ -34,19 +36,39 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.appthemuse.data.repository.LibraryRepositoryImpl
+import com.example.appthemuse.ui.screen.auth.VerifyScreen
+import com.example.appthemuse.ui.screens.user.creator_studio.CreateBookScreen
+import com.example.appthemuse.ui.screens.user.creator_studio.CreatorStudioScreen
+import com.example.appthemuse.ui.viewmodel.EditProfileViewModel
+import com.example.appthemuse.ui.viewmodel.LibraryViewModel
+import com.example.appthemuse.ui.viewmodel.SecurityViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.example.appthemuse.ui.viewmodel.CreatorStudioViewModel
+import com.example.appthemuse.ui.viewmodel.CreateBookViewModel
+import com.example.appthemuse.ui.viewmodel.CreatorBookDetailViewModel
+import com.example.appthemuse.ui.screens.user.creator_studio.CreatorBookDetailScreen
+import com.example.appthemuse.ui.viewmodel.AddChapterViewModel
+import com.example.appthemuse.ui.screens.user.creator_studio.AddChapterScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // 1. Khởi tạo các Service tầng Remote
         val authService = AuthService()
         val firestoreService = FirestoreService()
+        val firebaseUserService = FirebaseUserService() // 🌟 Khởi tạo Service User mới
 
-        // 👉 Khởi tạo các Repository Implementation
-        val authRepository = AuthRepositoryImpl(authService)
+        // 2. Khởi tạo các Repository Implementation
+        val authRepository = AuthRepositoryImpl(authService, firestoreService)
         val bookRepository = BookRepositoryImpl(firestoreService)
+        val libraryRepository = LibraryRepositoryImpl(firestoreService)
+        val userRepository = UserRepositoryImpl(firebaseUserService) // 🌟 Khởi tạo Repo User mới
 
+        // 3. Khai báo Factory để tạo ViewModel có tham số truyền vào
         val viewModelFactory = object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -57,6 +79,22 @@ class MainActivity : ComponentActivity() {
                         GenreViewModel(authRepository, bookRepository) as T
                     modelClass.isAssignableFrom(HomeViewModel::class.java) ->
                         HomeViewModel(bookRepository) as T
+                    modelClass.isAssignableFrom(LibraryViewModel::class.java) ->
+                        LibraryViewModel(libraryRepository) as T
+                    modelClass.isAssignableFrom(ProfileViewModel::class.java) -> // 🌟 Nạp ProfileViewModel vào Factory
+                        ProfileViewModel(userRepository) as T
+                    modelClass.isAssignableFrom(EditProfileViewModel::class.java) ->
+                        EditProfileViewModel(userRepository) as T
+                    modelClass.isAssignableFrom(SecurityViewModel::class.java) -> // 🌟 Nạp SecurityViewModel vào Factory
+                        SecurityViewModel() as T
+                    modelClass.isAssignableFrom(CreatorStudioViewModel::class.java) ->
+                        CreatorStudioViewModel(bookRepository, userRepository) as T
+                    modelClass.isAssignableFrom(CreateBookViewModel::class.java) ->
+                        CreateBookViewModel(bookRepository, userRepository) as T
+                    modelClass.isAssignableFrom(CreatorBookDetailViewModel::class.java) ->
+                        CreatorBookDetailViewModel(bookRepository) as T
+                    modelClass.isAssignableFrom(AddChapterViewModel::class.java) ->
+                        AddChapterViewModel(bookRepository) as T
                     else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                 }
             }
@@ -65,6 +103,14 @@ class MainActivity : ComponentActivity() {
         val authViewModel by viewModels<AuthViewModel> { viewModelFactory }
         val genreViewModel by viewModels<GenreViewModel> { viewModelFactory }
         val homeViewModel by viewModels<HomeViewModel> { viewModelFactory }
+        val libraryViewModel by viewModels<LibraryViewModel> { viewModelFactory }
+        val profileViewModel by viewModels<ProfileViewModel> { viewModelFactory }
+        val editProfileViewModel by viewModels<EditProfileViewModel> { viewModelFactory }
+        val securityViewModel by viewModels<SecurityViewModel> { viewModelFactory }
+        val creatorStudioViewModel by viewModels<CreatorStudioViewModel> { viewModelFactory }
+        val createBookViewModel by viewModels<CreateBookViewModel> { viewModelFactory }
+        val creatorBookDetailViewModel by viewModels<CreatorBookDetailViewModel> { viewModelFactory }
+        val addChapterViewModel by viewModels<AddChapterViewModel> { viewModelFactory }
 
         setContent {
             val systemInDarkTheme = isSystemInDarkTheme()
@@ -72,7 +118,6 @@ class MainActivity : ComponentActivity() {
 
             AppTheMuseTheme(darkTheme = isDarkTheme) {
                 val navController = rememberNavController()
-                // Kiểm tra trạng thái đăng nhập ngay từ đầu
                 val currentUser = FirebaseAuth.getInstance().currentUser
                 val startDestination = if (currentUser != null) "home" else "welcome"
 
@@ -80,105 +125,209 @@ class MainActivity : ComponentActivity() {
                     bottomBar = {
                         val navBackStackEntry by navController.currentBackStackEntryAsState()
                         val currentRoute = navBackStackEntry?.destination?.route
-                        // Chỉ hiện bottom bar ở màn hình chính
                         if (currentRoute in listOf("home", "explore", "bookshelf", "profile")) {
                             AppBottomBar(navController = navController, currentRoute = currentRoute)
                         }
                     }
-                    ) { paddingValues ->
-                        NavHost(
-                            navController = navController,
-                            startDestination = "welcome",
-                            modifier = Modifier.padding(paddingValues)
-                        ) {
-                            composable("welcome") {
-                                WelcomeScreen(onNavigateToLogin = { navController.navigate("auth_options") })
-                            }
+                ) { paddingValues ->
+                    NavHost(
+                        navController = navController,
+                        startDestination = startDestination, // 🌟 Nên dùng startDestination động này để mở app vào thẳng Home nếu đã login
+                        modifier = Modifier.padding(paddingValues)
+                    ) {
+                        composable("welcome") {
+                            WelcomeScreen(onNavigateToLogin = { navController.navigate("auth_options") })
+                        }
 
-                            composable("auth_options") {
-                                AuthOptionsScreen(
-                                    viewModel = authViewModel,
-                                    onNavigateToHome = { hasGenres ->
-                                        if (hasGenres) {
-                                            navController.navigate("home") { popUpTo("welcome") { inclusive = true } }
-                                        } else {
-                                            navController.navigate("genre_selection") { popUpTo("welcome") { inclusive = true } }
-                                        }
-                                    },
-                                    onNavigateToLoginEmail = { navController.navigate("login") },
-                                    onNavigateToRegister = { navController.navigate("register") }
-                                )
-                            }
-
-                            composable("login") {
-                                LoginScreen(
-                                    viewModel = authViewModel,
-                                    onNavigateToHome = { hasGenres ->
-                                        if (hasGenres) {
-                                            navController.navigate("home") { popUpTo("welcome") { inclusive = true } }
-                                        } else {
-                                            navController.navigate("genre_selection") { popUpTo("welcome") { inclusive = true } }
-                                        }
-                                    },
-                                    onNavigateToRegister = { navController.navigate("register") }
-                                )
-                            }
-
-                            composable("register") {
-                                RegisterScreen(
-                                    viewModel = authViewModel,
-                                    onRegisterSuccess = {
+                        composable("auth_options") {
+                            AuthOptionsScreen(
+                                viewModel = authViewModel,
+                                onNavigateToHome = { hasGenres ->
+                                    if (hasGenres) {
+                                        navController.navigate("home") { popUpTo("welcome") { inclusive = true } }
+                                    } else {
                                         navController.navigate("genre_selection") { popUpTo("welcome") { inclusive = true } }
-                                    },
-                                    onNavigateToLogin = {
-                                        navController.navigate("login") { popUpTo("auth_options") }
                                     }
-                                )
-                            }
+                                },
+                                onNavigateToLoginEmail = { navController.navigate("login") },
+                                onNavigateToRegister = { navController.navigate("register") }
+                            )
+                        }
 
-                            composable("genre_selection") {
-                                GenreSelectionScreen(
-                                    viewModel = genreViewModel,
-                                    onNavigateToHome = {
-                                        navController.navigate("home") { popUpTo("genre_selection") { inclusive = true } }
+                        composable("login") {
+                            LoginScreen(
+                                viewModel = authViewModel,
+                                onNavigateToHome = { hasGenres ->
+                                    if (hasGenres) {
+                                        navController.navigate("home") { popUpTo("welcome") { inclusive = true } }
+                                    } else {
+                                        navController.navigate("genre_selection") { popUpTo("welcome") { inclusive = true } }
                                     }
-                                )
-                            }
+                                },
+                                onNavigateToRegister = { navController.navigate("register") }
+                            )
+                        }
 
-                            composable("home") {
-                                HomeScreen(
-                                    viewModel = homeViewModel,
-                                    onBookClick = { bookId -> }
-                                )
-                            }
-
-                            composable("explore") {
-                                ExploreScreen()
-                            }
-
-                            composable("bookshelf") {
-                                Surface(modifier = Modifier.fillMaxSize()) {
-                                    Text(text = "Màn hình Tủ sách đang phát triển")
+                        composable("register") {
+                            RegisterScreen(
+                                viewModel = authViewModel,
+                                onRegisterSuccess = {
+                                    navController.navigate("verify_email")
+                                },
+                                onNavigateToLogin = {
+                                    navController.navigate("login") { popUpTo("auth_options") }
                                 }
-                            }
-
-                            composable("profile") {
-                                val profileViewModel: ProfileViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-                                ProfileScreen(
-                                    viewModel = profileViewModel,
-                                    onThemeChanged = { themeName ->
-                                        isDarkTheme = (themeName == "Dark")
-                                    },
-                                    onLogout = {
-                                        navController.navigate("welcome") {
-                                            popUpTo(0) { inclusive = true }
-                                        }
+                            )
+                        }
+                        composable("verify_email") {
+                            VerifyScreen(
+                                viewModel = authViewModel,
+                                onVerified = {
+                                    navController.navigate("genre_selection") {
+                                        popUpTo("welcome") { inclusive = true }
                                     }
-                                )
-                            }
+                                },
+                                onExpired = {
+                                    navController.navigate("welcome") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+
+                        composable("genre_selection") {
+                            GenreSelectionScreen(
+                                viewModel = genreViewModel,
+                                onNavigateToHome = {
+                                    navController.navigate("home") { popUpTo("genre_selection") { inclusive = true } }
+                                }
+                            )
+                        }
+
+                        composable("home") {
+                            HomeScreen(
+                                viewModel = homeViewModel,
+                                navController = navController,
+                                onBookClick = { bookId -> }
+                            )
+                        }
+
+                        composable("explore") {
+                            ExploreScreen(viewModel = homeViewModel,navController = navController, onBookClick = { })
+                        }
+                        // chuyển qua trang tủ sách
+                        composable("bookshelf") {
+                            LibraryScreen(
+                                viewModel = libraryViewModel,
+                                homeViewModel = homeViewModel,
+                                navController = navController,
+                                userId = FirebaseAuth.getInstance().currentUser?.uid ?: "",
+                                onBookClick = { }
+                            )
+                        }
+
+                        composable("profile") {
+                            // 🌟 SỬA ĐỔI: Sử dụng thẳng profileViewModel đã được Factory tạo an toàn ở phía trên
+                            ProfileScreen(
+                                viewModel = profileViewModel,
+                                onThemeChanged = { themeName ->
+                                    isDarkTheme = (themeName == "Dark")
+                                },
+                                onEditProfileClick = {
+                                    navController.navigate("edit_profile")
+                                },
+                                onSecurityClick = { navController.navigate("security_route") },
+                                onCreatorStudioClick = {
+                                    navController.navigate("creator_studio")
+                                },
+                                onLogout = {
+                                    navController.navigate("welcome") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+                        // route hiển thị danh sách sách
+                        composable("book/{title}/{type}") { backStack ->
+                            BookListScreen(
+                                title = backStack.arguments?.getString("title") ?: "",
+                                type = backStack.arguments?.getString("type") ?: "",
+                                viewModel = homeViewModel,
+                                navController = navController,
+                                onBookClick = {}
+                            )
+                        }
+                        // route hiển thị danh sách thể loại
+                        composable("categories"){
+                            CategoryListScreen(viewModel= homeViewModel, navController = navController)
+                        }
+                        composable("edit_profile") {
+                            EditProfileScreen(
+                                viewModel = editProfileViewModel,
+                                onBackClick = { navController.popBackStack() }
+                            )
+                        }
+                        composable("security_route") {
+                            SecurityScreen(
+                                viewModel = securityViewModel,
+                                onBackClick = { navController.popBackStack() }
+                            )
+                        }
+                        composable("creator_studio") {
+                            CreatorStudioScreen(
+                                viewModel = creatorStudioViewModel,
+                                navController = navController,
+                                onBackClick = { navController.popBackStack() },
+                                onCreateBookClick = { navController.navigate("create_book") }
+                            )
+                        }
+
+                        // 🌟 Chi tiết tác phẩm trong Góc tác giả
+                        composable("creator_book_detail/{bookId}") { backStack ->
+                            val bookId = backStack.arguments?.getString("bookId") ?: ""
+                            val detailUiState by creatorBookDetailViewModel.uiState.collectAsState()
+                            CreatorBookDetailScreen(
+                                bookId = bookId,
+                                viewModel = creatorBookDetailViewModel,
+                                onBackClick = { navController.popBackStack() },
+                                onPostChapterClick = { id ->
+                                    val nextChapter = detailUiState.chapters.size + 1
+                                    navController.navigate("add_chapter/$id/$nextChapter")
+                                }
+                            )
+                        }
+
+                        // 🌟 Thêm chương mới
+                        composable("add_chapter/{bookId}/{chapterNumber}") { backStack ->
+                            val bookId = backStack.arguments?.getString("bookId") ?: ""
+                            val chapterNumber = backStack.arguments?.getString("chapterNumber")?.toIntOrNull() ?: 1
+                            AddChapterScreen(
+                                bookId = bookId,
+                                chapterNumber = chapterNumber,
+                                viewModel = addChapterViewModel,
+                                onBackClick = { navController.popBackStack() },
+                                onSuccess = {
+                                    // Reload danh sách chương và quay về trang chi tiết
+                                    creatorBookDetailViewModel.loadBookDetails(bookId)
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        // 🌟 Tạo tác phẩm mới (Create Book)
+                        composable("create_book") {
+                            CreateBookScreen(
+                                viewModel = createBookViewModel,
+                                onBackClick = { navController.popBackStack() },
+                                onSuccess = {
+                                    createBookViewModel.resetState()
+                                    navController.popBackStack()
+                                }
+                            )
                         }
                     }
                 }
             }
         }
     }
+}
