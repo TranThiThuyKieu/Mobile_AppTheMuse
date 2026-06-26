@@ -1,6 +1,6 @@
 # MÔ HÌNH KIẾN TRÚC HỆ THỐNG "THE MUSE" (CLEAN ARCHITECTURE)
 ```text
-app/src/main/java/com/example/appthemuse/
+│app/src/main/java/com/example/appthemuse/
 ├── 📂 data/                // Nơi lấy dữ liệu (Firebase, Room)
 │   ├── 📂 local/           // Room Database (dao, entity, database)
 │   ├── 📂 remote/          // Firebase Services (AuthService, FirestoreService, StorageService)
@@ -21,3 +21,4 @@ app/src/main/java/com/example/appthemuse/
 └── 📂 utils/               // Các hàm tiện ích dùng chung
     ├── 📂 extensions/      // Hàm mở rộng (ví dụ: format date)
     └── 📂 constants/       // Các hằng số (Firebase path, key...)
+
