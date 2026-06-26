@@ -13,10 +13,10 @@ composeBom = "2024.09.00"
 firebaseBom = "33.1.1"
 
 # Room Database
-room = "2.6.1"
+room = "2.7.2"
 
 # KSP(cùng phiên bảng kotlin)
-ksp = "2.0.21-1.0.27"
+ksp = "2.2.10-2.0.2"
 
 # Hilt
 hilt = "2.51.1"

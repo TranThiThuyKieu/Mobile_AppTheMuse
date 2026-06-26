@@ -57,6 +57,8 @@ fun LibraryScreen(
     LaunchedEffect(userId) {
         viewModel.loadFavoriteBooks(userId)
         viewModel.loadHistoryBooks(userId)
+        viewModel.insertBook()
+        viewModel.loadDownloadedBooks()
     }
 
     Scaffold(
@@ -114,8 +116,13 @@ fun LibraryScreen(
                 }
                 // Tab Đã tải
                 2 -> {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Đã tải")
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(uiState.downloadedBooks) { book ->
+                            VerticalBookItem(book = book, onClick = {
+                                    onBookClick(book.id)
+                                }
+                            )
+                        }
                     }
                 }
             }
