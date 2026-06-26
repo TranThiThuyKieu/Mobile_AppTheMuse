@@ -5,6 +5,10 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.tasks.await
 import com.google.firebase.Timestamp
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 class FirestoreService {
     private val firestore = FirebaseFirestore.getInstance()
@@ -158,6 +162,73 @@ class FirestoreService {
         ratingCache[bookId] = rating
         return rating
     }
+
+    // Đếm số lượt bình chọn (favorites)
+    suspend fun getVoteCount(bookId: String): Int {
+        return try {
+            val snapshot = firestore.collection("favorites")
+                .whereEqualTo("book_id", bookId.removePrefix("book").toInt())
+                .get()
+                .await()
+            snapshot.size()
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    // Đếm số lượt bình luận (reviews)
+    suspend fun getCommentCount(bookId: String): Int {
+        return try {
+            val snapshot = firestore.collection("reviews")
+                .whereEqualTo("book_id", bookId.removePrefix("book").toInt())
+                .get()
+                .await()
+            snapshot.size()
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+    // Lấy danh sách chương của một tác phẩm (không dùng orderBy để tránh cần Composite Index)
+    suspend fun getChaptersRaw(bookId: String): List<DocumentSnapshot> {
+        return try {
+            val snapshot = firestore.collection("chapters")
+                .whereEqualTo("book_id", bookId.removePrefix("book").toIntOrNull() ?: return emptyList())
+                .get()
+                .await()
+            snapshot.documents
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "getChaptersRaw error: ${e.message}")
+            emptyList()
+        }
+    }
+
+    // Tạo chương mới cho một tác phẩm
+    suspend fun createChapterRaw(bookId: String, chapterData: Map<String, Any>): String {
+        val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: return ""
+        // Đếm số chương hiện tại để xác định chapter_number tiếp theo
+        val existingCount = firestore.collection("chapters")
+            .whereEqualTo("book_id", bookNumId)
+            .get().await().size()
+        val nextChapterNumber = existingCount + 1
+        // 🆔 Tạo document ID theo định dạng: book{N}-chapter{N} (vd: book1-chapter1)
+        val documentId = "${bookId}_chapter$nextChapterNumber"
+        val dataWithNumber = chapterData.toMutableMap()
+        dataWithNumber["chapter_number"] = nextChapterNumber
+        dataWithNumber["book_id"] = bookNumId
+        dataWithNumber["created_at"] = com.google.firebase.Timestamp.now()
+        dataWithNumber["view_count"] = 0L
+        dataWithNumber["status"] = "đã đăng"
+        // Dùng set() với document ID tùy chỉnh thay vì add() tạo ID ngẫu nhiên
+        firestore.collection("chapters").document(documentId).set(dataWithNumber).await()
+        // Cập nhật chapter_count trong document sách
+        firestore.collection("books").document(bookId)
+            .update("chapter_count", nextChapterNumber).await()
+        // Xóa cache để lần sau load sẽ lấy dữ liệu mới
+        chapterCache.remove(bookId)
+        return documentId
+    }
+
     // Thêm lịch sử tìm kiếm
     suspend fun addSearchHistory(userId: String, keyword: String) {
         if (keyword.isBlank()) return
@@ -201,5 +272,100 @@ class FirestoreService {
             .await()
             .documents
             .firstOrNull()
+    }
+    // Lấy sách dựa theo author_id (Dành cho Góc tác giả)
+    suspend fun getBooksByAuthorRaw(authorId: String): List<DocumentSnapshot> {
+        return try {
+            val snapshot = firestore.collection("books")
+                .whereEqualTo("author_id", authorId)
+                .get()
+                .await()
+            snapshot.documents
+        } catch (e: Exception) {
+            val snapshot = firestore.collection("sách")
+                .whereEqualTo("tác_giả_id", authorId)
+                .get()
+                .await()
+            snapshot.documents
+        }
+    }
+    // Tải ảnh bìa lên ImgBB (Bỏ qua Firebase Storage để sửa lỗi bắt buộc nâng cấp)
+    suspend fun uploadBookCoverToImgBB(base64Image: String): String = withContext(Dispatchers.IO) {
+        val apiKey = "a91c56ed41e002d0d9caf4919a1ee092"
+
+        val urlEncodedImage = java.net.URLEncoder.encode(base64Image, "UTF-8")
+        val url = java.net.URL("https://api.imgbb.com/1/upload")
+        val connection = url.openConnection() as java.net.HttpURLConnection
+        connection.requestMethod = "POST"
+        connection.doOutput = true
+        connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+
+        val postData = "key=$apiKey&image=$urlEncodedImage"
+        connection.outputStream.write(postData.toByteArray(Charsets.UTF_8))
+
+        val responseCode = connection.responseCode
+        if (responseCode == java.net.HttpURLConnection.HTTP_OK) {
+            val response = connection.inputStream.bufferedReader().use { it.readText() }
+            val jsonObject = org.json.JSONObject(response)
+            val dataObject = jsonObject.getJSONObject("data")
+            return@withContext dataObject.getString("url")
+        } else {
+            val errorResponse = connection.errorStream?.bufferedReader()?.use { it.readText() }
+            throw Exception("Lỗi ImgBB: $responseCode - $errorResponse")
+        }
+    }
+
+    // Lưu document sách mới vào Firestore (Xử lý an toàn khi nhiều người đăng cùng lúc)
+    suspend fun createBookRaw(bookData: Map<String, Any>): String {
+        val counterRef = firestore.collection("metadata").document("book_counter")
+
+        // 1. Kiểm tra xem bộ đếm đã được tạo trước đó chưa
+        val counterSnapshot = counterRef.get().await()
+        var fallbackCount = 0L
+        if (!counterSnapshot.exists()) {
+            // Nếu chưa có bộ đếm, lấy tổng số lượng sách hiện có làm mốc ban đầu (chỉ chạy 1 lần đầu tiên)
+            val countQuery = firestore.collection("books").count()
+            val aggregateSnapshot = countQuery.get(AggregateSource.SERVER).await()
+            fallbackCount = aggregateSnapshot.count
+        }
+
+        // 2. Chạy Transaction để khóa dữ liệu (tránh trùng ID)
+        return firestore.runTransaction { transaction ->
+            // Đọc lại trạng thái mới nhất của bộ đếm bên trong transaction
+            val snapshot = transaction.get(counterRef)
+
+            val currentCount = if (snapshot.exists()) {
+                snapshot.getLong("count") ?: 0L
+            } else {
+                fallbackCount
+            }
+
+            val nextNumber = currentCount + 1
+            val newId = "book$nextNumber"
+            val documentRef = firestore.collection("books").document(newId)
+
+            val dataWithId = bookData.toMutableMap()
+            dataWithId["id"] = nextNumber // Lưu chỉ số (Long), không phải "book+số"
+
+            // Cập nhật hoặc khởi tạo giá trị bộ đếm
+            if (snapshot.exists()) {
+                transaction.update(counterRef, "count", nextNumber)
+            } else {
+                transaction.set(counterRef, mapOf("count" to nextNumber))
+            }
+
+            // Lưu document sách mới
+            transaction.set(documentRef, dataWithId)
+
+            newId // Trả về ID vừa tạo
+        }.await()
+    }
+    suspend fun deleteUserDocument(userId: String) {
+        try {
+            firestore.collection("users").document(userId).delete().await()
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Lỗi xóa user document: ${e.message}")
+            throw e
+        }
     }
 }

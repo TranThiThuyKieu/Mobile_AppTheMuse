@@ -6,6 +6,7 @@ import com.example.appthemuse.domain.model.User
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.model.CategoryUi
 import com.example.appthemuse.ui.model.UserUi
+import com.google.firebase.firestore.DocumentSnapshot
 
 fun Book.toBookUi(): BookUi {
     return BookUi(
@@ -39,5 +40,20 @@ fun User.toUserUi(): UserUi {
         role = this.role,
         isBlocked = this.isBlocked,
         favoriteGenres = this.favoriteGenres
+    )
+}
+fun mapDocumentToUser(
+    userId: String,
+    doc: DocumentSnapshot,
+    backupEmail: String
+): User {
+    val genresRaw = (doc.get("favorite_genres")) as? List<*>
+    return User(
+        id = userId,
+        username = doc.getString("username") ?: "Người dùng",
+        email = doc.getString("email") ?: backupEmail,
+        role = doc.getString("role") ?: "user",
+        isBlocked = doc.getBoolean("is_blocked") ?: false,
+        favoriteGenres = genresRaw?.map { it.toString() } ?: emptyList()
     )
 }

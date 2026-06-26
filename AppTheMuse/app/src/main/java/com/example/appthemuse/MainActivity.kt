@@ -36,12 +36,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.appthemuse.data.repository.LibraryRepositoryImpl
+import com.example.appthemuse.ui.screen.auth.VerifyScreen
+import com.example.appthemuse.ui.screens.user.creator_studio.CreateBookScreen
+import com.example.appthemuse.ui.screens.user.creator_studio.CreatorStudioScreen
 import com.example.appthemuse.ui.viewmodel.EditProfileViewModel
 import com.example.appthemuse.ui.viewmodel.LibraryViewModel
 import com.example.appthemuse.ui.viewmodel.SecurityViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.example.appthemuse.ui.viewmodel.CreatorStudioViewModel
+import com.example.appthemuse.ui.viewmodel.CreateBookViewModel
+import com.example.appthemuse.ui.viewmodel.CreatorBookDetailViewModel
+import com.example.appthemuse.ui.screens.user.creator_studio.CreatorBookDetailScreen
+import com.example.appthemuse.ui.viewmodel.AddChapterViewModel
+import com.example.appthemuse.ui.screens.user.creator_studio.AddChapterScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,6 +87,14 @@ class MainActivity : ComponentActivity() {
                         EditProfileViewModel(userRepository) as T
                     modelClass.isAssignableFrom(SecurityViewModel::class.java) -> // 🌟 Nạp SecurityViewModel vào Factory
                         SecurityViewModel() as T
+                    modelClass.isAssignableFrom(CreatorStudioViewModel::class.java) ->
+                        CreatorStudioViewModel(bookRepository, userRepository) as T
+                    modelClass.isAssignableFrom(CreateBookViewModel::class.java) ->
+                        CreateBookViewModel(bookRepository, userRepository) as T
+                    modelClass.isAssignableFrom(CreatorBookDetailViewModel::class.java) ->
+                        CreatorBookDetailViewModel(bookRepository) as T
+                    modelClass.isAssignableFrom(AddChapterViewModel::class.java) ->
+                        AddChapterViewModel(bookRepository) as T
                     else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                 }
             }
@@ -89,6 +107,10 @@ class MainActivity : ComponentActivity() {
         val profileViewModel by viewModels<ProfileViewModel> { viewModelFactory }
         val editProfileViewModel by viewModels<EditProfileViewModel> { viewModelFactory }
         val securityViewModel by viewModels<SecurityViewModel> { viewModelFactory }
+        val creatorStudioViewModel by viewModels<CreatorStudioViewModel> { viewModelFactory }
+        val createBookViewModel by viewModels<CreateBookViewModel> { viewModelFactory }
+        val creatorBookDetailViewModel by viewModels<CreatorBookDetailViewModel> { viewModelFactory }
+        val addChapterViewModel by viewModels<AddChapterViewModel> { viewModelFactory }
 
         setContent {
             val systemInDarkTheme = isSystemInDarkTheme()
@@ -150,10 +172,25 @@ class MainActivity : ComponentActivity() {
                             RegisterScreen(
                                 viewModel = authViewModel,
                                 onRegisterSuccess = {
-                                    navController.navigate("genre_selection") { popUpTo("welcome") { inclusive = true } }
+                                    navController.navigate("verify_email")
                                 },
                                 onNavigateToLogin = {
                                     navController.navigate("login") { popUpTo("auth_options") }
+                                }
+                            )
+                        }
+                        composable("verify_email") {
+                            VerifyScreen(
+                                viewModel = authViewModel,
+                                onVerified = {
+                                    navController.navigate("genre_selection") {
+                                        popUpTo("welcome") { inclusive = true }
+                                    }
+                                },
+                                onExpired = {
+                                    navController.navigate("welcome") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
                                 }
                             )
                         }
@@ -200,6 +237,9 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate("edit_profile")
                                 },
                                 onSecurityClick = { navController.navigate("security_route") },
+                                onCreatorStudioClick = {
+                                    navController.navigate("creator_studio")
+                                },
                                 onLogout = {
                                     navController.navigate("welcome") {
                                         popUpTo(0) { inclusive = true }
@@ -231,6 +271,58 @@ class MainActivity : ComponentActivity() {
                             SecurityScreen(
                                 viewModel = securityViewModel,
                                 onBackClick = { navController.popBackStack() }
+                            )
+                        }
+                        composable("creator_studio") {
+                            CreatorStudioScreen(
+                                viewModel = creatorStudioViewModel,
+                                navController = navController,
+                                onBackClick = { navController.popBackStack() },
+                                onCreateBookClick = { navController.navigate("create_book") }
+                            )
+                        }
+
+                        // 🌟 Chi tiết tác phẩm trong Góc tác giả
+                        composable("creator_book_detail/{bookId}") { backStack ->
+                            val bookId = backStack.arguments?.getString("bookId") ?: ""
+                            val detailUiState by creatorBookDetailViewModel.uiState.collectAsState()
+                            CreatorBookDetailScreen(
+                                bookId = bookId,
+                                viewModel = creatorBookDetailViewModel,
+                                onBackClick = { navController.popBackStack() },
+                                onPostChapterClick = { id ->
+                                    val nextChapter = detailUiState.chapters.size + 1
+                                    navController.navigate("add_chapter/$id/$nextChapter")
+                                }
+                            )
+                        }
+
+                        // 🌟 Thêm chương mới
+                        composable("add_chapter/{bookId}/{chapterNumber}") { backStack ->
+                            val bookId = backStack.arguments?.getString("bookId") ?: ""
+                            val chapterNumber = backStack.arguments?.getString("chapterNumber")?.toIntOrNull() ?: 1
+                            AddChapterScreen(
+                                bookId = bookId,
+                                chapterNumber = chapterNumber,
+                                viewModel = addChapterViewModel,
+                                onBackClick = { navController.popBackStack() },
+                                onSuccess = {
+                                    // Reload danh sách chương và quay về trang chi tiết
+                                    creatorBookDetailViewModel.loadBookDetails(bookId)
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        // 🌟 Tạo tác phẩm mới (Create Book)
+                        composable("create_book") {
+                            CreateBookScreen(
+                                viewModel = createBookViewModel,
+                                onBackClick = { navController.popBackStack() },
+                                onSuccess = {
+                                    createBookViewModel.resetState()
+                                    navController.popBackStack()
+                                }
                             )
                         }
                     }
