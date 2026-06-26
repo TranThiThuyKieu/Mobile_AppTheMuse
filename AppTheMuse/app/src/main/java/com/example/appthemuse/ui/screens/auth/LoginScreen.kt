@@ -14,6 +14,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.appthemuse.R
@@ -35,18 +36,58 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val authState by viewModel.authState
+    
+    var showForgotDialog by remember { mutableStateOf(false) }
+    var forgotEmail by remember { mutableStateOf("") }
 
     LaunchedEffect(authState) {
-        if (authState is AuthState.LoginSuccess) {
-            val successState = authState as AuthState.LoginSuccess
-            // Đọc dữ liệu từ Object UI model truyền ra
-            Toast.makeText(context, "Chào mừng ${successState.user.username} trở lại!", Toast.LENGTH_SHORT).show()
-            viewModel.resetState()
-            onNavigateToHome(successState.hasGenres)
-        } else if (authState is AuthState.Error) {
-            Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_LONG).show()
-            viewModel.resetState()
+        when (authState) {
+            is AuthState.LoginSuccess -> {
+                val successState = authState as AuthState.LoginSuccess
+                Toast.makeText(context, "Chào mừng ${successState.user.username} trở lại!", Toast.LENGTH_SHORT).show()
+                viewModel.resetState()
+                onNavigateToHome(successState.hasGenres)
+            }
+            is AuthState.PasswordResetSent -> {
+                Toast.makeText(context, "Link đặt lại mật khẩu đã được gửi vào Email của bạn!", Toast.LENGTH_LONG).show()
+                viewModel.resetState()
+                showForgotDialog = false
+            }
+            is AuthState.Error -> {
+                Toast.makeText(context, (authState as AuthState.Error).message, Toast.LENGTH_LONG).show()
+                viewModel.resetState()
+            }
+            else -> {}
         }
+    }
+
+    if (showForgotDialog) {
+        AlertDialog(
+            onDismissRequest = { showForgotDialog = false },
+            title = { Text("Quên mật khẩu") },
+            text = {
+                Column {
+                    Text("Nhập email để nhận link đặt lại mật khẩu (Giới hạn 5 lần/ngày).")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = forgotEmail,
+                        onValueChange = { forgotEmail = it },
+                        label = { Text("Email") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { viewModel.forgotPassword(forgotEmail) }) {
+                    Text("Gửi link")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showForgotDialog = false }) {
+                    Text("Hủy")
+                }
+            }
+        )
     }
 
     Surface(
@@ -99,7 +140,19 @@ fun LoginScreen(
                     singleLine = true
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                    Text(
+                        text = "Quên mật khẩu?",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 13.sp,
+                        modifier = Modifier.padding(vertical = 8.dp).clickable { 
+                            forgotEmail = email
+                            showForgotDialog = true 
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 PrimaryButton(
                     text = "Đăng nhập",
@@ -110,7 +163,7 @@ fun LoginScreen(
                             viewModel.login(email.trim(), password.trim())
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -120,7 +173,8 @@ fun LoginScreen(
                 GoogleButton(
                     onClick = {
                         coroutineScope.launch {
-                            AuthUtils.triggerGoogleSignIn(context, autoSelect = false) { idToken ->
+                            val idToken = AuthUtils.triggerGoogleSignIn(context, autoSelect = false)
+                            if (idToken != null) {
                                 viewModel.loginWithGoogle(idToken)
                             }
                         }

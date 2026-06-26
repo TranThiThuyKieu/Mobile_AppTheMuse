@@ -178,7 +178,9 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Box(
-                modifier = Modifier.fillMaxWidth().height(50.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (authState is AuthState.Loading) {
@@ -195,7 +197,7 @@ fun RegisterScreen(
                                 viewModel.register(email, password, username)
                             }
                         },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
