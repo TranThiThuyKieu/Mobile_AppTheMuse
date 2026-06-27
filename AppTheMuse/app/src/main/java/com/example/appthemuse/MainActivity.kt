@@ -96,12 +96,18 @@ class MainActivity : ComponentActivity() {
                         BookDetailViewModel(bookRepository, libraryRepository, downloadRepository) as T
                     modelClass.isAssignableFrom(ReadingViewModel::class.java) ->
                         ReadingViewModel(bookRepository, downloadRepository) as T
-                    modelClass.isAssignableFrom(com.example.appthemuse.ui.viewmodel.AdminBookManagementViewModel::class.java) ->
-                        com.example.appthemuse.ui.viewmodel.AdminBookManagementViewModel() as T
-                    modelClass.isAssignableFrom(com.example.appthemuse.ui.viewmodel.AdminBookDetailViewModel::class.java) ->
-                        com.example.appthemuse.ui.viewmodel.AdminBookDetailViewModel() as T
-                    modelClass.isAssignableFrom(com.example.appthemuse.ui.viewmodel.AdminReviewModerationViewModel::class.java) ->
-                        com.example.appthemuse.ui.viewmodel.AdminReviewModerationViewModel() as T
+                    modelClass.isAssignableFrom(AdminDashboardViewModel::class.java) ->
+                        AdminDashboardViewModel() as T
+                    modelClass.isAssignableFrom(AdminUserViewModel::class.java) ->
+                        AdminUserViewModel() as T
+                    modelClass.isAssignableFrom(AdminUserDetailViewModel::class.java) ->
+                        AdminUserDetailViewModel() as T
+                    modelClass.isAssignableFrom(AdminBookManagementViewModel::class.java) ->
+                        AdminBookManagementViewModel() as T
+                    modelClass.isAssignableFrom(AdminBookDetailViewModel::class.java) ->
+                        AdminBookDetailViewModel() as T
+                    modelClass.isAssignableFrom(AdminReviewModerationViewModel::class.java) ->
+                        AdminReviewModerationViewModel() as T
                     else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                 }
             }
@@ -121,9 +127,12 @@ class MainActivity : ComponentActivity() {
         val bookDetailViewModel by viewModels<BookDetailViewModel> { viewModelFactory }
         val readingViewModel by viewModels<ReadingViewModel> { viewModelFactory }
         
-        val adminBookManagementViewModel by viewModels<com.example.appthemuse.ui.viewmodel.AdminBookManagementViewModel> { viewModelFactory }
-        val adminBookDetailViewModel by viewModels<com.example.appthemuse.ui.viewmodel.AdminBookDetailViewModel> { viewModelFactory }
-        val adminReviewModerationViewModel by viewModels<com.example.appthemuse.ui.viewmodel.AdminReviewModerationViewModel> { viewModelFactory }
+        val adminDashboardViewModel by viewModels<AdminDashboardViewModel> { viewModelFactory }
+        val adminUserViewModel by viewModels<AdminUserViewModel> { viewModelFactory }
+        val adminUserDetailViewModel by viewModels<AdminUserDetailViewModel> { viewModelFactory }
+        val adminBookManagementViewModel by viewModels<AdminBookManagementViewModel> { viewModelFactory }
+        val adminBookDetailViewModel by viewModels<AdminBookDetailViewModel> { viewModelFactory }
+        val adminReviewModerationViewModel by viewModels<AdminReviewModerationViewModel> { viewModelFactory }
 
         setContent {
             val systemInDarkTheme = isSystemInDarkTheme()
@@ -184,6 +193,9 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable("admin_main") {
                             com.example.appthemuse.ui.screens.admin.AdminMainScreen(
+                                adminDashboardViewModel = adminDashboardViewModel,
+                                adminUserViewModel = adminUserViewModel,
+                                adminUserDetailViewModel = adminUserDetailViewModel,
                                 adminBookManagementViewModel = adminBookManagementViewModel,
                                 adminBookDetailViewModel = adminBookDetailViewModel,
                                 adminReviewModerationViewModel = adminReviewModerationViewModel,

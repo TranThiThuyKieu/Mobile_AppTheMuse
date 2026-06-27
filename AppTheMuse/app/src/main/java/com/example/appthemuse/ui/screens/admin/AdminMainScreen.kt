@@ -6,7 +6,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -16,14 +15,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.appthemuse.ui.viewmodel.AdminBookManagementViewModel
-import com.example.appthemuse.ui.viewmodel.AdminBookDetailViewModel
-import com.example.appthemuse.ui.viewmodel.AdminReviewModerationViewModel
+import com.example.appthemuse.ui.viewmodel.*
 
 private val AdminPrimary = Color(0xFF6C63FF)
 
 @Composable
 fun AdminMainScreen(
+    adminDashboardViewModel: AdminDashboardViewModel,
+    adminUserViewModel: AdminUserViewModel,
+    adminUserDetailViewModel: AdminUserDetailViewModel,
     adminBookManagementViewModel: AdminBookManagementViewModel,
     adminBookDetailViewModel: AdminBookDetailViewModel,
     adminReviewModerationViewModel: AdminReviewModerationViewModel,
@@ -37,7 +37,9 @@ fun AdminMainScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
-            AdminBottomBar(navController = navController, currentRoute = currentRoute)
+            if (currentRoute !in listOf("admin_user_detail/{userId}")) {
+                AdminBottomBar(navController = navController, currentRoute = currentRoute)
+            }
         }
     ) { paddingValues ->
         NavHost(
@@ -46,10 +48,27 @@ fun AdminMainScreen(
             modifier = Modifier.padding(paddingValues)
         ) {
             composable("admin_dashboard") {
-                AdminDashboardScreen(viewModel = adminBookManagementViewModel)
+                AdminDashboardScreen(
+                    viewModel = adminDashboardViewModel,
+                    onLogout = onLogout
+                )
             }
             composable("admin_users") {
-                AdminUserManagementScreen()
+                AdminUserManagementScreen(
+                    viewModel = adminUserViewModel,
+                    onViewProfile = { userId ->
+                        navController.navigate("admin_user_detail/$userId")
+                    },
+                    onLogout = onLogout
+                )
+            }
+            composable("admin_user_detail/{userId}") { backStack ->
+                val userId = backStack.arguments?.getString("userId") ?: ""
+                AdminUserDetailScreen(
+                    userId = userId,
+                    viewModel = adminUserDetailViewModel,
+                    onBack = { navController.popBackStack() }
+                )
             }
             composable("admin_books") {
                 AdminBookManagementScreen(
@@ -60,11 +79,10 @@ fun AdminMainScreen(
                 )
             }
             composable("admin_reviews") {
-                // Màn đánh giá tổng hợp - truyền bookId rỗng để load tất cả
                 AdminReviewModerationScreen(
                     bookId = "",
                     viewModel = adminReviewModerationViewModel,
-                    onBack = {}
+                    onBack = { navController.popBackStack() }
                 )
             }
             composable("admin_book_detail/{bookId}") { backStack ->
@@ -90,8 +108,8 @@ fun AdminBottomBar(
 ) {
     val items = listOf(
         Triple("admin_dashboard", Icons.Default.Dashboard, "Tổng quan"),
-        Triple("admin_users", Icons.Default.Person, "Quản lý user"),
-        Triple("admin_books", Icons.Default.Book, "Quản lý sách"),
+        Triple("admin_users", Icons.Default.Person, "Người dùng"),
+        Triple("admin_books", Icons.Default.Book, "Sách"),
     )
 
     NavigationBar(
