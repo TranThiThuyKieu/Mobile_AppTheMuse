@@ -79,7 +79,7 @@ class MainActivity : ComponentActivity() {
                     modelClass.isAssignableFrom(LibraryViewModel::class.java) ->
                         LibraryViewModel(libraryRepository, downloadRepository, bookRepository) as T
                     modelClass.isAssignableFrom(ProfileViewModel::class.java) ->
-                        ProfileViewModel(userRepository) as T
+                        ProfileViewModel(userRepository, downloadRepository) as T
                     modelClass.isAssignableFrom(EditProfileViewModel::class.java) ->
                         EditProfileViewModel(userRepository) as T
                     modelClass.isAssignableFrom(SecurityViewModel::class.java) ->
@@ -181,8 +181,9 @@ class MainActivity : ComponentActivity() {
                     bottomBar = {
                         val navBackStackEntry by navController.currentBackStackEntryAsState()
                         val currentRoute = navBackStackEntry?.destination?.route
-                        if (currentRoute in listOf("home", "explore", "bookshelf", "profile")) {
-                            AppBottomBar(navController = navController, currentRoute = currentRoute)
+                        val baseRoute = currentRoute?.substringBefore("?")
+                        if (baseRoute in listOf("home", "explore", "bookshelf", "profile")) {
+                            AppBottomBar(navController = navController, currentRoute = baseRoute)
                         }
                     }
                 ) { paddingValues ->
@@ -303,8 +304,13 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        composable("bookshelf") {
+                        composable(
+                            "bookshelf?tab={tab}",
+                            arguments = listOf(androidx.navigation.navArgument("tab") { defaultValue = 0; type = androidx.navigation.NavType.IntType })
+                        ) { backStackEntry ->
+                            val tabIndex = backStackEntry.arguments?.getInt("tab") ?: 0
                             LibraryScreen(
+                                initialTab = tabIndex,
                                 viewModel = libraryViewModel,
                                 homeViewModel = homeViewModel,
                                 navController = navController,
@@ -317,22 +323,39 @@ class MainActivity : ComponentActivity() {
 
                         composable("profile") {
                             ProfileScreen(
-                                viewModel = profileViewModel,
-                                onThemeChanged = { themeName ->
-                                    isDarkTheme = (themeName == "Dark")
-                                },
                                 onEditProfileClick = {
                                     navController.navigate("edit_profile")
                                 },
-                                onSecurityClick = { navController.navigate("security_route") },
                                 onCreatorStudioClick = {
                                     navController.navigate("creator_studio")
+                                },
+                                onSecurityClick = { navController.navigate("security_route") },
+                                onStatClick = { tabIndex ->
+                                    navController.navigate("bookshelf?tab=$tabIndex")
+                                },
+                                viewModel = profileViewModel,
+                                onThemeChanged = { themeName ->
+                                    isDarkTheme = (themeName == "Dark")
                                 },
                                 onLogout = {
                                     navController.navigate("welcome") {
                                         popUpTo(0) { inclusive = true }
                                     }
                                 }
+                            )
+                        }
+
+                        composable("edit_profile") {
+                            EditProfileScreen(
+                                viewModel = editProfileViewModel,
+                                onBackClick = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable("security_route") {
+                            SecurityScreen(
+                                viewModel = securityViewModel,
+                                onBackClick = { navController.popBackStack() }
                             )
                         }
 
@@ -354,11 +377,14 @@ class MainActivity : ComponentActivity() {
                         ) { backStack ->
                             val bookId = backStack.arguments?.getString("bookId") ?: ""
                             val chapterNumber = backStack.arguments?.getInt("chapterNumber") ?: 1
+                            val profileState by profileViewModel.uiState.collectAsState()
                             ReadingScreen(
                                 bookId = bookId,
                                 initialChapterNumber = chapterNumber,
                                 viewModel = readingViewModel,
-                                navController = navController
+                                navController = navController,
+                                fontSizeValue = profileState.fontSizeValue,
+                                lineSpacing = profileState.lineSpacing
                             )
                         }
 

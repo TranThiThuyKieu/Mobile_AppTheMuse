@@ -85,4 +85,11 @@ class UserRepositoryImpl(
             updateData
         )
     }
+
+    override suspend fun getUserStats(uid: String): Triple<Int, Int, Int> {
+        val readCount = firebaseUserService.countReadBooks(uid)
+        val favoriteCount = firebaseUserService.countFavoriteBooks(uid)
+        // downloadedCount được truyền từ ngoài (Room DB), trả 0 ở đây
+        return Triple(readCount, favoriteCount, 0)
+    }
 }

@@ -15,8 +15,8 @@ class LibraryRepositoryImpl(
         val favoriteDocs = firestoreService.getFavoriteDocuments(userId)
         val books = mutableListOf<Book>()
         for (favorite in favoriteDocs) {
-            val number = favorite.getLong("book_id")?.toInt()
-            val bookIdStr = favorite.getString("book_id")
+            val number = try { favorite.getLong("book_id")?.toInt() } catch (e: Exception) { null }
+            val bookIdStr = try { favorite.getString("book_id") } catch (e: Exception) { null }
             val finalId = if (number != null) "book$number" else (bookIdStr ?: continue)
             
             val bookDoc = firestoreService.getBookByDocumentId(finalId) ?: continue
@@ -29,9 +29,19 @@ class LibraryRepositoryImpl(
         val historyDocs = firestoreService.getHistoryDocuments(userId)
         val result = mutableListOf<HistoryUi>()
 
-        for (history in historyDocs) {
-            val number = history.getLong("book_id")?.toInt()
-            val bookIdStr = history.getString("book_id")
+        // Sắp xếp giảm dần theo thời gian đọc (mới nhất lên đầu)
+        val sortedDocs = historyDocs.sortedByDescending { it.getTimestamp("read_at")?.seconds ?: 0 }
+        
+        // Lọc để chỉ giữ lại document đầu tiên (mới nhất) cho mỗi book_id
+        val uniqueDocs = sortedDocs.distinctBy {
+            val number = try { it.getLong("book_id")?.toInt() } catch (e: Exception) { null }
+            val bookIdStr = try { it.getString("book_id") } catch (e: Exception) { null }
+            if (number != null) "book$number" else bookIdStr
+        }
+
+        for (history in uniqueDocs) {
+            val number = try { history.getLong("book_id")?.toInt() } catch (e: Exception) { null }
+            val bookIdStr = try { history.getString("book_id") } catch (e: Exception) { null }
             val finalId = if (number != null) "book$number" else (bookIdStr ?: continue)
             
             val bookDoc = firestoreService.getBookByDocumentId(finalId) ?: continue
@@ -52,7 +62,7 @@ class LibraryRepositoryImpl(
                 )
             )
         }
-        return result.sortedByDescending { it.lastReadAt }
+        return result
     }
 
     private fun mapDocumentToBook(doc: DocumentSnapshot): Book {

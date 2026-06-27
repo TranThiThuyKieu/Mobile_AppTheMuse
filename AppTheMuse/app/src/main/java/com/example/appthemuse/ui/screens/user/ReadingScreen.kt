@@ -31,7 +31,9 @@ fun ReadingScreen(
     bookId: String,
     initialChapterNumber: Int,
     viewModel: ReadingViewModel,
-    navController: NavController
+    navController: NavController,
+    fontSizeValue: Float = 0.5f,
+    lineSpacing: String = "Vừa"
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scope = rememberCoroutineScope()
@@ -117,7 +119,9 @@ fun ReadingScreen(
                 is ReadingState.Success -> {
                     ReadingContent(
                         modifier = Modifier.padding(paddingValues),
-                        chapter = state.currentChapter
+                        chapter = state.currentChapter,
+                        fontSizeValue = fontSizeValue,
+                        lineSpacing = lineSpacing
                     )
                 }
                 is ReadingState.Error -> {
@@ -133,10 +137,26 @@ fun ReadingScreen(
 @Composable
 fun ReadingContent(
     modifier: Modifier = Modifier,
-    chapter: ChapterUi
+    chapter: ChapterUi,
+    fontSizeValue: Float = 0.5f,
+    lineSpacing: String = "Vừa"
 ) {
     val scrollState = rememberScrollState()
-    
+
+    // Tính kích cỡ chữ: nhỏ=14sp, trung bình=18sp, lớn=22sp
+    val fontSize = when {
+        fontSizeValue < 0.33f -> 14.sp
+        fontSizeValue < 0.66f -> 18.sp
+        else -> 22.sp
+    }
+
+    // Tính khoảng cách dòng: dày=24sp, vừa=30sp, thưa=40sp
+    val lineHeightSp = when (lineSpacing) {
+        "Dày" -> (fontSize.value * 1.4f).sp
+        "Thưa" -> (fontSize.value * 2.2f).sp
+        else -> (fontSize.value * 1.8f).sp  // Vừa
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -157,17 +177,15 @@ fun ReadingContent(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
         )
         Spacer(modifier = Modifier.height(32.dp))
-        
+
         Text(
             text = chapter.content,
-            style = MaterialTheme.typography.bodyLarge.copy(
-                lineHeight = 28.sp,
-                fontSize = 18.sp
-            ),
+            fontSize = fontSize,
+            lineHeight = lineHeightSp,
             textAlign = TextAlign.Justify,
             modifier = Modifier.fillMaxWidth()
         )
-        
+
         Spacer(modifier = Modifier.height(48.dp))
         Text(
             text = "Hết chương ${chapter.chapter_number}",

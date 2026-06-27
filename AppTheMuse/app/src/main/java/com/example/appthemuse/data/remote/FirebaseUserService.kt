@@ -69,4 +69,25 @@ class FirebaseUserService {
             }
         }
     }
+
+    suspend fun countFavoriteBooks(userId: String): Int {
+        return try {
+            firestore.collection("favorites")
+                .whereEqualTo("user_id", userId)
+                .get().await().size()
+        } catch (e: Exception) { 0 }
+    }
+
+    suspend fun countReadBooks(userId: String): Int {
+        return try {
+            // Đếm số sách duy nhất người dùng đã đọc từ bảng history
+            firestore.collection("history")
+                .whereEqualTo("user_id", userId)
+                .get().await()
+                .documents
+                .mapNotNull { it.getString("book_id") }
+                .toSet()
+                .size
+        } catch (e: Exception) { 0 }
+    }
 }
