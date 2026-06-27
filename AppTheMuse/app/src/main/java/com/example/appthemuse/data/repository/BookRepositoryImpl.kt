@@ -5,6 +5,7 @@ import com.example.appthemuse.data.remote.FirestoreService
 import com.example.appthemuse.domain.model.Book
 import com.example.appthemuse.domain.model.Category
 import com.example.appthemuse.domain.model.Chapter
+import com.example.appthemuse.domain.model.Review
 import com.example.appthemuse.domain.repository.BookRepository
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.Timestamp
@@ -174,5 +175,54 @@ class BookRepositoryImpl(
                 Pair(chapterNumber, scrollPosition)
             } else null
         } catch (e: Exception) { null }
+    }
+
+    override suspend fun toggleFavorite(userId: String, bookId: String) {
+        firestoreService.toggleFavorite(userId, bookId)
+    }
+
+    override suspend fun isBookFavorite(userId: String, bookId: String): Boolean {
+        return firestoreService.getFavoriteDocuments(userId).any { doc ->
+            val idRaw = doc.get("book_id")
+            val idStr = when (idRaw) {
+                is Number -> "book${idRaw.toInt()}"
+                is String -> if (idRaw.startsWith("book")) idRaw else "book$idRaw"
+                else -> ""
+            }
+            idStr == bookId
+        }
+    }
+
+    override suspend fun getReviews(bookId: String): List<Review> = coroutineScope {
+        val documents = firestoreService.getReviewsRaw(bookId)
+        documents.map { doc ->
+            async {
+                val userId = doc.getString("user_id") ?: ""
+                val userDoc = firestoreService.getUserById(userId)
+                Review(
+                    id = doc.id,
+                    book_id = doc.get("book_id")?.toString() ?: "",
+                    user_id = userId,
+                    rating = doc.getLong("rating")?.toInt() ?: 0,
+                    comment = doc.getString("comment") ?: "",
+                    created_at = doc.getTimestamp("created_at"),
+                    is_hidden = doc.getBoolean("is_hidden") ?: false,
+                    user_name = userDoc?.getString("name") ?: "Người dùng",
+                    user_avatar = userDoc?.getString("avatar_url") ?: ""
+                )
+            }
+        }.awaitAll()
+    }
+
+    override suspend fun addReview(bookId: String, userId: String, rating: Int, comment: String) {
+        val reviewData = hashMapOf(
+            "book_id" to bookId,
+            "user_id" to userId,
+            "rating" to rating,
+            "comment" to comment,
+            "created_at" to Timestamp.now(),
+            "is_hidden" to false
+        )
+        firestoreService.addReview(reviewData)
     }
 }

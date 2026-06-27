@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -25,9 +26,11 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import coil.compose.rememberAsyncImagePainter
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.model.ChapterUi
+import com.example.appthemuse.ui.model.ReviewUi
 import com.example.appthemuse.ui.viewmodel.BookDetailState
 import com.example.appthemuse.ui.viewmodel.BookDetailViewModel
 import java.text.SimpleDateFormat
@@ -42,8 +45,8 @@ fun BookDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
+    var showReviewDialog by remember { mutableStateOf(false) }
 
-    // Làm mới dữ liệu khi vào màn hình hoặc quay lại từ màn hình đọc
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -87,6 +90,7 @@ fun BookDetailScreen(
                     modifier = Modifier.padding(paddingValues),
                     book = state.book,
                     chapters = state.chapters,
+                    reviews = state.reviews,
                     isDownloaded = state.isDownloaded,
                     progressPercent = state.book.progressPercent,
                     lastReadChapterNumber = state.lastReadChapterNumber,
@@ -96,8 +100,21 @@ fun BookDetailScreen(
                     },
                     onDownloadClick = {
                         viewModel.downloadBook(state.book)
+                    },
+                    onWriteReviewClick = {
+                        showReviewDialog = true
                     }
                 )
+
+                if (showReviewDialog) {
+                    AddReviewDialog(
+                        onDismiss = { showReviewDialog = false },
+                        onSubmit = { rating, comment ->
+                            viewModel.addReview(bookId, rating, comment)
+                            showReviewDialog = false
+                        }
+                    )
+                }
             }
             is BookDetailState.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -113,12 +130,14 @@ fun BookDetailContent(
     modifier: Modifier = Modifier,
     book: BookUi,
     chapters: List<ChapterUi>,
+    reviews: List<ReviewUi>,
     isDownloaded: Boolean,
     progressPercent: Int,
     lastReadChapterNumber: Int,
     isFinished: Boolean,
     onReadClick: (Int) -> Unit,
-    onDownloadClick: () -> Unit
+    onDownloadClick: () -> Unit,
+    onWriteReviewClick: () -> Unit
 ) {
     var isDescriptionExpanded by remember { mutableStateOf(false) }
 
@@ -182,7 +201,6 @@ fun BookDetailContent(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Action Buttons: Đọc ngay / Đọc tiếp / Đọc lại
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(
                         onClick = { 
@@ -203,7 +221,6 @@ fun BookDetailContent(
                         Text(text = buttonText, fontWeight = FontWeight.Bold)
                     }
                     
-                    // Nếu đang đọc dở thì hiện thêm nút "Đọc lại" (về chương 1) bên cạnh
                     if (progressPercent > 0 && !isFinished) {
                         OutlinedButton(
                             onClick = { onReadClick(1) },
@@ -220,7 +237,6 @@ fun BookDetailContent(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // Hiển thị trạng thái tải xuống
                 if (!isDownloaded) {
                     TextButton(onClick = onDownloadClick) {
                         Icon(Icons.Default.Download, contentDescription = null)
@@ -242,6 +258,7 @@ fun BookDetailContent(
             }
         }
 
+        // --- DANH SÁCH CHƯƠNG ---
         item {
             Text(
                 text = "Danh sách chương",
@@ -252,7 +269,6 @@ fun BookDetailContent(
         }
 
         items(chapters) { chapter ->
-            // Logic hiển thị nhãn trạng thái từng chương
             val readingStatus = when {
                 isFinished -> "Đã đọc"
                 chapter.chapter_number < lastReadChapterNumber -> "Đã đọc"
@@ -265,18 +281,126 @@ fun BookDetailContent(
                 statusText = readingStatus,
                 onClick = { onReadClick(chapter.chapter_number) }
             )
-            Divider(modifier = Modifier.padding(vertical = 4.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.5f))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.5f))
+        }
+
+        // --- PHẦN ĐÁNH GIÁ ---
+        item {
+            Spacer(modifier = Modifier.height(32.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Đánh giá (${reviews.size})", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                TextButton(onClick = onWriteReviewClick) {
+                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Viết đánh giá")
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        if (reviews.isEmpty()) {
+            item {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    Text("Chưa có đánh giá nào.", color = Color.Gray)
+                }
+            }
+        } else {
+            items(reviews) { review ->
+                ReviewItem(review = review)
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
+            }
+        }
+        
+        item { Spacer(modifier = Modifier.height(32.dp)) }
+    }
+}
+
+@Composable
+fun ReviewItem(review: ReviewUi) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        AsyncImage(
+            model = if (review.userAvatar.isNotEmpty()) review.userAvatar else "https://ui-avatars.com/api/?name=${review.userName}&background=random",
+            contentDescription = null,
+            modifier = Modifier.size(40.dp).clip(CircleShape).background(Color.LightGray),
+            contentScale = ContentScale.Crop
+        )
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(review.userName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(
+                    text = review.createdAt?.let { formatDate(it.toDate()) } ?: "",
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                repeat(5) { index ->
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = if (index < review.rating) Color(0xFFFFD700) else Color.LightGray,
+                        modifier = Modifier.size(14.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(review.comment, style = MaterialTheme.typography.bodyMedium)
         }
     }
 }
 
 @Composable
+fun AddReviewDialog(onDismiss: () -> Unit, onSubmit: (Int, String) -> Unit) {
+    var rating by remember { mutableIntStateOf(5) }
+    var comment by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Đánh giá của bạn") },
+        text = {
+            Column {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
+                    repeat(5) { index ->
+                        IconButton(onClick = { rating = index + 1 }) {
+                            Icon(
+                                imageVector = Icons.Default.Star,
+                                contentDescription = null,
+                                tint = if (index < rating) Color(0xFFFFD700) else Color.LightGray,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = comment,
+                    onValueChange = { comment = it },
+                    label = { Text("Nhập nhận xét...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onSubmit(rating, comment) }, enabled = comment.isNotBlank()) {
+                Text("Gửi")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Hủy") }
+        }
+    )
+}
+
+@Composable
 fun ChapterItem(chapter: ChapterUi, statusText: String, onClick: () -> Unit) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {

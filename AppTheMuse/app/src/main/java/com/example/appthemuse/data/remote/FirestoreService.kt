@@ -7,8 +7,6 @@ import com.google.firebase.firestore.AggregateSource
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.Dispatchers
 import com.google.firebase.Timestamp
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import com.google.firebase.firestore.FieldValue
 
@@ -45,7 +43,6 @@ class FirestoreService {
         }
     }
 
-    // ✅ Security Logs Methods
     suspend fun getSecurityLog(email: String): DocumentSnapshot {
         return firestore.collection("security_logs").document(email).get().await()
     }
@@ -54,7 +51,6 @@ class FirestoreService {
         firestore.collection("security_logs").document(email).set(data, com.google.firebase.firestore.SetOptions.merge()).await()
     }
 
-       // Lấy tất cả sách
     suspend fun getAllBooksRaw(limit: Long): List<DocumentSnapshot> {
         return try {
             val snapshot = firestore.collection("books")
@@ -70,7 +66,7 @@ class FirestoreService {
             snapshot.documents
         }
     }
-    // Lấy sách mới phát hành (Sắp xếp theo thời gian created_at giảm dần)
+
     suspend fun getNewReleaseBooksRaw(limit: Long): List<DocumentSnapshot> {
         return try {
             val snapshot = firestore.collection("books")
@@ -88,7 +84,7 @@ class FirestoreService {
             snapshot.documents
         }
     }
-    // Lấy sách đang thịnh hành (Sắp xếp theo lượt xem giảm dần)
+
     suspend fun getTrendingBooksRaw(limit: Long): List<DocumentSnapshot> {
         return try {
             val snapshot = firestore.collection("books")
@@ -106,11 +102,11 @@ class FirestoreService {
             snapshot.documents
         }
     }
-    // Lấy sách đọc gần đây
+
     suspend fun getRecentBooksRaw(limit: Long): List<DocumentSnapshot> {
         return getAllBooksRaw(limit)
     }
-    // Gợi ý sách dựa trên danh sách thể loại yêu thích của người dùng
+
     suspend fun getRecommendedBooksRaw(favoriteGenres: List<String>, limit: Long): List<DocumentSnapshot> {
         return try {
             if (favoriteGenres.isEmpty()) return getAllBooksRaw(limit)
@@ -130,7 +126,7 @@ class FirestoreService {
             snapshot.documents
         }
     }
-    // Lấy danh sách danh mục / thể loại sách hiện có trên hệ thống
+
     suspend fun getCategoriesListRaw(): List<DocumentSnapshot> {
         return try {
             val snapshot = firestore.collection("categories").get().await()
@@ -140,7 +136,7 @@ class FirestoreService {
             snapshot.documents
         }
     }
-    // Lấy người dùng qua Id người dùng
+
     suspend fun getUserById(userId: String): DocumentSnapshot? {
         userCache[userId]?.let {
             return it
@@ -149,7 +145,7 @@ class FirestoreService {
         userCache[userId] = user
         return user
     }
-    // Đếm số chương của một quyển sách
+
     suspend fun getChapterCount(bookId: String): Int {
         chapterCache[bookId]?.let {
             return it
@@ -159,24 +155,29 @@ class FirestoreService {
         chapterCache[bookId] = count
         return count
     }
-    // Tính Rating
+
     suspend fun getAverageRating(bookId: String): Double {
         ratingCache[bookId]?.let {
             return it
         }
-        val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
-        val snapshot = firestore.collection("reviews").whereEqualTo("book_id", bookNumId).get().await()
+        val bookNumId = bookId.removePrefix("book").toIntOrNull()
+
+        // Chỉ lọc theo book_id đơn giản
+        val query = firestore.collection("reviews")
+            .whereIn("book_id", listOfNotNull(bookId, bookNumId))
+
+        val snapshot = query.get().await()
         val rating = if (snapshot.isEmpty) {
-                0.0
-            } else {
-                snapshot.documents.map {
-                    it.getLong("rating")?.toDouble() ?: 0.0
-                }.average()
-            }
+            0.0
+        } else {
+            snapshot.documents.map {
+                it.getLong("rating")?.toDouble() ?: 0.0
+            }.average()
+        }
         ratingCache[bookId] = rating
         return rating
     }
-    // Đếm số lượt bình chọn (favorites)
+
     suspend fun getVoteCount(bookId: String): Int {
         return try {
             val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
@@ -189,12 +190,12 @@ class FirestoreService {
             0
         }
     }
-    // Đếm số lượt bình luận (reviews)
+
     suspend fun getCommentCount(bookId: String): Int {
         return try {
-            val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
+            val bookNumId = bookId.removePrefix("book").toIntOrNull()
             val snapshot = firestore.collection("reviews")
-                .whereEqualTo("book_id", bookNumId)
+                .whereIn("book_id", listOfNotNull(bookId, bookNumId))
                 .get()
                 .await()
             snapshot.size()
@@ -202,7 +203,7 @@ class FirestoreService {
             0
         }
     }
-    // Lấy danh sách chương của một tác phẩm
+
     suspend fun getChaptersRaw(bookId: String): List<DocumentSnapshot> {
         return try {
             val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: return emptyList()
@@ -217,59 +218,51 @@ class FirestoreService {
         }
     }
 
-    // Tạo chương mới cho một tác phẩm
     suspend fun createChapterRaw(bookId: String, chapterData: Map<String, Any>): String {
         val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: return ""
-        // Đếm số chương hiện tại để xác định chapter_number tiếp theo
         val existingCount = firestore.collection("chapters")
             .whereEqualTo("book_id", bookNumId)
             .get().await().size()
         val nextChapterNumber = existingCount + 1
-        // 🆔 Tạo document ID theo định dạng: book{N}_chapter{N} (vd: book1_chapter1)
         val documentId = "${bookId}_chapter$nextChapterNumber"
         val dataWithNumber = chapterData.toMutableMap()
         dataWithNumber["chapter_number"] = nextChapterNumber
         dataWithNumber["book_id"] = bookNumId
-        dataWithNumber["created_at"] = com.google.firebase.Timestamp.now()
+        dataWithNumber["created_at"] = Timestamp.now()
         dataWithNumber["view_count"] = 0L
         dataWithNumber["status"] = "đã đăng"
-        // Dùng set() với document ID tùy chỉnh thay vì add() tạo ID ngẫu nhiên
         firestore.collection("chapters").document(documentId).set(dataWithNumber).await()
-        // Cập nhật chapter_count trong document sách
         firestore.collection("books").document(bookId)
             .update("chapter_count", nextChapterNumber).await()
-        // Xóa cache để lần sau load sẽ lấy dữ liệu mới
         chapterCache.remove(bookId)
         return documentId
     }
 
-    // Thêm lịch sử tìm kiếm
     suspend fun addSearchHistory(userId: String, keyword: String) {
         if (keyword.isBlank()) return
         firestore.collection("users").document(userId)
             .collection("search_history").document(keyword)
             .set(mapOf("keyword" to keyword,
-                "timestamp" to com.google.firebase.Timestamp.now()))
+                "timestamp" to Timestamp.now()))
     }
-    // Lấy lịch sử tìm kiếm
+
     suspend fun getSearchHistory(userId: String): List<String> {
         return firestore.collection("users").document(userId)
-            .collection("search_history").orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            .collection("search_history").orderBy("timestamp", Query.Direction.DESCENDING)
             .limit(7).get()
             .await().documents.mapNotNull { it.getString("keyword") }
     }
-    // Lấy tất cả document favorite của user
+
     suspend fun getFavoriteDocuments(userId: String): List<DocumentSnapshot> {
         return firestore.collection("favorites").whereEqualTo("user_id", userId)
             .get().await().documents
     }
 
-    // Lấy 1 quyển sách theo document id
     suspend fun getBookByDocumentId(bookId: String): DocumentSnapshot? {
         val doc = firestore.collection("books").document(bookId).get().await()
         return if (doc.exists()) doc else null
     }
-    // lấy lịch sử đọc sách
+
     suspend fun getHistoryDocuments(userId: String): List<DocumentSnapshot> {
         return firestore.collection("history").whereEqualTo("user_id", userId)
             .get().await().documents
@@ -289,7 +282,7 @@ class FirestoreService {
             .documents
             .firstOrNull()
     }
-    
+
     suspend fun updateReadingProgress(userId: String, bookId: String, chapterNumber: Int, scrollPosition: Int) {
         val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
         val progressRef = firestore.collection("reading_progress")
@@ -300,7 +293,7 @@ class FirestoreService {
             .await()
             .documents
             .firstOrNull()
-            
+
         val data = mapOf(
             "user_id" to userId,
             "book_id" to bookNumId,
@@ -308,28 +301,26 @@ class FirestoreService {
             "scroll_position" to scrollPosition,
             "updated_at" to Timestamp.now()
         )
-        
+
         if (existing != null) {
             existing.reference.update(data).await()
         } else {
             progressRef.add(data).await()
         }
-        
-        // Thêm vào bảng history
+
         firestore.collection("history").add(mapOf(
             "user_id" to userId,
             "book_id" to bookId,
             "read_at" to Timestamp.now()
         )).await()
     }
-    
+
     suspend fun incrementViewCount(bookId: String) {
         firestore.collection("books").document(bookId)
             .update("view_count", FieldValue.increment(1))
             .await()
     }
 
-    // Lấy sách dựa theo author_id
     suspend fun getBooksByAuthorRaw(authorId: String): List<DocumentSnapshot> {
         return try {
             val snapshot = firestore.collection("books")
@@ -406,5 +397,53 @@ class FirestoreService {
             android.util.Log.e("FirestoreService", "Lỗi xóa user document: ${e.message}")
             throw e
         }
+    }
+
+    suspend fun toggleFavorite(userId: String, bookId: String) {
+        val favoritesRef = firestore.collection("favorites")
+
+        val stringQuery = favoritesRef
+            .whereEqualTo("user_id", userId)
+            .whereEqualTo("book_id", bookId)
+            .get().await()
+
+        val bookNumId = bookId.removePrefix("book").toIntOrNull()
+        val numberQuery = if (bookNumId != null) {
+            favoritesRef
+                .whereEqualTo("user_id", userId)
+                .whereEqualTo("book_id", bookNumId)
+                .get().await()
+        } else null
+
+        val existingDoc = stringQuery.documents.firstOrNull() ?: numberQuery?.documents?.firstOrNull()
+
+        if (existingDoc != null) {
+            existingDoc.reference.delete().await()
+        } else {
+            favoritesRef.add(mapOf(
+                "user_id" to userId,
+                "book_id" to bookId,
+                "created_at" to Timestamp.now()
+            )).await()
+        }
+    }
+
+    suspend fun getReviewsRaw(bookId: String): List<DocumentSnapshot> {
+        val bookNumId = bookId.removePrefix("book").toIntOrNull()
+
+        // Lấy toàn bộ reviews của bookId này (không filter is_hidden hay orderBy để tránh lỗi Index)
+        val query = firestore.collection("reviews")
+            .whereIn("book_id", listOfNotNull(bookId, bookNumId))
+
+        val results = query.get().await().documents
+
+        // Lọc và sắp xếp thủ công bằng Kotlin
+        return results
+            .filter { it.getBoolean("is_hidden") == false }
+            .sortedByDescending { it.getTimestamp("created_at") }
+    }
+
+    suspend fun addReview(reviewData: Map<String, Any>) {
+        firestore.collection("reviews").add(reviewData).await()
     }
 }
