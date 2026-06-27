@@ -3,6 +3,7 @@ package com.example.appthemuse.domain.repository
 
 import com.example.appthemuse.domain.model.Book
 import com.example.appthemuse.domain.model.Category
+import com.example.appthemuse.domain.model.Chapter
 
 interface BookRepository {
     suspend fun getTrendingBooks(limit: Long = 5): List<Book>
@@ -16,8 +17,13 @@ interface BookRepository {
     suspend fun getBooksByAuthor(authorId: String): List<Book>
     suspend fun createBook(book: Book, imageUriStr: String?): String
     suspend fun getBookById(bookId: String): Book?
-    suspend fun getChapters(bookId: String): List<com.example.appthemuse.domain.model.Chapter>
+    suspend fun getChapters(bookId: String): List<Chapter>
     suspend fun getVoteCount(bookId: String): Int
     suspend fun getCommentCount(bookId: String): Int
     suspend fun createChapter(bookId: String, title: String, content: String): String
+    
+    // Progress and View Count
+    suspend fun incrementViewCount(bookId: String)
+    suspend fun updateReadingProgress(userId: String, bookId: String, chapterNumber: Int, scrollPosition: Int)
+    suspend fun getReadingProgress(userId: String, bookId: String): Pair<Int, Int>? // chapterNumber, scrollPosition
 }

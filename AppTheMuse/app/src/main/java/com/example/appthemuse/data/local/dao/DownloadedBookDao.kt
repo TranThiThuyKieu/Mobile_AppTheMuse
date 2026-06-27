@@ -1,21 +1,30 @@
 package com.example.appthemuse.data.local.dao
 
-import androidx.room.Dao
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
+import androidx.room.*
 import com.example.appthemuse.data.local.entity.DownloadedBookEntity
+import com.example.appthemuse.data.local.entity.DownloadedChapterEntity
 
 @Dao
 interface DownloadedBookDao {
-    // Thêm một sách đã tải xuống mới
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(
-        book: DownloadedBookEntity
-    ): Long
-    // Lấy toàn bộ danh sách sách đã tải xuống từ database
-    @Query("SELECT * FROM downloaded_books")
-    suspend fun getAllBooks():
-            List<DownloadedBookEntity>
+    suspend fun insertBook(book: DownloadedBookEntity): Long
 
+    @Query("SELECT * FROM downloaded_books")
+    suspend fun getAllBooks(): List<DownloadedBookEntity>
+
+    @Query("SELECT * FROM downloaded_books WHERE id = :bookId")
+    suspend fun getBookById(bookId: String): DownloadedBookEntity?
+
+    @Delete
+    suspend fun deleteBook(book: DownloadedBookEntity)
+
+    // Chapters
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertChapters(chapters: List<DownloadedChapterEntity>)
+
+    @Query("SELECT * FROM downloaded_chapters WHERE bookId = :bookId ORDER BY chapterNumber ASC")
+    suspend fun getChaptersByBookId(bookId: String): List<DownloadedChapterEntity>
+
+    @Query("SELECT * FROM downloaded_chapters WHERE id = :chapterId")
+    suspend fun getChapterById(chapterId: String): DownloadedChapterEntity?
 }

@@ -12,6 +12,7 @@ data class BookUi(
     val view_count: Long,
     val status: String,
     val category_id: String,
+    val description: String,
     val progressPercent: Int,
     val lastReadAt: Timestamp?
 )
