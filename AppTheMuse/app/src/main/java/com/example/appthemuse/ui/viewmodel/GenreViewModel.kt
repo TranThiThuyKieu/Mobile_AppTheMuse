@@ -31,8 +31,7 @@ class GenreViewModel(
     fun fetchCategories() {
         viewModelScope.launch {
             try {
-                val categoryList = bookRepository.getCategories()
-                _categories.value = categoryList
+                _categories.value = bookRepository.getCategories()
             } catch (e: Exception) {
                 _genreState.value = GenreState.Error(e.localizedMessage ?: "Lỗi tải thể loại")
             }
@@ -42,9 +41,7 @@ class GenreViewModel(
     fun saveFavoriteGenres(genres: List<String>) {
         _genreState.value = GenreState.Loading
         viewModelScope.launch {
-
             val userId = authRepository.getCurrentUserId() ?: return@launch
-
             authRepository.saveFavoriteGenres(userId, genres)
                 .onSuccess {
                     _genreState.value = GenreState.Success

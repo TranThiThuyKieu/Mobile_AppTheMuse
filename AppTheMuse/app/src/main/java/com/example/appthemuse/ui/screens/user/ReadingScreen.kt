@@ -86,8 +86,12 @@ fun ReadingScreen(
                             }
                         },
                         actions = {
-                            IconButton(onClick = { /* Bookmark logic */ }) {
-                                Icon(Icons.Default.BookmarkBorder, contentDescription = "Bookmark")
+                            IconButton(onClick = { viewModel.toggleBookmark() }) {
+                                Icon(
+                                    if (state.isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                                    contentDescription = "Bookmark",
+                                    tint = if (state.isBookmarked) Color(0xFF6C63FF) else LocalContentColor.current
+                                )
                             }
                             IconButton(onClick = { scope.launch { drawerState.open() } }) {
                                 Icon(Icons.Default.Menu, contentDescription = "Chapters")

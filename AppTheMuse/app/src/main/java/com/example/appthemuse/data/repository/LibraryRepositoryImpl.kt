@@ -15,11 +15,8 @@ class LibraryRepositoryImpl(
         val favoriteDocs = firestoreService.getFavoriteDocuments(userId)
         val books = mutableListOf<Book>()
         for (favorite in favoriteDocs) {
-            val number = favorite.getLong("book_id")?.toInt()
-            val bookIdStr = favorite.getString("book_id")
-            val finalId = if (number != null) "book$number" else (bookIdStr ?: continue)
-            
-            val bookDoc = firestoreService.getBookByDocumentId(finalId) ?: continue
+            val bookId = favorite.getString("book_id") ?: continue
+            val bookDoc = firestoreService.getBookByDocumentId(bookId) ?: continue
             books.add(mapDocumentToBook(bookDoc))
         }
         return books
@@ -30,15 +27,12 @@ class LibraryRepositoryImpl(
         val result = mutableListOf<HistoryUi>()
 
         for (history in historyDocs) {
-            val number = history.getLong("book_id")?.toInt()
-            val bookIdStr = history.getString("book_id")
-            val finalId = if (number != null) "book$number" else (bookIdStr ?: continue)
+            val bookId = history.getString("book_id") ?: continue
+            val bookDoc = firestoreService.getBookByDocumentId(bookId) ?: continue
             
-            val bookDoc = firestoreService.getBookByDocumentId(finalId) ?: continue
-            
-            val progressDoc = firestoreService.getReadingProgress(userId, finalId)
+            val progressDoc = firestoreService.getReadingProgress(userId, bookId)
             val currentChapter = progressDoc?.getLong("chapter_number")?.toInt() ?: 1
-            val totalChapters = bookDoc.getLong("chapter_count")?.toInt() ?: 0
+            val totalChapters = bookDoc.getLong("chapter_count")?.toInt() ?: 1
 
             val percent = if (totalChapters > 0) {
                 ((currentChapter.toFloat() / totalChapters.toFloat()) * 100).toInt().coerceIn(0, 100)
@@ -55,8 +49,19 @@ class LibraryRepositoryImpl(
         return result.sortedByDescending { it.lastReadAt }
     }
 
+    override suspend fun isFavorite(userId: String, bookId: String): Boolean {
+        return firestoreService.isFavorite(userId, bookId)
+    }
+
+    override suspend fun addFavorite(userId: String, bookId: String) {
+        firestoreService.addFavorite(userId, bookId)
+    }
+
+    override suspend fun removeFavorite(userId: String, bookId: String) {
+        firestoreService.removeFavorite(userId, bookId)
+    }
+
     private fun mapDocumentToBook(doc: DocumentSnapshot): Book {
-        val categoryId = doc.get("category_id")?.toString() ?: ""
         return Book(
             id = doc.id,
             title = doc.getString("title") ?: "",
@@ -66,8 +71,8 @@ class LibraryRepositoryImpl(
             rating = (doc.get("rating") as? Number)?.toDouble() ?: 0.0,
             view_count = doc.getLong("view_count") ?: 0L,
             status = doc.getString("status") ?: "",
-            category_id = categoryId,
-            description = doc.getString("description") ?: doc.getString("mô_tả") ?: ""
+            category_id = doc.get("category_id")?.toString() ?: "",
+            description = doc.getString("description") ?: ""
         )
     }
 }

@@ -4,7 +4,7 @@ import com.google.firebase.Timestamp
 
 data class Chapter(
     val id: String = "",
-    val book_id: Int = 0,
+    val book_id: String = "",
     val title: String = "",
     val content: String = "",
     val chapter_number: Int = 0,

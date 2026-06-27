@@ -5,7 +5,8 @@ import com.example.appthemuse.ui.model.HistoryUi
 
 interface LibraryRepository {
     suspend fun getFavoriteBooks(userId: String): List<Book>
-    suspend fun getHistoryBooks(
-        userId: String
-    ): List<HistoryUi>
+    suspend fun getHistoryBooks(userId: String): List<HistoryUi>
+    suspend fun isFavorite(userId: String, bookId: String): Boolean
+    suspend fun addFavorite(userId: String, bookId: String)
+    suspend fun removeFavorite(userId: String, bookId: String)
 }

@@ -89,7 +89,7 @@ class DownloadedRepositoryImpl(
         return dao.getChaptersByBookId(bookId).map {
             Chapter(
                 id = it.id,
-                book_id = it.bookId.removePrefix("book").toIntOrNull() ?: 0,
+                book_id = it.bookId,
                 title = it.title,
                 content = it.content,
                 chapter_number = it.chapterNumber,
@@ -103,7 +103,7 @@ class DownloadedRepositoryImpl(
         return dao.getChapterById(chapterId)?.let {
             Chapter(
                 id = it.id,
-                book_id = it.bookId.removePrefix("book").toIntOrNull() ?: 0,
+                book_id = it.bookId,
                 title = it.title,
                 content = it.content,
                 chapter_number = it.chapterNumber,

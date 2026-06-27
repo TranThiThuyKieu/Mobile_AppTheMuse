@@ -44,7 +44,7 @@ class CreateBookViewModel(
                 val categories = bookRepository.getCategories()
                 _uiState.update { it.copy(categories = categories) }
             } catch (e: Exception) {
-                // Ignore or handle
+                android.util.Log.e("CreateBookVM", "Error loading categories: ${e.message}")
             }
         }
     }
@@ -62,7 +62,6 @@ class CreateBookViewModel(
     }
 
     fun toggleCategory(category: Category) {
-        // Chỉ chọn 1 thể loại chính cho Book model hiện tại (vì category_id là String)
         _uiState.update { state ->
             if (state.selectedCategory?.id == category.id) {
                 state.copy(selectedCategory = null)
@@ -97,12 +96,9 @@ class CreateBookViewModel(
 
         viewModelScope.launch {
             try {
-                // Lấy tên tác giả (tạm thời lấy displayName hoặc "Ẩn danh")
                 val authorName = currentUser.displayName ?: "Ẩn danh"
-
                 val book = Book(
                     title = currentState.title,
-                    slug = currentState.title.lowercase().replace(" ", "-"),
                     author_id = currentUser.uid,
                     author_name = authorName,
                     description = currentState.description,
@@ -111,9 +107,7 @@ class CreateBookViewModel(
                     created_at = Timestamp.now()
                 )
 
-                // Nếu có coverImageBase64, truyền base64 thay vì truyền uri cục bộ
                 bookRepository.createBook(book, currentState.coverImageBase64)
-
                 _uiState.update { it.copy(isLoading = false, isSuccess = true) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "Có lỗi xảy ra") }
@@ -127,7 +121,7 @@ class CreateBookViewModel(
 
     fun resetState() {
         _uiState.update {
-            CreateBookUiState(categories = it.categories) // Reset hết về mặc định, giữ lại danh sách categories
+            CreateBookUiState(categories = it.categories)
         }
     }
 }

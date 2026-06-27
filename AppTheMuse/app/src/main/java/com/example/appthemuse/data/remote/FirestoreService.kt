@@ -54,7 +54,7 @@ class FirestoreService {
         firestore.collection("security_logs").document(email).set(data, com.google.firebase.firestore.SetOptions.merge()).await()
     }
 
-       // Lấy tất cả sách
+    // Lấy tất cả sách
     suspend fun getAllBooksRaw(limit: Long): List<DocumentSnapshot> {
         return try {
             val snapshot = firestore.collection("books")
@@ -167,21 +167,20 @@ class FirestoreService {
         val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
         val snapshot = firestore.collection("reviews").whereEqualTo("book_id", bookNumId).get().await()
         val rating = if (snapshot.isEmpty) {
-                0.0
-            } else {
-                snapshot.documents.map {
-                    it.getLong("rating")?.toDouble() ?: 0.0
-                }.average()
-            }
+            0.0
+        } else {
+            snapshot.documents.map {
+                it.getLong("rating")?.toDouble() ?: 0.0
+            }.average()
+        }
         ratingCache[bookId] = rating
         return rating
     }
     // Đếm số lượt bình chọn (favorites)
     suspend fun getVoteCount(bookId: String): Int {
         return try {
-            val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
             val snapshot = firestore.collection("favorites")
-                .whereEqualTo("book_id", bookNumId)
+                .whereEqualTo("book_id", bookId)
                 .get()
                 .await()
             snapshot.size()
@@ -264,6 +263,30 @@ class FirestoreService {
             .get().await().documents
     }
 
+    suspend fun isFavorite(userId: String, bookId: String): Boolean {
+        val favoriteId = "${userId}_${bookId}"
+        return try {
+            firestore.collection("favorites").document(favoriteId).get().await().exists()
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    suspend fun addFavorite(userId: String, bookId: String) {
+        val favoriteId = "${userId}_${bookId}"
+        val data = mapOf(
+            "user_id" to userId,
+            "book_id" to bookId,
+            "created_at" to Timestamp.now()
+        )
+        firestore.collection("favorites").document(favoriteId).set(data).await()
+    }
+
+    suspend fun removeFavorite(userId: String, bookId: String) {
+        val favoriteId = "${userId}_${bookId}"
+        firestore.collection("favorites").document(favoriteId).delete().await()
+    }
+
     // Lấy 1 quyển sách theo document id
     suspend fun getBookByDocumentId(bookId: String): DocumentSnapshot? {
         val doc = firestore.collection("books").document(bookId).get().await()
@@ -289,7 +312,7 @@ class FirestoreService {
             .documents
             .firstOrNull()
     }
-    
+
     suspend fun updateReadingProgress(userId: String, bookId: String, chapterNumber: Int, scrollPosition: Int) {
         val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
         val progressRef = firestore.collection("reading_progress")
@@ -300,7 +323,7 @@ class FirestoreService {
             .await()
             .documents
             .firstOrNull()
-            
+
         val data = mapOf(
             "user_id" to userId,
             "book_id" to bookNumId,
@@ -308,13 +331,13 @@ class FirestoreService {
             "scroll_position" to scrollPosition,
             "updated_at" to Timestamp.now()
         )
-        
+
         if (existing != null) {
             existing.reference.update(data).await()
         } else {
             progressRef.add(data).await()
         }
-        
+
         // Thêm vào bảng history
         firestore.collection("history").add(mapOf(
             "user_id" to userId,
@@ -322,7 +345,7 @@ class FirestoreService {
             "read_at" to Timestamp.now()
         )).await()
     }
-    
+
     suspend fun incrementViewCount(bookId: String) {
         firestore.collection("books").document(bookId)
             .update("view_count", FieldValue.increment(1))
@@ -405,6 +428,31 @@ class FirestoreService {
         } catch (e: Exception) {
             android.util.Log.e("FirestoreService", "Lỗi xóa user document: ${e.message}")
             throw e
+        }
+    }
+
+    suspend fun addBookmark(userId: String, bookId: String, chapterNumber: Int) {
+        val bookmarkId = "${userId}_${bookId}_$chapterNumber"
+        val data = mapOf(
+            "user_id" to userId,
+            "book_id" to bookId,
+            "chapter_number" to chapterNumber,
+            "created_at" to Timestamp.now()
+        )
+        firestore.collection("bookmarks").document(bookmarkId).set(data).await()
+    }
+
+    suspend fun removeBookmark(userId: String, bookId: String, chapterNumber: Int) {
+        val bookmarkId = "${userId}_${bookId}_$chapterNumber"
+        firestore.collection("bookmarks").document(bookmarkId).delete().await()
+    }
+
+    suspend fun isBookmarked(userId: String, bookId: String, chapterNumber: Int): Boolean {
+        val bookmarkId = "${userId}_${bookId}_$chapterNumber"
+        return try {
+            firestore.collection("bookmarks").document(bookmarkId).get().await().exists()
+        } catch (e: Exception) {
+            false
         }
     }
 }

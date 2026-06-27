@@ -13,6 +13,7 @@ data class BookUi(
     val status: String,
     val category_id: String,
     val description: String,
-    val progressPercent: Int,
-    val lastReadAt: Timestamp?
+    val progressPercent: Int = 0,
+    val lastReadAt: Timestamp? = null,
+    val hasUpdate: Boolean = false
 )

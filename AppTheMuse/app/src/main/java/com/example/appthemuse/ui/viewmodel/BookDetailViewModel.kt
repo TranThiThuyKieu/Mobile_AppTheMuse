@@ -41,41 +41,32 @@ class BookDetailViewModel(
         viewModelScope.launch {
             _uiState.value = BookDetailState.Loading
             try {
-                // 1. Lấy dữ liệu cốt lõi từ Firestore (Phải có cái này mới hiện UI)
                 val book = bookRepository.getBookById(bookId)
                 if (book != null) {
                     val chapters = bookRepository.getChapters(bookId)
                     val userId = auth.currentUser?.uid
                     
-                    // 2. Các phần phụ (Nếu lỗi thì vẫn cho qua để hiện thông tin sách)
                     val isFavorite = if (userId != null) {
-                        try {
-                            libraryRepository.getFavoriteBooks(userId).any { it.id == bookId }
-                        } catch (e: Exception) { false }
+                        libraryRepository.isFavorite(userId, bookId)
                     } else false
                     
                     val isDownloaded = try {
                         downloadRepository.getBookById(bookId) != null
-                    } catch (e: Exception) {
-                        android.util.Log.e("BookDetailVM", "Room Database Error: ${e.message}")
-                        false 
-                    }
+                    } catch (e: Exception) { false }
                     
                     var progressPercent = 0
                     var lastChapter = 1
                     var isFinished = false
 
                     if (userId != null) {
-                        try {
-                            val progress = bookRepository.getReadingProgress(userId, bookId)
-                            if (progress != null) {
-                                lastChapter = progress.first
-                                if (chapters.isNotEmpty()) {
-                                    progressPercent = ((lastChapter.toFloat() / chapters.size.toFloat()) * 100).toInt()
-                                    if (lastChapter >= chapters.size) isFinished = true
-                                }
+                        val progress = bookRepository.getReadingProgress(userId, bookId)
+                        if (progress != null) {
+                            lastChapter = progress.first
+                            if (chapters.isNotEmpty()) {
+                                progressPercent = ((lastChapter.toFloat() / chapters.size.toFloat()) * 100).toInt()
+                                if (lastChapter >= chapters.size) isFinished = true
                             }
-                        } catch (e: Exception) { }
+                        }
                     }
 
                     _uiState.value = BookDetailState.Success(
@@ -90,7 +81,6 @@ class BookDetailViewModel(
                     _uiState.value = BookDetailState.Error("Không tìm thấy thông tin tác phẩm này.")
                 }
             } catch (e: Exception) {
-                android.util.Log.e("BookDetailVM", "Load Error", e)
                 _uiState.value = BookDetailState.Error("Lỗi tải dữ liệu: ${e.localizedMessage}")
             }
         }
@@ -103,10 +93,16 @@ class BookDetailViewModel(
                 val currentState = _uiState.value
                 if (currentState is BookDetailState.Success) {
                     val newStatus = !currentState.isFavorite
-                    // Ở đây bạn có thể gọi thêm repository để cập nhật Firestore
+                    if (newStatus) {
+                        libraryRepository.addFavorite(userId, bookId)
+                    } else {
+                        libraryRepository.removeFavorite(userId, bookId)
+                    }
                     _uiState.value = currentState.copy(isFavorite = newStatus)
                 }
-            } catch (e: Exception) { }
+            } catch (e: Exception) {
+                android.util.Log.e("BookDetailVM", "Toggle Favorite Error: ${e.message}")
+            }
         }
     }
 

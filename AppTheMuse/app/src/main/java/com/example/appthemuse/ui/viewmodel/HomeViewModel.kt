@@ -37,6 +37,7 @@ class HomeViewModel(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
             try {
+                // Sử dụng default limit từ Repository
                 val trending = bookRepository.getTrendingBooks().map { it.toBookUi() }
                 val recent = bookRepository.getRecentBooks().map { it.toBookUi() }
                 val recommended = bookRepository.getRecommendedBooks(favoriteGenres).map { it.toBookUi() }
@@ -61,56 +62,46 @@ class HomeViewModel(
             }
         }
     }
-    // hàm tìm kiếm
+    
     fun searchBooks(keyword: String, filterType: String, status: String?, star: Int?) {
-        // lấy toàn bộ sách đã load từ Firestore về trước đó
         val source = _uiState.value.allBooks
-        // nếu chưa có data thì không search
         if (source.isEmpty()) return
-        // bắt đầu từ full list
         var results = source
-        // filter theo keyword
         if (keyword.isNotBlank()) {
             results = when (filterType) {
-                // search theo tác giả
-                "author" -> results.filter {
-                    it.author_name.contains(keyword, true)
-                }
-                // search theo title
-                else -> results.filter {
-                    it.title.contains(keyword, true)
-                }
+                "author" -> results.filter { it.author_name.contains(keyword, true) }
+                else -> results.filter { it.title.contains(keyword, true) }
             }
         }
-        // filter theo status
         status?.let { selectedStatus ->
-            results = results.filter { book ->
-                book.status.equals(selectedStatus, true)
-            }
+            results = results.filter { it.status.equals(selectedStatus, true) }
         }
-        // filter theo rating
         star?.let { selectedStar ->
-            results = results.filter { book ->
-                book.rating.toInt() >= selectedStar
-            }
+            results = results.filter { it.rating.toInt() >= selectedStar }
         }
         _uiState.value = _uiState.value.copy(searchResults = results)
     }
-    // hàm clear search result
+
     fun clearSearch(){
         _uiState.value = _uiState.value.copy(searchResults = emptyList())
     }
-    // hàm gọi lịch sử tìm kiếm khi mở màn hình search
+
     fun loadSearchHistory(userId: String) {
         viewModelScope.launch {
-            val history = bookRepository.getSearchHistory(userId)
-            _uiState.value = _uiState.value.copy(searchHistory = history)
+            try {
+                val history = bookRepository.getSearchHistory(userId)
+                _uiState.value = _uiState.value.copy(searchHistory = history)
+            } catch (e: Exception) {}
         }
     }
-    // hàm lưu lịch sử tìm kiếm khi user tìm kiếm
+
     fun saveSearchHistory(userId: String, keyword: String) {
         viewModelScope.launch {
-            bookRepository.saveSearchHistory(userId, keyword)
+            try {
+                bookRepository.saveSearchHistory(userId, keyword)
+                // Refresh history after saving
+                loadSearchHistory(userId)
+            } catch (e: Exception) {}
         }
     }
 }
