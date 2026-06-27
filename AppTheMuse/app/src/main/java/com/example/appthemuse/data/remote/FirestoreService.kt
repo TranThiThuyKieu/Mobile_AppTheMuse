@@ -8,7 +8,6 @@ import com.google.firebase.firestore.Query
 import kotlinx.coroutines.Dispatchers
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.tasks.await
-import com.google.firebase.Timestamp
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import com.google.firebase.firestore.FieldValue
