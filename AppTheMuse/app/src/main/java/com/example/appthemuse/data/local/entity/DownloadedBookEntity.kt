@@ -14,5 +14,6 @@ data class DownloadedBookEntity(
     val rating: Double,
     val viewCount: Long,
     val status: String,
-    val categoryId: String
+    val categoryId: String,
+    val description: String
 )

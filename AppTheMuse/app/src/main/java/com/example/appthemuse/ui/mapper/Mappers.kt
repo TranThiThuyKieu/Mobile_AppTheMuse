@@ -2,9 +2,11 @@ package com.example.appthemuse.ui.mapper
 
 import com.example.appthemuse.domain.model.Book
 import com.example.appthemuse.domain.model.Category
+import com.example.appthemuse.domain.model.Chapter
 import com.example.appthemuse.domain.model.User
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.model.CategoryUi
+import com.example.appthemuse.ui.model.ChapterUi
 import com.example.appthemuse.ui.model.UserUi
 import com.google.firebase.firestore.DocumentSnapshot
 
@@ -17,10 +19,24 @@ fun Book.toBookUi(): BookUi {
         chapter_count = this.chapter_count,
         rating = this.rating,
         view_count = this.view_count,
-        status = this.status ,
+        status = this.status,
         category_id = this.category_id,
-        progressPercent = progressPercent,
-        lastReadAt = lastReadAt
+        description = this.description,
+        progressPercent = this.progressPercent,
+        lastReadAt = this.lastReadAt
+    )
+}
+
+fun Chapter.toChapterUi(): ChapterUi {
+    return ChapterUi(
+        id = this.id,
+        book_id = this.book_id,
+        title = this.title,
+        content = this.content,
+        chapter_number = this.chapter_number,
+        view_count = this.view_count,
+        created_at = this.created_at,
+        status = this.status
     )
 }
 
@@ -42,6 +58,7 @@ fun User.toUserUi(): UserUi {
         favoriteGenres = this.favoriteGenres
     )
 }
+
 fun mapDocumentToUser(
     userId: String,
     doc: DocumentSnapshot,
