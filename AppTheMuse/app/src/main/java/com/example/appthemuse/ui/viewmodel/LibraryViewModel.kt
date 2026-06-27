@@ -2,7 +2,6 @@ package com.example.appthemuse.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.appthemuse.domain.model.Book
 import com.example.appthemuse.domain.repository.BookRepository
 import com.example.appthemuse.domain.repository.DownloadRepository
 import com.example.appthemuse.domain.repository.LibraryRepository
@@ -11,6 +10,7 @@ import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.model.HistoryUi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class LibraryUiState(
@@ -28,50 +28,39 @@ class LibraryViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState
-    // hàm load sách yêu thích
+
     fun loadFavoriteBooks(userId: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            val books = repository.getFavoriteBooks(userId).map {
-                it.toBookUi()
+            _uiState.update { it.copy(isLoading = true) }
+            try {
+                val books = repository.getFavoriteBooks(userId).map { it.toBookUi() }
+                _uiState.update { it.copy(favoriteBooks = books, isLoading = false) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false) }
             }
-            _uiState.value = LibraryUiState(favoriteBooks = books, isLoading = false)
         }
     }
-    // hàm load lịch sử sách đã đọc
+
     fun loadHistoryBooks(userId: String) {
         viewModelScope.launch {
-
-            val books =
-                repository.getHistoryBooks(userId)
-
-            _uiState.value =
-                _uiState.value.copy(
-                    historyBooks = books
-                )
+            try {
+                val books = repository.getHistoryBooks(userId)
+                _uiState.update { it.copy(historyBooks = books) }
+            } catch (e: Exception) { }
         }
     }
-    // Hàm load sách đã tải
+
     fun loadDownloadedBooks() {
         viewModelScope.launch {
-            val books = downloadRepository.getDownloadedBooks()
-            _uiState.value = _uiState.value.copy(downloadedBooks = books.map {
-                            it.toBookUi()
-                        }
-                )
+            try {
+                val books = downloadRepository.getDownloadedBooks().map { it.toBookUi() }
+                _uiState.update { it.copy(downloadedBooks = books) }
+            } catch (e: Exception) { }
         }
     }
-    // Hàm tải sách về
+
     fun insertBook() {
         viewModelScope.launch {
-            // Dữ liệu tạm để test, chạy lần 1 thì sài, chạy lần 2 trở đi thì nhớ comment lại, sau khi làm tải sách vế thì thay
-//            val ids = listOf("book1", "book2", "book3")
-//            ids.forEach { id ->
-//                val book = bookRepository.getBookById(id)
-//                if (book != null) {
-//                    downloadRepository.saveBook(book)
-//                }
-//            }
             loadDownloadedBooks()
         }
     }

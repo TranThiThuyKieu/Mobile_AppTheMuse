@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -39,18 +40,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
 import com.example.appthemuse.ui.model.HistoryUi
+import com.example.appthemuse.ui.mapper.formatViewCount
 import java.text.SimpleDateFormat
 import java.util.Locale
-import androidx.compose.ui.platform.LocalLocale
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookClick: (String) -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
-    var showSearch by remember {
-        mutableStateOf(false)
-    }
+    var showSearch by remember { mutableStateOf(false) }
+
     LaunchedEffect(uiState.errorMessage) {
         uiState.errorMessage?.let { error ->
             Toast.makeText(context, error, Toast.LENGTH_LONG).show()
@@ -58,9 +58,7 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
     }
 
     Scaffold(
-        topBar = { HomeTopBar(onSearchClick = {
-            showSearch = true
-        }) },
+        topBar = { HomeTopBar(onSearchClick = { showSearch = true }) },
         containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         if (uiState.isLoading) {
@@ -88,7 +86,7 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
                         }
                     }
                 }
-                // Chuyển sang trang hiển thị tất cả truyện hot
+                
                 item { SectionHeader(title = "Truyện Hot", onSeeMoreClick = {
                         navController.navigate("book/Truyện Hot/hot")
                     })
@@ -96,7 +94,7 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
                 items(uiState.trendingBooks.take(2)) { book ->
                     VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
                 }
-                // Chuyển sang trang hiển thị tất cả truyện được đề xuất
+                
                 item { SectionHeader(title="Đề xuất cho bạn", onSeeMoreClick={
                         navController.navigate("book/Đề xuất/recommend")
                     }
@@ -105,7 +103,6 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
                     VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
                 }
                 if (uiState.recentBooks.isNotEmpty()) {
-                    // Chuyển sang trang hiển thị tất cả truyện mới cập nhật
                     item {
                         SectionHeader(title="Mới cập nhật", onSeeMoreClick={
                                 navController.navigate("book/Sách mới/new")
@@ -120,11 +117,8 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
                             }
                         }
                     }
-                    items(uiState.newReleaseBooks.take(2)) { book ->
-                        VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
-                    }
                 }
-                // Chuyển sang trang tất cả thể loại
+                
                 item {
                     SectionHeader(title = "Khám phá thể loại" ,onSeeMoreClick = {
                         navController.navigate("categories")
@@ -138,26 +132,22 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
                             val category = uiState.categories[index]
                             Card(
                                 modifier = Modifier.clickable {
-                                    navController.navigate("book/${category.name}/${category.id.removePrefix("cate")}")
+                                    navController.navigate("book/${category.name}/${category.id}")
                                 },
                                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                             ) {
                                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp),
                                     horizontalAlignment = Alignment.CenterHorizontally,
                                     verticalArrangement = Arrangement.Center) {
-                                    val category = uiState.categories[index]
                                     Text(text = category.name, color = MaterialTheme.colorScheme.onBackground, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    val count = uiState.allBooks.count {
-                                        it.category_id == category.id.removePrefix("cate")
-                                    }
-                                    Text(text = "$count truyện", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text(text = "${category.totalBooks} truyện", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         }
                     }
                 }
-                // Chuyển sang trang Sách mới phát hành
+                
                 item { SectionHeader(title="Sách mới phát hành", onSeeMoreClick={
                         navController.navigate("book/Sách mới/new")
                     }
@@ -165,17 +155,14 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
                 items(uiState.newReleaseBooks.take(2)) { book ->
                     VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
                 }
-
             }
         }
     }
-    // Hiển thị kết quả tìm kiếm
+    
     if (showSearch) {
         SearchScreen(
             viewModel = viewModel,
-            onClose = {
-                showSearch = false
-            }
+            onClose = { showSearch = false }
         )
     }
 }
@@ -186,10 +173,9 @@ fun HomeTopBar(onSearchClick: () -> Unit) {
     TopAppBar(
         title = { Text("The Muse", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
         actions = {
-            IconButton(onClick = onSearchClick) { Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onBackground) }
-            IconButton(onClick = {}) { Icon(Icons.Default.Notifications, contentDescription = "Alerts", tint = MaterialTheme.colorScheme.onBackground) }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            IconButton(onClick = onSearchClick) { Icon(Icons.Default.Search, contentDescription = "Search") }
+            IconButton(onClick = {}) { Icon(Icons.Default.Notifications, contentDescription = "Alerts") }
+        }
     )
 }
 
@@ -198,7 +184,7 @@ fun SectionHeader(title: String, onSeeMoreClick: () -> Unit = {}) {
     Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically) {
-        Text(title, color = MaterialTheme.colorScheme.onBackground, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(title, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Text("Xem thêm →", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, modifier = Modifier.clickable { onSeeMoreClick() })
     }
 }
@@ -239,10 +225,11 @@ fun VerticalBookItem(book: BookUi, onClick: () -> Unit) {
             )
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1.0f)) {
-                Text(book.title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(book.author_name, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
+                Text(book.title, fontWeight = FontWeight.Bold, fontSize = 16.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(book.author_name, color = Color.Gray, fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(4.dp))
-                Text("📚 ${book.chapter_count} Chương  •  ⭐ ${book.rating}  •  👁️ ${book.view_count}", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f))
+                // Dùng hàm formatViewCount từ Mapper dùng chung
+                Text("📚 ${book.chapter_count} Chương  •  ⭐ ${String.format(Locale.US, \"%.1f\", book.rating)}  •  👁️ ${formatViewCount(book.view_count)}", fontSize = 12.sp, color = Color.Gray)
             }
         }
     }
@@ -255,88 +242,49 @@ fun RecentBookCard(book: BookUi, onClick: () -> Unit) {
         Column {
             AsyncImage(model = book.cover_url, contentDescription = null, modifier = Modifier.fillMaxWidth().height(120.dp), contentScale = ContentScale.Crop)
             Column(modifier = Modifier.padding(8.dp)) {
-                Text(book.title, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(book.author_name, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(book.title, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(book.author_name, fontSize = 12.sp, color = Color.Gray)
             }
         }
     }
 }
-@Composable
-fun HistoryBookItem(
-    historyBook: HistoryUi,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
 
+@Composable
+fun HistoryBookItem(historyBook: HistoryUi, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp).clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             AsyncImage(
                 model = historyBook.book.cover_url,
                 contentDescription = null,
-                modifier = Modifier
-                    .size(width = 70.dp, height = 95.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                modifier = Modifier.size(width = 70.dp, height = 95.dp).clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop
             )
-
             Spacer(modifier = Modifier.width(16.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-
-                Text(
-                    text = historyBook.book.title,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Text(
-                    text = historyBook.book.author_name,
-                    color = Color.Gray
-                )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = historyBook.book.title, fontWeight = FontWeight.Bold)
+                Text(text = historyBook.book.author_name, color = Color.Gray, fontSize = 14.sp)
                 Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = "${historyBook.book.chapter_count} chương",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
+                Text(text = \"${historyBook.book.chapter_count} chương\", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                 Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Đã đọc ${historyBook.progressPercent}%"
-                )
-
+                Text(text = \"Đã đọc ${historyBook.progressPercent}%\", fontSize = 12.sp)
+                
+                // Sửa cú pháp LinearProgressIndicator truyền thống
                 LinearProgressIndicator(
-                    progress = {
-                        historyBook.progressPercent / 100f
-                    },
-                    modifier = Modifier.fillMaxWidth()
+                    progress = historyBook.progressPercent / 100f,
+                    modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp))
                 )
-
+                
                 Spacer(modifier = Modifier.height(4.dp))
-
-                historyBook.lastReadAt?.let {
-
+                historyBook.lastReadAt?.let { timestamp ->
+                    val sdf = SimpleDateFormat(\"dd/MM/yyyy\", Locale.getDefault())
                     Text(
-                        text = "Cập nhật ${
-                            SimpleDateFormat(
-                                "dd/MM/yyyy",
-                                LocalLocale.current.platformLocale
-                            ).format(it.toDate())
-                        }",
-                        color = Color.Gray
+                        text = \"Cập nhật ${sdf.format(timestamp.toDate())}\",
+                        color = Color.Gray,
+                        fontSize = 11.sp
                     )
                 }
             }

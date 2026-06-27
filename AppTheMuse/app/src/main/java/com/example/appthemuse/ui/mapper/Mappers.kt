@@ -9,6 +9,7 @@ import com.example.appthemuse.ui.model.CategoryUi
 import com.example.appthemuse.ui.model.ChapterUi
 import com.example.appthemuse.ui.model.UserUi
 import com.google.firebase.firestore.DocumentSnapshot
+import java.util.Locale
 
 fun Book.toBookUi(): BookUi {
     return BookUi(
@@ -57,6 +58,15 @@ fun User.toUserUi(): UserUi {
         isBlocked = this.isBlocked,
         favoriteGenres = this.favoriteGenres
     )
+}
+
+// Hàm dùng chung cho toàn bộ ứng dụng
+fun formatViewCount(count: Long): String {
+    return when {
+        count >= 1_000_000 -> String.format(Locale.US, "%.1fM", count / 1_000_000.0)
+        count >= 1000 -> String.format(Locale.US, "%.1fK", count / 1000.0)
+        else -> count.toString()
+    }
 }
 
 fun mapDocumentToUser(

@@ -30,6 +30,7 @@ import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.model.ChapterUi
 import com.example.appthemuse.ui.viewmodel.BookDetailState
 import com.example.appthemuse.ui.viewmodel.BookDetailViewModel
+import com.example.appthemuse.ui.mapper.formatViewCount
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -43,7 +44,6 @@ fun BookDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Làm mới dữ liệu khi vào màn hình hoặc quay lại từ màn hình đọc
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -157,7 +157,7 @@ fun BookDetailContent(
                 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(18.dp))
-                    Text(text = " ${String.format("%.1f", book.rating)}", style = MaterialTheme.typography.bodyMedium)
+                    Text(text = " ${String.format(Locale.US, \"%.1f\", book.rating)}", style = MaterialTheme.typography.bodyMedium)
                     Spacer(modifier = Modifier.width(16.dp))
                     Icon(Icons.Default.RemoveRedEye, contentDescription = null, modifier = Modifier.size(18.dp))
                     Text(text = " ${formatViewCount(book.view_count)}", style = MaterialTheme.typography.bodyMedium)
@@ -182,7 +182,6 @@ fun BookDetailContent(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Action Buttons: Đọc ngay / Đọc tiếp / Đọc lại
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(
                         onClick = { 
@@ -203,7 +202,6 @@ fun BookDetailContent(
                         Text(text = buttonText, fontWeight = FontWeight.Bold)
                     }
                     
-                    // Nếu đang đọc dở thì hiện thêm nút "Đọc lại" (về chương 1) bên cạnh
                     if (progressPercent > 0 && !isFinished) {
                         OutlinedButton(
                             onClick = { onReadClick(1) },
@@ -220,7 +218,6 @@ fun BookDetailContent(
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // Hiển thị trạng thái tải xuống
                 if (!isDownloaded) {
                     TextButton(onClick = onDownloadClick) {
                         Icon(Icons.Default.Download, contentDescription = null)
@@ -252,7 +249,6 @@ fun BookDetailContent(
         }
 
         items(chapters) { chapter ->
-            // Logic hiển thị nhãn trạng thái từng chương
             val readingStatus = when {
                 isFinished -> "Đã đọc"
                 chapter.chapter_number < lastReadChapterNumber -> "Đã đọc"
@@ -312,15 +308,7 @@ fun ChapterItem(chapter: ChapterUi, statusText: String, onClick: () -> Unit) {
     }
 }
 
-fun formatViewCount(count: Long): String {
-    return when {
-        count >= 1_000_000 -> "${String.format("%.1f", count / 1_000_000.0)}M"
-        count >= 1000 -> "${String.format("%.1f", count / 1000.0)}K"
-        else -> count.toString()
-    }
-}
-
 fun formatDate(date: Date): String {
-    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    val sdf = SimpleDateFormat(\"dd/MM/yyyy\", Locale.getDefault())
     return sdf.format(date)
 }
