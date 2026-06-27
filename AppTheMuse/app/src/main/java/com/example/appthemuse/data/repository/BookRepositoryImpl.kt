@@ -58,7 +58,7 @@ class BookRepositoryImpl(
         val authorDoc = firestoreService.getUserById(authorId)
         val chapterCount = firestoreService.getChapterCount(doc.id)
         val rating = firestoreService.getAverageRating(doc.id)
-        val categoryId = doc.getLong("category_id")?.toString() ?: ""
+        val categoryId = doc.get("category_id")?.toString() ?: ""
         return Book(
             id = doc.id,
             title = doc.getString("title") ?: "",

@@ -87,7 +87,7 @@ class LibraryRepositoryImpl(
             rating = rating,
             view_count = doc.getLong("view_count") ?: 0,
             status = doc.getString("status") ?: "",
-            category_id = doc.getLong("category_id")?.toString() ?: ""
+            category_id = doc.get("category_id")?.toString() ?: ""
         )
     }
 }
