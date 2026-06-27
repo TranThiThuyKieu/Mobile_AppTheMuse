@@ -75,7 +75,7 @@ class MainActivity : ComponentActivity() {
                     modelClass.isAssignableFrom(GenreViewModel::class.java) ->
                         GenreViewModel(authRepository, bookRepository) as T
                     modelClass.isAssignableFrom(HomeViewModel::class.java) ->
-                        HomeViewModel(bookRepository) as T
+                        HomeViewModel(application, bookRepository) as T
                     modelClass.isAssignableFrom(LibraryViewModel::class.java) ->
                         LibraryViewModel(libraryRepository, downloadRepository, bookRepository) as T
                     modelClass.isAssignableFrom(ProfileViewModel::class.java) ->
@@ -93,9 +93,9 @@ class MainActivity : ComponentActivity() {
                     modelClass.isAssignableFrom(AddChapterViewModel::class.java) ->
                         AddChapterViewModel(bookRepository) as T
                     modelClass.isAssignableFrom(BookDetailViewModel::class.java) ->
-                        BookDetailViewModel(bookRepository, libraryRepository, downloadRepository) as T
+                        BookDetailViewModel(application, bookRepository, libraryRepository, downloadRepository) as T
                     modelClass.isAssignableFrom(ReadingViewModel::class.java) ->
-                        ReadingViewModel(bookRepository, downloadRepository) as T
+                        ReadingViewModel(application, bookRepository, downloadRepository) as T
                     modelClass.isAssignableFrom(AdminDashboardViewModel::class.java) ->
                         AdminDashboardViewModel() as T
                     modelClass.isAssignableFrom(AdminUserViewModel::class.java) ->

@@ -1,12 +1,14 @@
 package com.example.appthemuse.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appthemuse.domain.repository.BookRepository
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.model.CategoryUi
 import com.example.appthemuse.ui.mapper.toBookUi
 import com.example.appthemuse.ui.mapper.toCategoryUi
+import com.example.appthemuse.utils.NetworkUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -19,24 +21,33 @@ data class HomeUiState(
     val categories: List<CategoryUi> = emptyList(),
     val newReleaseBooks: List<BookUi> = emptyList(),
     val allBooks: List<BookUi> = emptyList(),
-    val searchResults:List<BookUi> = emptyList(),
+    val searchResults: List<BookUi> = emptyList(),
     val searchHistory: List<String> = emptyList(),
+    val isOnline: Boolean = true,
     val errorMessage: String? = null
 )
 
 class HomeViewModel(
+    application: Application,
     private val bookRepository: BookRepository,
     private val favoriteGenres: List<String> = emptyList()
-) : ViewModel() {
+) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState
 
     init { loadHomeData() }
 
+    private fun checkOnlineStatus(): Boolean {
+        return NetworkUtils.isOnline(getApplication())
+    }
+
     fun loadHomeData() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
+            val online = checkOnlineStatus()
+            _uiState.value = _uiState.value.copy(isLoading = true, isOnline = online)
+            
             try {
+                // Luôn thử tải dữ liệu. Firestore sẽ tự lấy từ Cache nếu Offline.
                 val trending = bookRepository.getTrendingBooks().map { it.toBookUi() }
                 val recent = bookRepository.getRecentBooks().map { it.toBookUi() }
                 val recommended = bookRepository.getRecommendedBooks(favoriteGenres).map { it.toBookUi() }
@@ -51,63 +62,50 @@ class HomeViewModel(
                     recommendedBooks = recommended,
                     categories = categories,
                     newReleaseBooks = newRelease,
-                    allBooks = allBooks
+                    allBooks = allBooks,
+                    isOnline = online
                 )
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(
                     isLoading = false,
-                    errorMessage = e.localizedMessage ?: "Đã xảy ra lỗi khi tải dữ liệu."
+                    isOnline = online,
+                    errorMessage = if (!online) "Bạn đang ở chế độ ngoại tuyến. Một số dữ liệu có thể không hiển thị."
+                                  else (e.localizedMessage ?: "Đã xảy ra lỗi khi tải dữ liệu.")
                 )
             }
         }
     }
-    // hàm tìm kiếm
+
     fun searchBooks(keyword: String, filterType: String, status: String?, star: Int?) {
-        // lấy toàn bộ sách đã load từ Firestore về trước đó
         val source = _uiState.value.allBooks
-        // nếu chưa có data thì không search
         if (source.isEmpty()) return
-        // bắt đầu từ full list
         var results = source
-        // filter theo keyword
         if (keyword.isNotBlank()) {
             results = when (filterType) {
-                // search theo tác giả
-                "author" -> results.filter {
-                    it.author_name.contains(keyword, true)
-                }
-                // search theo title
-                else -> results.filter {
-                    it.title.contains(keyword, true)
-                }
+                "author" -> results.filter { it.author_name.contains(keyword, true) }
+                else -> results.filter { it.title.contains(keyword, true) }
             }
         }
-        // filter theo status
         status?.let { selectedStatus ->
-            results = results.filter { book ->
-                book.status.equals(selectedStatus, true)
-            }
+            results = results.filter { it.status.equals(selectedStatus, true) }
         }
-        // filter theo rating
         star?.let { selectedStar ->
-            results = results.filter { book ->
-                book.rating.toInt() >= selectedStar
-            }
+            results = results.filter { it.rating.toInt() >= selectedStar }
         }
         _uiState.value = _uiState.value.copy(searchResults = results)
     }
-    // hàm clear search result
-    fun clearSearch(){
+
+    fun clearSearch() {
         _uiState.value = _uiState.value.copy(searchResults = emptyList())
     }
-    // hàm gọi lịch sử tìm kiếm khi mở màn hình search
+
     fun loadSearchHistory(userId: String) {
         viewModelScope.launch {
             val history = bookRepository.getSearchHistory(userId)
             _uiState.value = _uiState.value.copy(searchHistory = history)
         }
     }
-    // hàm lưu lịch sử tìm kiếm khi user tìm kiếm
+
     fun saveSearchHistory(userId: String, keyword: String) {
         viewModelScope.launch {
             bookRepository.saveSearchHistory(userId, keyword)

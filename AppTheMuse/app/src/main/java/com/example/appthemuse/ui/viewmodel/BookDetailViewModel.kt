@@ -1,6 +1,7 @@
 package com.example.appthemuse.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appthemuse.domain.repository.BookRepository
 import com.example.appthemuse.domain.repository.DownloadRepository
@@ -10,14 +11,11 @@ import com.example.appthemuse.ui.mapper.toChapterUi
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.model.ChapterUi
 import com.example.appthemuse.ui.model.ReviewUi
+import com.example.appthemuse.utils.NetworkUtils
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withTimeoutOrNull
 
 sealed class BookDetailState {
     object Loading : BookDetailState()
@@ -35,22 +33,18 @@ sealed class BookDetailState {
 }
 
 class BookDetailViewModel(
+    application: Application,
     private val bookRepository: BookRepository,
     private val libraryRepository: LibraryRepository,
     private val downloadRepository: DownloadRepository
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow<BookDetailState>(BookDetailState.Loading)
     val uiState: StateFlow<BookDetailState> = _uiState
     private val auth = FirebaseAuth.getInstance()
 
-    private suspend fun isOnline(): Boolean {
-        return try {
-            val result = withTimeoutOrNull(2000) {
-                FirebaseFirestore.getInstance().collection(".info").document("connected").get().await()
-            }
-            result?.getBoolean("connected") == true
-        } catch (e: Exception) { false }
+    private fun isOnline(): Boolean {
+        return NetworkUtils.isOnline(getApplication())
     }
 
     fun loadBookDetail(bookId: String) {
@@ -59,31 +53,40 @@ class BookDetailViewModel(
             
             val online = isOnline()
             val localBook = downloadRepository.getBookById(bookId)
-            
-            if (!online && localBook == null) {
-                _uiState.value = BookDetailState.Error("Truyện chưa được tải về. Vui lòng bật mạng để xem.")
-                return@launch
-            }
 
             try {
-                val book = (if (online) bookRepository.getBookById(bookId) else null) ?: localBook
+                // Không chặn người dùng bằng `online`. Thử lấy data từ repo trước (Firestore tự cache).
+                val book = try { bookRepository.getBookById(bookId) } catch (e: Exception) { null } ?: localBook
+                
                 if (book != null) {
                     val userId = auth.currentUser?.uid
-                    val chapters = if (online) bookRepository.getChapters(bookId) else downloadRepository.getChapters(bookId)
-                    val reviews = if (online) bookRepository.getReviews(bookId) else emptyList()
-                    val isFavorite = if (online && userId != null) bookRepository.isBookFavorite(userId, bookId) else false
+                    
+                    // Lấy danh sách chương: ưu tiên mạng, nếu lỗi thì lấy local
+                    val chapters = try {
+                        val remoteChapters = bookRepository.getChapters(bookId)
+                        if (remoteChapters.isNotEmpty()) remoteChapters else downloadRepository.getChapters(bookId)
+                    } catch (e: Exception) {
+                        downloadRepository.getChapters(bookId)
+                    }
+
+                    val reviews = try { bookRepository.getReviews(bookId) } catch (e: Exception) { emptyList() }
+                    val isFavorite = if (userId != null) {
+                        try { bookRepository.isBookFavorite(userId, bookId) } catch (e: Exception) { false }
+                    } else false
                     
                     var lastChapter = 1
                     var progressPercent = 0
                     var isFinished = false
-                    if (userId != null && online) {
-                        bookRepository.getReadingProgress(userId, bookId)?.let {
-                            lastChapter = it.first
-                            if (chapters.isNotEmpty()) {
-                                progressPercent = ((lastChapter.toFloat() / chapters.size.toFloat()) * 100).toInt()
-                                if (lastChapter >= chapters.size) isFinished = true
+                    if (userId != null) {
+                        try {
+                            bookRepository.getReadingProgress(userId, bookId)?.let {
+                                lastChapter = it.first
+                                if (chapters.isNotEmpty()) {
+                                    progressPercent = ((lastChapter.toFloat() / chapters.size.toFloat()) * 100).toInt()
+                                    if (lastChapter >= chapters.size) isFinished = true
+                                }
                             }
-                        }
+                        } catch (e: Exception) {}
                     }
 
                     _uiState.value = BookDetailState.Success(
@@ -97,38 +100,41 @@ class BookDetailViewModel(
                         isOnline = online
                     )
                 } else {
-                    _uiState.value = BookDetailState.Error("Không tìm thấy dữ liệu.")
+                    _uiState.value = BookDetailState.Error("Không tìm thấy dữ liệu. Vui lòng bật mạng để tải truyện.")
                 }
             } catch (e: Exception) {
-                _uiState.value = BookDetailState.Error("Lỗi: ${e.localizedMessage}")
+                _uiState.value = BookDetailState.Error("Lỗi tải dữ liệu: ${e.localizedMessage}")
             }
         }
     }
 
     fun addReview(bookId: String, rating: Int, comment: String) {
         viewModelScope.launch {
-            if (!isOnline()) return@launch
-            bookRepository.addReview(bookId, auth.currentUser?.uid ?: return@launch, rating, comment)
-            loadBookDetail(bookId)
+            try {
+                bookRepository.addReview(bookId, auth.currentUser?.uid ?: return@launch, rating, comment)
+                loadBookDetail(bookId)
+            } catch (e: Exception) {}
         }
     }
 
     fun toggleFavorite(bookId: String) {
         viewModelScope.launch {
-            if (!isOnline()) return@launch
             val currentState = _uiState.value as? BookDetailState.Success ?: return@launch
             _uiState.value = currentState.copy(isFavorite = !currentState.isFavorite)
-            bookRepository.toggleFavorite(auth.currentUser?.uid ?: return@launch, bookId)
+            try {
+                bookRepository.toggleFavorite(auth.currentUser?.uid ?: return@launch, bookId)
+            } catch (e: Exception) {}
         }
     }
 
     fun downloadBook(bookUi: BookUi) {
         viewModelScope.launch {
-            if (!isOnline()) return@launch
-            val book = bookRepository.getBookById(bookUi.id) ?: return@launch
-            downloadRepository.saveBook(book)
-            downloadRepository.saveChapters(book.id, bookRepository.getChapters(book.id))
-            (_uiState.value as? BookDetailState.Success)?.let { _uiState.value = it.copy(isDownloaded = true) }
+            try {
+                val book = bookRepository.getBookById(bookUi.id) ?: return@launch
+                downloadRepository.saveBook(book)
+                downloadRepository.saveChapters(book.id, bookRepository.getChapters(book.id))
+                (_uiState.value as? BookDetailState.Success)?.let { _uiState.value = it.copy(isDownloaded = true) }
+            } catch (e: Exception) {}
         }
     }
 }
