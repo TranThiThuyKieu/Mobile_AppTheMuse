@@ -42,7 +42,7 @@ fun CreatorBookDetailScreen(
     bookId: String,
     viewModel: CreatorBookDetailViewModel,
     onBackClick: () -> Unit,
-    onPostChapterClick: (String) -> Unit
+    onPostChapterClick: (String, Int) -> Unit
 ) {
     LaunchedEffect(bookId) {
         viewModel.loadBookDetails(bookId)
@@ -223,7 +223,7 @@ fun CreatorBookDetailScreen(
 
                         // --- NÚT BẤM ---
                         Button(
-                            onClick = { onPostChapterClick(book.id) },
+                            onClick = { onPostChapterClick(book.id, uiState.chapters.size + 1) },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),

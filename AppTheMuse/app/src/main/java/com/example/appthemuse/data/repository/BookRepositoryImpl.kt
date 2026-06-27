@@ -4,34 +4,35 @@ import android.util.Log
 import com.example.appthemuse.data.remote.FirestoreService
 import com.example.appthemuse.domain.model.Book
 import com.example.appthemuse.domain.model.Category
+import com.example.appthemuse.domain.model.Chapter
 import com.example.appthemuse.domain.repository.BookRepository
 import com.google.firebase.firestore.DocumentSnapshot
-import android.net.Uri
 import com.google.firebase.Timestamp
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 
 class BookRepositoryImpl(
     private val firestoreService: FirestoreService
 ) : BookRepository {
 
-    override suspend fun getTrendingBooks(limit: Long): List<Book> {
-        // Giả sử service trả về List<DocumentSnapshot> thô từ Firestore
+    override suspend fun getTrendingBooks(limit: Long): List<Book> = coroutineScope {
         val documents = firestoreService.getTrendingBooksRaw(limit)
-        return documents.map { mapDocumentToBook(it) }
+        documents.map { async { mapDocumentToBook(it) } }.awaitAll()
     }
 
-    override suspend fun getRecentBooks(limit: Long): List<Book> {
+    override suspend fun getRecentBooks(limit: Long): List<Book> = coroutineScope {
         val documents = firestoreService.getRecentBooksRaw(limit)
-        return documents.map { mapDocumentToBook(it) }
+        documents.map { async { mapDocumentToBook(it) } }.awaitAll()
     }
 
-    override suspend fun getRecommendedBooks(favoriteGenres: List<String>, limit: Long): List<Book> {
+    override suspend fun getRecommendedBooks(favoriteGenres: List<String>, limit: Long): List<Book> = coroutineScope {
         val documents = firestoreService.getRecommendedBooksRaw(favoriteGenres, limit)
-        return documents.map { mapDocumentToBook(it) }
+        documents.map { async { mapDocumentToBook(it) } }.awaitAll()
     }
 
     override suspend fun getCategories(): List<Category> {
-        val documents = firestoreService.getCategoriesListRaw()
-        return documents.map { doc ->
+        return firestoreService.getCategoriesListRaw().map { doc ->
             Category(
                 id = doc.id,
                 name = doc.getString("name") ?: doc.getString("tên_thể_loại") ?: "Chưa phân loại",
@@ -40,48 +41,56 @@ class BookRepositoryImpl(
         }
     }
 
-    override suspend fun getNewReleaseBooks(limit: Long): List<Book> {
+    override suspend fun getNewReleaseBooks(limit: Long): List<Book> = coroutineScope {
         val documents = firestoreService.getNewReleaseBooksRaw(limit)
-        return documents.map { mapDocumentToBook(it) }
+        documents.map { async { mapDocumentToBook(it) } }.awaitAll()
     }
 
-    override suspend fun getAllBooks(limit: Long): List<Book> {
+    override suspend fun getAllBooks(limit: Long): List<Book> = coroutineScope {
         val documents = firestoreService.getAllBooksRaw(limit)
-        return documents.map { mapDocumentToBook(it) }
+        documents.map { async { mapDocumentToBook(it) } }.awaitAll()
     }
 
-    // 👉 Hàm tiện ích nội bộ tách biệt hoàn toàn cấu trúc Firebase Database và Domain Model
     private suspend fun mapDocumentToBook(doc: DocumentSnapshot): Book {
-        Log.d("BOOK_ID",doc.id)
-        println(doc.id)
-        val authorId = doc.getString("author_id") ?: ""
-        val authorDoc = firestoreService.getUserById(authorId)
-        val chapterCount = firestoreService.getChapterCount(doc.id)
-        val rating = firestoreService.getAverageRating(doc.id)
-        val categoryId = doc.getLong("category_id")?.toString() ?: ""
+        val docId = doc.id
+        
+        val chapterCount = (doc.get("chapter_count") as? Number)?.toInt()
+            ?: firestoreService.getChapterCount(docId)
+            
+        val rating = (doc.get("rating") as? Number)?.toDouble() 
+            ?: firestoreService.getAverageRating(docId)
+
+        val categoryId = doc.get("category_id")?.toString() ?: ""
+        
         return Book(
-            id = doc.id,
-            title = doc.getString("title") ?: "",
-            cover_url = doc.getString("cover_url") ?: "",
-            author_name = authorDoc?.getString("username") ?: "Ẩn danh",
+            id = docId,
+            title = doc.getString("title") ?: doc.getString("tên_sách") ?: "",
+            slug = doc.getString("slug") ?: "",
+            author_id = doc.getString("author_id") ?: "",
+            author_name = doc.getString("author_name") ?: doc.getString("tác_giả") ?: "Ẩn danh",
             chapter_count = chapterCount,
             rating = rating,
-            view_count = doc.getLong("view_count") ?: 0L,
+            category_id = categoryId,
+            cover_url = doc.getString("cover_url") ?: doc.getString("ảnh_bìa") ?: "",
+            description = doc.getString("description") ?: doc.getString("mô_tả") ?: "",
+            is_premium = doc.getBoolean("is_premium") ?: false,
+            view_count = (doc.get("view_count") as? Number)?.toLong() ?: 0L,
             status = doc.getString("status") ?: "",
-            category_id = categoryId
+            created_at = doc.getTimestamp("created_at")
         )
     }
-    // Hàm lưu lịch sử tìm kiếm
+
     override suspend fun saveSearchHistory(userId: String, keyword: String) {
         firestoreService.addSearchHistory(userId, keyword)
     }
-    // Hàm lấy lịch sử tìm kiếm
+
     override suspend fun getSearchHistory(userId: String): List<String> {
         return firestoreService.getSearchHistory(userId)
     }
-    override suspend fun getBooksByAuthor(authorId: String): List<Book> {
+
+    override suspend fun getBooksByAuthor(authorId: String): List<Book> = coroutineScope {
         val documents = firestoreService.getBooksByAuthorRaw(authorId)
-        return documents.map { mapDocumentToBook(it) }
+        documents.map { async { mapDocumentToBook(it) } }.awaitAll()
     }
 
     override suspend fun createBook(book: Book, imageBase64: String?): String {
@@ -118,20 +127,19 @@ class BookRepositoryImpl(
         }
     }
 
-    override suspend fun getChapters(bookId: String): List<com.example.appthemuse.domain.model.Chapter> {
-        val documents = firestoreService.getChaptersRaw(bookId)
-        return documents.map { doc ->
-            com.example.appthemuse.domain.model.Chapter(
+    override suspend fun getChapters(bookId: String): List<Chapter> {
+        return firestoreService.getChaptersRaw(bookId).map { doc ->
+            Chapter(
                 id = doc.id,
-                book_id = doc.getLong("book_id")?.toInt() ?: 0,
+                book_id = (doc.get("book_id") as? Number)?.toInt() ?: 0,
                 title = doc.getString("title") ?: "",
                 content = doc.getString("content") ?: "",
-                chapter_number = doc.getLong("chapter_number")?.toInt() ?: 0,
-                view_count = doc.getLong("view_count") ?: 0L,
+                chapter_number = (doc.get("chapter_number") as? Number)?.toInt() ?: 0,
+                view_count = (doc.get("view_count") as? Number)?.toLong() ?: 0L,
                 created_at = doc.getTimestamp("created_at"),
                 status = doc.getString("status") ?: "đã đăng"
             )
-        }.sortedBy { it.chapter_number } // Sort client-side, tránh cần Composite Index trên Firestore
+        }.sortedBy { it.chapter_number }
     }
 
     override suspend fun getVoteCount(bookId: String): Int {
@@ -143,10 +151,26 @@ class BookRepositoryImpl(
     }
 
     override suspend fun createChapter(bookId: String, title: String, content: String): String {
-        val chapterData = mapOf<String, Any>(
-            "title" to title,
-            "content" to content
-        )
+        val chapterData = mapOf<String, Any>("title" to title, "content" to content)
         return firestoreService.createChapterRaw(bookId, chapterData)
     }
-}
+
+    override suspend fun incrementViewCount(bookId: String) {
+        try { firestoreService.incrementViewCount(bookId) } catch (e: Exception) { }
+    }
+
+    override suspend fun updateReadingProgress(userId: String, bookId: String, chapterNumber: Int, scrollPosition: Int) {
+        try { firestoreService.updateReadingProgress(userId, bookId, chapterNumber, scrollPosition) } catch (e: Exception) { }
+    }
+
+    override suspend fun getReadingProgress(userId: String, bookId: String): Pair<Int, Int>? {
+        return try {
+            val doc = firestoreService.getReadingProgress(userId, bookId)
+            if (doc != null) {
+                val chapterNumber = (doc.get("chapter_number") as? Number)?.toInt() ?: 1
+                val scrollPosition = (doc.get("scroll_position") as? Number)?.toInt() ?: 0
+                Pair(chapterNumber, scrollPosition)
+            } else null
+        } catch (e: Exception) { null }
+    }
+}
