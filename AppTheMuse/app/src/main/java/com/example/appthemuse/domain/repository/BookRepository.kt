@@ -1,9 +1,9 @@
-// domain/repository/BookRepository.kt
 package com.example.appthemuse.domain.repository
 
 import com.example.appthemuse.domain.model.Book
 import com.example.appthemuse.domain.model.Category
 import com.example.appthemuse.domain.model.Chapter
+import com.example.appthemuse.domain.model.Review
 
 interface BookRepository {
     suspend fun getTrendingBooks(limit: Long = 5): List<Book>
@@ -26,4 +26,12 @@ interface BookRepository {
     suspend fun incrementViewCount(bookId: String)
     suspend fun updateReadingProgress(userId: String, bookId: String, chapterNumber: Int, scrollPosition: Int)
     suspend fun getReadingProgress(userId: String, bookId: String): Pair<Int, Int>? // chapterNumber, scrollPosition
+    
+    // Favorites
+    suspend fun toggleFavorite(userId: String, bookId: String)
+    suspend fun isBookFavorite(userId: String, bookId: String): Boolean
+
+    // Reviews
+    suspend fun getReviews(bookId: String): List<Review>
+    suspend fun addReview(bookId: String, userId: String, rating: Int, comment: String)
 }

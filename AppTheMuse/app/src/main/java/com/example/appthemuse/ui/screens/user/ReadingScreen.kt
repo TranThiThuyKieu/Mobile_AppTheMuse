@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -45,35 +46,47 @@ fun ReadingScreen(
 
     ModalNavigationDrawer(
         drawerState = drawerState,
+        gesturesEnabled = false, // Chỉ cho phép hiện khi nhấn nút 3 gạch
         drawerContent = {
-            if (uiState is ReadingState.Success) {
-                val state = uiState as ReadingState.Success
-                ChapterListModal(
-                    chapters = state.allChapters,
-                    currentChapterNumber = state.currentChapter.chapter_number,
-                    onChapterClick = { chapterNum ->
-                        scope.launch {
-                            drawerState.close()
-                            viewModel.loadChapter(bookId, chapterNum)
+            ModalDrawerSheet(
+                modifier = Modifier.width(300.dp)
+            ) {
+                when (val state = uiState) {
+                    is ReadingState.Success -> {
+                        ChapterListModal(
+                            chapters = state.allChapters,
+                            currentChapterNumber = state.currentChapter.chapter_number,
+                            onChapterClick = { chapterNum ->
+                                scope.launch {
+                                    drawerState.close()
+                                    viewModel.loadChapter(bookId, chapterNum)
+                                }
+                            },
+                            onClose = { scope.launch { drawerState.close() } }
+                        )
+                    }
+                    is ReadingState.Loading -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
                         }
-                    },
-                    onClose = { scope.launch { drawerState.close() } }
-                )
+                    }
+                    else -> {}
+                }
             }
-        },
-        gesturesEnabled = true
+        }
     ) {
         Scaffold(
             topBar = {
-                if (uiState is ReadingState.Success) {
-                    val state = uiState as ReadingState.Success
-                    TopAppBar(
-                        title = {
+                TopAppBar(
+                    title = {
+                        val state = uiState as? ReadingState.Success
+                        if (state != null) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Text(
                                     text = state.currentChapter.title,
                                     style = MaterialTheme.typography.titleMedium,
-                                    maxLines = 1
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = "Chương ${state.currentChapter.chapter_number} • ${state.progressPercent}%",
@@ -81,22 +94,21 @@ fun ReadingScreen(
                                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                 )
                             }
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                            }
-                        },
-                        actions = {
-                            IconButton(onClick = { /* Bookmark logic */ }) {
-                                Icon(Icons.Default.BookmarkBorder, contentDescription = "Bookmark")
-                            }
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(Icons.Default.Menu, contentDescription = "Chapters")
-                            }
+                        } else {
+                            Text("Đang tải...")
                         }
-                    )
-                }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Chapters")
+                        }
+                    }
+                )
             },
             bottomBar = {
                 if (uiState is ReadingState.Success) {
@@ -104,29 +116,36 @@ fun ReadingScreen(
                     ReadingBottomBar(
                         hasPrevious = state.currentChapter.chapter_number > 1,
                         hasNext = state.currentChapter.chapter_number < state.allChapters.size,
-                        onPrevious = { viewModel.loadChapter(bookId, state.currentChapter.chapter_number - 1) },
-                        onNext = { viewModel.loadChapter(bookId, state.currentChapter.chapter_number + 1) }
+                        onPrevious = { 
+                            scope.launch { drawerState.close() }
+                            viewModel.loadChapter(bookId, state.currentChapter.chapter_number - 1) 
+                        },
+                        onNext = { 
+                            scope.launch { drawerState.close() }
+                            viewModel.loadChapter(bookId, state.currentChapter.chapter_number + 1) 
+                        }
                     )
                 }
             }
         ) { paddingValues ->
-            when (val state = uiState) {
-                is ReadingState.Loading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+            Box(modifier = Modifier.padding(paddingValues)) {
+                when (val state = uiState) {
+                    is ReadingState.Loading -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
                     }
-                }
-                is ReadingState.Success -> {
-                    ReadingContent(
-                        modifier = Modifier.padding(paddingValues),
-                        chapter = state.currentChapter,
-                        fontSizeValue = fontSizeValue,
-                        lineSpacing = lineSpacing
-                    )
-                }
-                is ReadingState.Error -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                    is ReadingState.Success -> {
+                        ReadingContent(
+                            chapter = state.currentChapter,
+                            fontSizeValue = fontSizeValue,
+                            lineSpacing = lineSpacing
+                        )
+                    }
+                    is ReadingState.Error -> {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(text = state.message, color = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             }
@@ -143,18 +162,16 @@ fun ReadingContent(
 ) {
     val scrollState = rememberScrollState()
 
-    // Tính kích cỡ chữ: nhỏ=14sp, trung bình=18sp, lớn=22sp
     val fontSize = when {
         fontSizeValue < 0.33f -> 14.sp
         fontSizeValue < 0.66f -> 18.sp
         else -> 22.sp
     }
 
-    // Tính khoảng cách dòng: dày=24sp, vừa=30sp, thưa=40sp
     val lineHeightSp = when (lineSpacing) {
         "Dày" -> (fontSize.value * 1.4f).sp
         "Thưa" -> (fontSize.value * 2.2f).sp
-        else -> (fontSize.value * 1.8f).sp  // Vừa
+        else -> (fontSize.value * 1.8f).sp
     }
 
     Column(
@@ -244,48 +261,41 @@ fun ChapterListModal(
     onChapterClick: (Int) -> Unit,
     onClose: () -> Unit
 ) {
-    Surface(
-        modifier = Modifier
-            .fillMaxHeight()
-            .width(300.dp),
-        color = MaterialTheme.colorScheme.surface
-    ) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "Danh sách chương",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "${chapters.size} CHƯƠNG",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-                IconButton(onClick = onClose) {
-                    Icon(Icons.Default.Close, contentDescription = "Close")
-                }
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "Danh sách chương",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "${chapters.size} CHƯƠNG",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
             }
-            
-            HorizontalDivider(thickness = 0.5.dp)
-            
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(chapters) { chapter ->
-                    val isCurrent = chapter.chapter_number == currentChapterNumber
-                    ChapterModalItem(
-                        chapter = chapter,
-                        isCurrent = isCurrent,
-                        onClick = { onChapterClick(chapter.chapter_number) }
-                    )
-                }
+            IconButton(onClick = onClose) {
+                Icon(Icons.Default.Close, contentDescription = "Close")
+            }
+        }
+        
+        HorizontalDivider(thickness = 0.5.dp)
+        
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(chapters) { chapter ->
+                val isCurrent = chapter.chapter_number == currentChapterNumber
+                ChapterModalItem(
+                    chapter = chapter,
+                    isCurrent = isCurrent,
+                    onClick = { onChapterClick(chapter.chapter_number) }
+                )
             }
         }
     }

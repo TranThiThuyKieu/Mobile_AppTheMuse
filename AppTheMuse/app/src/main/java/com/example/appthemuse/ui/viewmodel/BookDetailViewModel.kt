@@ -9,6 +9,7 @@ import com.example.appthemuse.ui.mapper.toBookUi
 import com.example.appthemuse.ui.mapper.toChapterUi
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.model.ChapterUi
+import com.example.appthemuse.ui.model.ReviewUi
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +20,7 @@ sealed class BookDetailState {
     data class Success(
         val book: BookUi,
         val chapters: List<ChapterUi>,
+        val reviews: List<ReviewUi> = emptyList(),
         val isFavorite: Boolean,
         val isDownloaded: Boolean,
         val lastReadChapterNumber: Int = 1,
@@ -41,16 +43,27 @@ class BookDetailViewModel(
         viewModelScope.launch {
             _uiState.value = BookDetailState.Loading
             try {
-                // 1. Lấy dữ liệu cốt lõi từ Firestore (Phải có cái này mới hiện UI)
+                // 1. Lấy dữ liệu cốt lõi từ Firestore
                 val book = bookRepository.getBookById(bookId)
                 if (book != null) {
                     val chapters = bookRepository.getChapters(bookId)
+                    val reviews = bookRepository.getReviews(bookId).map {
+                        ReviewUi(
+                            id = it.id,
+                            userId = it.user_id,
+                            userName = it.user_name,
+                            userAvatar = it.user_avatar,
+                            rating = it.rating,
+                            comment = it.comment,
+                            createdAt = it.created_at
+                        )
+                    }
                     val userId = auth.currentUser?.uid
                     
-                    // 2. Các phần phụ (Nếu lỗi thì vẫn cho qua để hiện thông tin sách)
+                    // 2. Kiểm tra yêu thích bằng hàm chuyên dụng để tăng tốc độ
                     val isFavorite = if (userId != null) {
                         try {
-                            libraryRepository.getFavoriteBooks(userId).any { it.id == bookId }
+                            bookRepository.isBookFavorite(userId, bookId)
                         } catch (e: Exception) { false }
                     } else false
                     
@@ -81,6 +94,7 @@ class BookDetailViewModel(
                     _uiState.value = BookDetailState.Success(
                         book = book.toBookUi().copy(progressPercent = progressPercent),
                         chapters = chapters.map { it.toChapterUi() },
+                        reviews = reviews,
                         isFavorite = isFavorite,
                         isDownloaded = isDownloaded,
                         lastReadChapterNumber = lastChapter,
@@ -96,17 +110,37 @@ class BookDetailViewModel(
         }
     }
 
+    fun addReview(bookId: String, rating: Int, comment: String) {
+        val userId = auth.currentUser?.uid ?: return
+        viewModelScope.launch {
+            try {
+                bookRepository.addReview(bookId, userId, rating, comment)
+                // Reload data to show new review and updated average rating
+                loadBookDetail(bookId)
+            } catch (e: Exception) {
+                android.util.Log.e("BookDetailVM", "Add Review Error", e)
+            }
+        }
+    }
+
     fun toggleFavorite(bookId: String) {
         val userId = auth.currentUser?.uid ?: return
         viewModelScope.launch {
             try {
                 val currentState = _uiState.value
                 if (currentState is BookDetailState.Success) {
-                    val newStatus = !currentState.isFavorite
-                    // Ở đây bạn có thể gọi thêm repository để cập nhật Firestore
+                    val oldStatus = currentState.isFavorite
+                    val newStatus = !oldStatus
+                    
+                    // Cập nhật UI ngay lập tức (Optimistic UI)
                     _uiState.value = currentState.copy(isFavorite = newStatus)
+                    
+                    // Gọi repository để cập nhật Firestore thực tế
+                    bookRepository.toggleFavorite(userId, bookId)
                 }
-            } catch (e: Exception) { }
+            } catch (e: Exception) {
+                android.util.Log.e("BookDetailVM", "Toggle Favorite Error", e)
+            }
         }
     }
 
