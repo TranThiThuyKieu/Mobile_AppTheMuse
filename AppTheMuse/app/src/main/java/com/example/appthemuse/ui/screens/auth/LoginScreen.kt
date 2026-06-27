@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 fun LoginScreen(
     viewModel: AuthViewModel,
     onNavigateToHome: (Boolean) -> Unit,
+    onNavigateToAdmin: () -> Unit,
     onNavigateToRegister: () -> Unit
 ) {
     val context = LocalContext.current
@@ -46,7 +47,11 @@ fun LoginScreen(
                 val successState = authState as AuthState.LoginSuccess
                 Toast.makeText(context, "Chào mừng ${successState.user.username} trở lại!", Toast.LENGTH_SHORT).show()
                 viewModel.resetState()
-                onNavigateToHome(successState.hasGenres)
+                if (successState.user.role == "admin") {
+                    onNavigateToAdmin()
+                } else {
+                    onNavigateToHome(successState.hasGenres)
+                }
             }
             is AuthState.PasswordResetSent -> {
                 Toast.makeText(context, "Link đặt lại mật khẩu đã được gửi vào Email của bạn!", Toast.LENGTH_LONG).show()
