@@ -36,6 +36,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.room.Room
 import com.example.appthemuse.data.local.database.AppDatabase
 import com.example.appthemuse.data.repository.DownloadedRepositoryImpl
@@ -45,6 +47,7 @@ import com.example.appthemuse.ui.screens.user.creator_studio.CreatorStudioScreen
 import com.google.firebase.auth.FirebaseAuth
 import com.example.appthemuse.ui.screens.user.creator_studio.CreatorBookDetailScreen
 import com.example.appthemuse.ui.screens.user.creator_studio.AddChapterScreen
+import kotlinx.coroutines.tasks.await
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,6 +96,12 @@ class MainActivity : ComponentActivity() {
                         BookDetailViewModel(bookRepository, libraryRepository, downloadRepository) as T
                     modelClass.isAssignableFrom(ReadingViewModel::class.java) ->
                         ReadingViewModel(bookRepository, downloadRepository) as T
+                    modelClass.isAssignableFrom(com.example.appthemuse.ui.viewmodel.AdminBookManagementViewModel::class.java) ->
+                        com.example.appthemuse.ui.viewmodel.AdminBookManagementViewModel() as T
+                    modelClass.isAssignableFrom(com.example.appthemuse.ui.viewmodel.AdminBookDetailViewModel::class.java) ->
+                        com.example.appthemuse.ui.viewmodel.AdminBookDetailViewModel() as T
+                    modelClass.isAssignableFrom(com.example.appthemuse.ui.viewmodel.AdminReviewModerationViewModel::class.java) ->
+                        com.example.appthemuse.ui.viewmodel.AdminReviewModerationViewModel() as T
                     else -> throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
                 }
             }
@@ -111,6 +120,10 @@ class MainActivity : ComponentActivity() {
         val addChapterViewModel by viewModels<AddChapterViewModel> { viewModelFactory }
         val bookDetailViewModel by viewModels<BookDetailViewModel> { viewModelFactory }
         val readingViewModel by viewModels<ReadingViewModel> { viewModelFactory }
+        
+        val adminBookManagementViewModel by viewModels<com.example.appthemuse.ui.viewmodel.AdminBookManagementViewModel> { viewModelFactory }
+        val adminBookDetailViewModel by viewModels<com.example.appthemuse.ui.viewmodel.AdminBookDetailViewModel> { viewModelFactory }
+        val adminReviewModerationViewModel by viewModels<com.example.appthemuse.ui.viewmodel.AdminReviewModerationViewModel> { viewModelFactory }
 
         setContent {
             val systemInDarkTheme = isSystemInDarkTheme()
@@ -118,10 +131,42 @@ class MainActivity : ComponentActivity() {
 
             AppTheMuseTheme(darkTheme = isDarkTheme) {
                 val navController = rememberNavController()
-                val currentUser = FirebaseAuth.getInstance().currentUser
                 
-                // Logic Offline: Nếu có mạng thì vào Home, không mạng/lỗi mà có login thì vào Bookshelf
-                val startDestination = if (currentUser != null) "home" else "welcome"
+                var startDestination by remember { mutableStateOf<String?>(null) }
+
+                LaunchedEffect(Unit) {
+                    val currentUser = FirebaseAuth.getInstance().currentUser
+                    if (currentUser != null) {
+                        try {
+                            val doc = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                                .collection("users")
+                                .document(currentUser.uid)
+                                .get()
+                                .await()
+                            
+                            val role = doc.getString("role") ?: "user"
+                            if (role == "admin") {
+                                startDestination = "admin_main"
+                            } else {
+                                startDestination = "home"
+                            }
+                        } catch (e: Exception) {
+                            startDestination = "home"
+                        }
+                    } else {
+                        startDestination = "welcome"
+                    }
+                }
+
+                if (startDestination == null) {
+                    androidx.compose.foundation.layout.Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = androidx.compose.ui.Alignment.Center
+                    ) {
+                        androidx.compose.material3.CircularProgressIndicator()
+                    }
+                    return@AppTheMuseTheme
+                }
 
                 Scaffold(
                     bottomBar = {
@@ -134,9 +179,23 @@ class MainActivity : ComponentActivity() {
                 ) { paddingValues ->
                     NavHost(
                         navController = navController,
-                        startDestination = startDestination,
+                        startDestination = startDestination!!,
                         modifier = Modifier.padding(paddingValues)
                     ) {
+                        composable("admin_main") {
+                            com.example.appthemuse.ui.screens.admin.AdminMainScreen(
+                                adminBookManagementViewModel = adminBookManagementViewModel,
+                                adminBookDetailViewModel = adminBookDetailViewModel,
+                                adminReviewModerationViewModel = adminReviewModerationViewModel,
+                                onLogout = {
+                                    FirebaseAuth.getInstance().signOut()
+                                    navController.navigate("welcome") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                }
+                            )
+                        }
+
                         composable("welcome") {
                             WelcomeScreen(onNavigateToLogin = { navController.navigate("auth_options") })
                         }
@@ -165,6 +224,9 @@ class MainActivity : ComponentActivity() {
                                     } else {
                                         navController.navigate("genre_selection") { popUpTo("welcome") { inclusive = true } }
                                     }
+                                },
+                                onNavigateToAdmin = {
+                                    navController.navigate("admin_main") { popUpTo("welcome") { inclusive = true } }
                                 },
                                 onNavigateToRegister = { navController.navigate("register") }
                             )
