@@ -294,6 +294,33 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        composable("categories") {
+                            CategoryListScreen(
+                                viewModel = homeViewModel,
+                                navController = navController
+                            )
+                        }
+
+                        composable(
+                            "book/{title}/{type}",
+                            arguments = listOf(
+                                androidx.navigation.navArgument("title") { type = androidx.navigation.NavType.StringType },
+                                androidx.navigation.navArgument("type") { type = androidx.navigation.NavType.StringType }
+                            )
+                        ) { backStackEntry ->
+                            val title = backStackEntry.arguments?.getString("title") ?: ""
+                            val type = backStackEntry.arguments?.getString("type") ?: ""
+                            BookListScreen(
+                                title = title,
+                                type = type,
+                                viewModel = homeViewModel,
+                                navController = navController,
+                                onBookClick = { bookId ->
+                                    navController.navigate("book_detail/$bookId")
+                                }
+                            )
+                        }
+
                         composable("explore") {
                             ExploreScreen(
                                 viewModel = homeViewModel,

@@ -172,17 +172,6 @@ fun CreatorStudioScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             StatItemCard(
-                icon = Icons.Default.Group,
-                title = "NGƯỜI THEO DÕI",
-                value = uiState.totalFollowersStr,
-                subText = "Cộng đồng của bạn",
-                subTextColor = Color(0xFFC2185B),
-                themeColors = themeColors
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            StatItemCard(
                 icon = Icons.Default.LibraryBooks,
                 title = "TỔNG SỐ CHƯƠNG",
                 value = uiState.totalChaptersStr,
@@ -217,9 +206,24 @@ fun CreatorStudioScreen(
                     )
                 } else {
                     uiState.publishedBooks.forEach { book ->
-                        val statusStr = if (book.status.lowercase() == "hoàn thành") "HOÀN THÀNH" else "ĐANG CẬP NHẬT"
-                        val statusColor = if (statusStr == "HOÀN THÀNH") Color(0xFFE8F5E9) else Color(0xFFE8EAF6)
-                        val statusTextColor = if (statusStr == "HOÀN THÀNH") Color(0xFF388E3C) else themeColors.accentColor
+                        val statusStr = when (book.status.lowercase()) {
+                            "pending" -> "CHỜ XÁC NHẬN"
+                            "completed", "hoàn thành" -> "ĐÃ HOÀN THÀNH"
+                            "hidden" -> "ĐÃ ẨN"
+                            else -> "ĐANG CẬP NHẬT"
+                        }
+                        val statusColor = when (statusStr) {
+                            "ĐÃ HOÀN THÀNH" -> Color(0xFFE8F5E9)
+                            "CHỜ XÁC NHẬN" -> Color(0xFFFFF3E0)
+                            "ĐÃ ẨN" -> Color(0xFFEEEEEE)
+                            else -> Color(0xFFE8EAF6)
+                        }
+                        val statusTextColor = when (statusStr) {
+                            "ĐÃ HOÀN THÀNH" -> Color(0xFF388E3C)
+                            "CHỜ XÁC NHẬN" -> Color(0xFFE65100)
+                            "ĐÃ ẨN" -> Color(0xFF616161)
+                            else -> themeColors.accentColor
+                        }
 
                         WorkItem(
                             title = book.title,
@@ -236,29 +240,6 @@ fun CreatorStudioScreen(
                             }
                         )
                         Spacer(modifier = Modifier.height(16.dp))
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                // --- Bản thảo gần đây ---
-                SectionHeader(title = "Bản thảo gần đây", themeColors = themeColors)
-                Spacer(modifier = Modifier.height(16.dp))
-
-                if (uiState.drafts.isEmpty()) {
-                    Text(
-                        text = "Không có bản thảo nào.",
-                        color = themeColors.contentTextColor,
-                        modifier = Modifier.padding(vertical = 16.dp)
-                    )
-                } else {
-                    uiState.drafts.forEach { draft ->
-                        DraftItem(
-                            title = draft.title,
-                            subText = "Lưu gần đây", // TODO: Tính toán thời gian từ created_at
-                            themeColors = themeColors
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
                     }
                 }
             }
@@ -337,23 +318,6 @@ fun SectionHeader(title: String, themeColors: CreatorThemeColors) {
                     .width(40.dp)
                     .height(3.dp)
                     .background(themeColors.accentColor, RoundedCornerShape(1.5.dp))
-            )
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.clickable { /* TODO */ }
-        ) {
-            Text(
-                text = "Xem thêm",
-                fontSize = 13.sp,
-                color = themeColors.accentColor,
-                fontWeight = FontWeight.Medium
-            )
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = themeColors.accentColor,
-                modifier = Modifier.size(16.dp)
             )
         }
     }

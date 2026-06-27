@@ -22,6 +22,10 @@ class BookRepositoryImpl(
         documents.map { async { mapDocumentToBook(it) } }.awaitAll()
     }
 
+    override suspend fun updateBookStatus(bookId: String, status: String) {
+        firestoreService.updateBookStatus(bookId, status)
+    }
+
     override suspend fun getRecentBooks(limit: Long): List<Book> = coroutineScope {
         val documents = firestoreService.getRecentBooksRaw(limit)
         documents.map { async { mapDocumentToBook(it) } }.awaitAll()

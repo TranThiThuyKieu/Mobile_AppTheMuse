@@ -20,6 +20,7 @@ data class CreatorBookDetailUiState(
     val totalReadsStr: String = "0",
     val totalVotesStr: String = "0",
     val totalCommentsStr: String = "0",
+    val categoryName: String = "Chưa phân loại",
     val error: String? = null
 )
 
@@ -43,6 +44,9 @@ class CreatorBookDetailViewModel(
                 val chapters = bookRepository.getChapters(bookId)
                 val voteCount = bookRepository.getVoteCount(bookId)
                 val commentCount = bookRepository.getCommentCount(bookId)
+                
+                val categories = bookRepository.getCategories()
+                val categoryName = categories.find { it.id == book.category_id }?.name ?: "Chưa phân loại"
 
                 _uiState.update { state ->
                     state.copy(
@@ -51,7 +55,8 @@ class CreatorBookDetailViewModel(
                         chapters = chapters,
                         totalReadsStr = formatNumber(book.view_count),
                         totalVotesStr = formatNumber(voteCount.toLong()),
-                        totalCommentsStr = formatNumber(commentCount.toLong())
+                        totalCommentsStr = formatNumber(commentCount.toLong()),
+                        categoryName = categoryName
                     )
                 }
 
@@ -67,5 +72,17 @@ class CreatorBookDetailViewModel(
         val suffix = if (number >= 1000000) "M" else "k"
         val value = if (number >= 1000000) number / 1000000.0 else formatted
         return String.format(Locale.US, "%.1f%s", value, suffix).replace(".0", "")
+    }
+
+    fun updateBookStatus(bookId: String, status: String) {
+        viewModelScope.launch {
+            try {
+                bookRepository.updateBookStatus(bookId, status)
+                // Reload the book details to reflect the updated status
+                loadBookDetails(bookId)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "Không thể cập nhật trạng thái: ${e.message}") }
+            }
+        }
     }
 }

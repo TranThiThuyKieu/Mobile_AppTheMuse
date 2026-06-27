@@ -119,9 +119,6 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
                             }
                         }
                     }
-                    items(uiState.newReleaseBooks.take(2)) { book ->
-                        VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
-                    }
                 }
                 // Chuyển sang trang tất cả thể loại
                 item {

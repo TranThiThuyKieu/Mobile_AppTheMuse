@@ -214,40 +214,74 @@ fun CreatorBookDetailScreen(
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            // Tạm thời hiển thị category_id, nếu có mảng genres thì lặp qua
-                            BadgeItem(book.category_id.ifEmpty { "Chưa phân loại" }, themeColors)
-                            // Thêm dummy data nếu cần giống hình
+                            BadgeItem(uiState.categoryName, themeColors)
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
 
+                        val isPending = book.status.lowercase() == "pending"
+                        val isCompleted = book.status.lowercase() == "completed" || book.status.lowercase() == "hoàn thành"
+
                         // --- NÚT BẤM ---
-                        Button(
-                            onClick = { onPostChapterClick(book.id, uiState.chapters.size + 1) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = themeColors.accentColor)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Đăng chương mới", fontWeight = FontWeight.Medium)
+                        // Nút Đăng chương mới: Ẩn nếu trạng thái là chờ xác nhận hoặc đã hoàn thành
+                        if (!isPending && !isCompleted) {
+                            Button(
+                                onClick = { onPostChapterClick(book.id, uiState.chapters.size + 1) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = themeColors.accentColor)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Đăng chương mới", fontWeight = FontWeight.Medium)
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        // Nếu truyện chưa hoàn thành và không phải chờ xác nhận thì hiện nút Đánh dấu hoàn thành
+                        if (!isPending && !isCompleted) {
+                            OutlinedButton(
+                                onClick = { viewModel.updateBookStatus(bookId, "completed") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(24.dp),
+                                border = BorderStroke(1.dp, themeColors.accentColor.copy(alpha = 0.2f))
+                            ) {
+                                Icon(Icons.Default.CheckCircle, contentDescription = null, tint = themeColors.accentColor, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("ĐÁNH DẤU HOÀN THÀNH", color = themeColors.accentColor, fontWeight = FontWeight.Medium)
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
 
+                        // Nút Ẩn / Hiện tác phẩm
+                        val isHidden = book.status.lowercase() == "hidden"
                         OutlinedButton(
-                            onClick = { /* Mark as completed */ },
+                            onClick = { 
+                                val newStatus = if (isHidden) "ongoing" else "hidden"
+                                viewModel.updateBookStatus(bookId, newStatus) 
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
                             shape = RoundedCornerShape(24.dp),
-                            border = BorderStroke(1.dp, themeColors.accentColor.copy(alpha = 0.2f))
+                            border = BorderStroke(1.dp, themeColors.positiveColor.copy(alpha = 0.5f))
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = null, tint = themeColors.accentColor, modifier = Modifier.size(18.dp))
+                            Icon(
+                                if (isHidden) Icons.Default.Visibility else Icons.Default.VisibilityOff, 
+                                contentDescription = null, 
+                                tint = themeColors.positiveColor, 
+                                modifier = Modifier.size(18.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("ĐÁNH DẤU HOÀN THÀNH", color = themeColors.accentColor, fontWeight = FontWeight.Medium)
+                            Text(
+                                if (isHidden) "HIỆN TÁC PHẨM" else "ẨN TÁC PHẨM", 
+                                color = themeColors.positiveColor, 
+                                fontWeight = FontWeight.Medium
+                            )
                         }
 
                         Spacer(modifier = Modifier.height(32.dp))
