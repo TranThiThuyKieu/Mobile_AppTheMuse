@@ -2,15 +2,16 @@ package com.example.appthemuse.ui.screens.admin
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.MenuBook
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,14 +21,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.appthemuse.ui.model.AdminBookUi
-import com.example.appthemuse.ui.viewmodel.AdminBookManagementViewModel
+import com.example.appthemuse.domain.model.AdminBook
+import com.example.appthemuse.ui.viewmodel.AdminDashboardViewModel
+import kotlinx.coroutines.launch
 
 // Màu chủ đạo admin
 private val AdminPrimary = Color(0xFF6C63FF)
@@ -35,107 +38,258 @@ private val AdminPrimaryLight = Color(0xFFF0EEFF)
 private val AdminGreen = Color(0xFF22C55E)
 private val AdminRed = Color(0xFFEF4444)
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminDashboardScreen(
-    viewModel: AdminBookManagementViewModel,
+    viewModel: AdminDashboardViewModel,
+    onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showFilterMenu by remember { mutableStateOf(false) }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
-    LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
-        contentPadding = PaddingValues(bottom = 16.dp)
-    ) {
-        // Header
-        item {
-            AdminDashboardHeader()
-        }
-
-        // Stat Cards
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                modifier = Modifier.width(300.dp),
+                drawerContainerColor = Color.White
             ) {
-                StatCardAdmin(
-                    modifier = Modifier.weight(1f),
-                    label = "Người dùng mới",
-                    value = "1.2k",
-                    change = "+12%",
-                    isPositive = true,
-                    icon = "👤"
-                )
-                StatCardAdmin(
-                    modifier = Modifier.weight(1f),
-                    label = "Lượt đọc hôm nay",
-                    value = "45k",
-                    change = "+6.4k",
-                    isPositive = true,
-                    icon = "👁️"
+                AdminDrawerContent(
+                    adminName = uiState.adminName,
+                    adminRole = uiState.adminRole,
+                    onLogout = onLogout
                 )
             }
         }
-
-        item { Spacer(Modifier.height(16.dp)) }
-
-        // Chart
-        item {
-            ReadingTrendChart()
-        }
-
-        item { Spacer(Modifier.height(16.dp)) }
-
-        // Top sách hot title
-        item {
-            Text(
-                text = "Top sách hot",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-            )
-        }
-
-        // Top books từ ViewModel (dùng sách hiện có)
-        if (uiState.isLoading) {
+    ) {
+        LazyColumn(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+            contentPadding = PaddingValues(bottom = 16.dp)
+        ) {
+            // Header
             item {
-                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = AdminPrimary)
+                AdminDashboardHeader(
+                    onMenuClick = {
+                        scope.launch { drawerState.open() }
+                    }
+                )
+            }
+
+            // Filter Section
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Bộ lọc: ${uiState.selectedFilter}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = AdminPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Box {
+                        IconButton(onClick = { showFilterMenu = true }) {
+                            Icon(Icons.Default.DateRange, contentDescription = "Lọc thời gian", tint = AdminPrimary)
+                        }
+                        DropdownMenu(
+                            expanded = showFilterMenu,
+                            onDismissRequest = { showFilterMenu = false }
+                        ) {
+                            val filters = listOf("Hôm nay", "Tuần này", "Tuần trước", "Tháng này", "Năm này", "Tất cả")
+                            filters.forEach { filter ->
+                                DropdownMenuItem(
+                                    text = { Text(filter) },
+                                    onClick = {
+                                        viewModel.onFilterChanged(filter)
+                                        showFilterMenu = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
-        } else {
-            items(uiState.books.take(5)) { book ->
-                AdminTopBookRow(book = book)
+
+            // Stat Cards
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    StatCardAdmin(
+                        modifier = Modifier.weight(1f),
+                        label = "Người dùng mới",
+                        value = uiState.newUserCount,
+                        change = uiState.newUserChange,
+                        isPositive = true,
+                        icon = "👤"
+                    )
+                    StatCardAdmin(
+                        modifier = Modifier.weight(1f),
+                        label = "Lượt đọc ${uiState.selectedFilter}",
+                        value = uiState.todayReadCount,
+                        change = uiState.todayReadChange,
+                        isPositive = true,
+                        icon = "👁️"
+                    )
+                }
+            }
+
+            item { Spacer(Modifier.height(16.dp)) }
+
+            // Chart
+            item {
+                ReadingTrendChart(
+                    trendData = uiState.weeklyReadingTrend,
+                    currentTab = if (uiState.selectedFilter.contains("Tuần")) uiState.selectedFilter else "Tuần này",
+                    onTabSelected = { viewModel.onFilterChanged(it) }
+                )
+            }
+
+            item { Spacer(Modifier.height(16.dp)) }
+
+            // Top sách hot title
+            item {
+                Text(
+                    text = "Top sách hot (Lượt xem cao nhất)",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
+
+            // Top books từ ViewModel
+            if (uiState.isLoading) {
+                item {
+                    Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = AdminPrimary)
+                    }
+                }
+            } else {
+                items(uiState.topBooks) { book ->
+                    AdminTopBookRow(book = book)
+                }
             }
         }
     }
 }
 
 @Composable
-private fun AdminDashboardHeader() {
+private fun AdminDrawerContent(adminName: String, adminRole: String, onLogout: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxHeight()
+            .padding(20.dp)
+    ) {
+        // Admin Profile Info
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(AdminPrimary.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = AdminPrimary)
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(
+                    text = adminName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = adminRole,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Menu Items
+        DrawerMenuItem(icon = Icons.Default.Group, label = "Hồ sơ")
+        DrawerMenuItem(icon = Icons.Default.Edit, label = "Chỉnh sửa thông tin cá nhân")
+        DrawerMenuItem(icon = Icons.Default.Security, label = "Mật khẩu và bảo mật")
+        DrawerMenuItem(icon = Icons.Default.Settings, label = "Cài đặt")
+        
+        Spacer(modifier = Modifier.weight(1f))
+        
+        // Logout Button at the bottom
+        DrawerMenuItem(
+            icon = Icons.AutoMirrored.Filled.ExitToApp,
+            label = "Đăng xuất", 
+            textColor = AdminRed,
+            onClick = onLogout
+        )
+    }
+}
+
+@Composable
+private fun DrawerMenuItem(
+    icon: ImageVector, 
+    label: String, 
+    textColor: Color = Color.DarkGray,
+    onClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 20.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text(
-                text = "The Muse",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-            )
-            Text(
-                text = "Tổng quan",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onBackground
-            )
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (textColor == AdminRed) AdminRed else AdminPrimary,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = textColor
+        )
+    }
+}
+
+@Composable
+private fun AdminDashboardHeader(onMenuClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 20.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onMenuClick) {
+            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = MaterialTheme.colorScheme.onBackground)
         }
+        Text(
+            text = "The Muse",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(start = 4.dp)
+        )
+        Spacer(modifier = Modifier.weight(1f))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             IconButton(onClick = {}) {
                 Icon(Icons.Default.Search, contentDescription = "Tìm kiếm", tint = MaterialTheme.colorScheme.onBackground)
@@ -203,12 +357,12 @@ private fun StatCardAdmin(
 }
 
 @Composable
-private fun ReadingTrendChart() {
-    var selectedTab by remember { mutableStateOf("Tuần này") }
+private fun ReadingTrendChart(
+    trendData: List<Float>,
+    currentTab: String,
+    onTabSelected: (String) -> Unit
+) {
     val tabs = listOf("Tuần này", "Tuần trước")
-
-    // Dữ liệu mẫu lượt đọc trong tuần
-    val dataPoints = listOf(30f, 45f, 28f, 55f, 40f, 70f, 60f)
     val dayLabels = listOf("Th.2", "Th.3", "Th.4", "Th.5", "Th.6", "Th.7", "CN")
 
     Card(
@@ -238,11 +392,12 @@ private fun ReadingTrendChart() {
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     tabs.forEach { tab ->
-                        val isSelected = selectedTab == tab
+                        val isSelected = currentTab == tab
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(20.dp))
                                 .background(if (isSelected) AdminPrimary else Color.Transparent)
+                                .clickable { onTabSelected(tab) }
                                 .padding(horizontal = 10.dp, vertical = 6.dp),
                             contentAlignment = Alignment.Center
                         ) {
@@ -267,13 +422,15 @@ private fun ReadingTrendChart() {
                     .fillMaxWidth()
                     .height(130.dp)
             ) {
-                val maxVal = dataPoints.max()
-                val minVal = dataPoints.min()
+                if (trendData.isEmpty()) return@Canvas
+                
+                val maxVal = trendData.max().takeIf { it > 0 } ?: 100f
+                val minVal = 0f
                 val range = maxVal - minVal
-                val stepX = size.width / (dataPoints.size - 1)
+                val stepX = size.width / (trendData.size - 1).coerceAtLeast(1)
                 val pad = 8.dp.toPx()
 
-                val points = dataPoints.mapIndexed { i, v ->
+                val points = trendData.mapIndexed { i, v ->
                     val x = i * stepX
                     val y = size.height - pad - ((v - minVal) / range) * (size.height - pad * 2)
                     Offset(x, y)
@@ -288,7 +445,7 @@ private fun ReadingTrendChart() {
                 }
                 drawPath(fillPath, fillColor)
 
-                // Line path (smooth-ish using lines)
+                // Line path
                 val linePath = Path().apply {
                     moveTo(points.first().x, points.first().y)
                     for (i in 1 until points.size) {
@@ -326,7 +483,7 @@ private fun ReadingTrendChart() {
 }
 
 @Composable
-private fun AdminTopBookRow(book: AdminBookUi) {
+private fun AdminTopBookRow(book: AdminBook) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -367,7 +524,7 @@ private fun AdminTopBookRow(book: AdminBookUi) {
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = book.authorId,
+                text = "ID Tác giả: ${book.authorId}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                 maxLines = 1,
@@ -384,7 +541,7 @@ private fun AdminTopBookRow(book: AdminBookUi) {
                     modifier = Modifier.size(12.dp)
                 )
                 Text(
-                    text = book.ratingText,
+                    text = "4.5", // Giả lập rating
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
@@ -394,7 +551,7 @@ private fun AdminTopBookRow(book: AdminBookUi) {
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                 )
                 Text(
-                    text = "${book.viewCountText} lượt xem",
+                    text = "${book.viewCount} lượt xem",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )
