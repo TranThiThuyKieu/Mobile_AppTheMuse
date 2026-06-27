@@ -41,7 +41,6 @@ import androidx.navigation.NavController
 import com.example.appthemuse.ui.model.HistoryUi
 import java.text.SimpleDateFormat
 import java.util.Locale
-import androidx.compose.ui.platform.LocalLocale
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -333,7 +332,7 @@ fun HistoryBookItem(
                         text = "Cập nhật ${
                             SimpleDateFormat(
                                 "dd/MM/yyyy",
-                                LocalLocale.current.platformLocale
+                                Locale.getDefault()
                             ).format(it.toDate())
                         }",
                         color = Color.Gray

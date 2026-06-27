@@ -20,4 +20,8 @@ interface UserRepository {
         uid: String,
         userUi: UserUi
     ): Boolean
+
+    // Đếm số liệu thống kê hồ sơ: đã đọc, yêu thích
+    suspend fun getUserStats(uid: String): Triple<Int, Int, Int>
+    //                                     readCount, favoriteCount, downloadedCount(truyền từ ngoài)
 }

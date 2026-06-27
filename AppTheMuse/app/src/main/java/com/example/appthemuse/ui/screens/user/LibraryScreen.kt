@@ -39,6 +39,7 @@ import com.example.appthemuse.ui.viewmodel.LibraryViewModel
 
 @Composable
 fun LibraryScreen(
+    initialTab: Int = 0,
     viewModel: LibraryViewModel,
     navController: NavController,
     userId: String,
@@ -48,8 +49,8 @@ fun LibraryScreen(
     var showSearch by remember { mutableStateOf(false) }
     val uiState by viewModel.uiState.collectAsState()
     // Tab đang được chọn
-    var selectedTab by remember {
-        mutableStateOf(0)
+    var selectedTab by remember(initialTab) {
+        mutableStateOf(initialTab)
     }
     // Route hiện tại của Navigation
     val navBackStackEntry by navController.currentBackStackEntryAsState()

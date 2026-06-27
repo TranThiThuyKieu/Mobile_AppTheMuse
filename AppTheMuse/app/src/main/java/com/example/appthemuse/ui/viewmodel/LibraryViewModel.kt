@@ -35,7 +35,7 @@ class LibraryViewModel(
             val books = repository.getFavoriteBooks(userId).map {
                 it.toBookUi()
             }
-            _uiState.value = LibraryUiState(favoriteBooks = books, isLoading = false)
+            _uiState.value = _uiState.value.copy(favoriteBooks = books, isLoading = false)
         }
     }
     // hàm load lịch sử sách đã đọc

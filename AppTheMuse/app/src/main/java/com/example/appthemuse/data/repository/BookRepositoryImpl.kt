@@ -34,7 +34,7 @@ class BookRepositoryImpl(
     override suspend fun getCategories(): List<Category> {
         return firestoreService.getCategoriesListRaw().map { doc ->
             Category(
-                id = doc.id,
+                id = doc.get("id")?.toString() ?: doc.id,
                 name = doc.getString("name") ?: doc.getString("tên_thể_loại") ?: "Chưa phân loại",
                 totalBooks = doc.getLong("total_books")?.toInt() ?: doc.getLong("số_lượng_sách")?.toInt() ?: 0
             )
@@ -99,6 +99,8 @@ class BookRepositoryImpl(
             finalCoverUrl = firestoreService.uploadBookCoverToImgBB(imageBase64)
         }
 
+        val categoryIdLong = book.category_id.toLongOrNull() ?: 0L
+
         val bookData = hashMapOf<String, Any>(
             "title" to book.title,
             "slug" to book.slug,
@@ -106,8 +108,8 @@ class BookRepositoryImpl(
             "author_name" to book.author_name,
             "chapter_count" to book.chapter_count,
             "rating" to book.rating,
-            "category_id" to book.category_id,
-            "genres" to listOf(book.category_id),
+            "category_id" to categoryIdLong,
+            "genres" to listOf(categoryIdLong),
             "cover_url" to finalCoverUrl,
             "description" to book.description,
             "is_premium" to book.is_premium,

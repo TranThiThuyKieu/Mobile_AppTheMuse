@@ -49,9 +49,9 @@ data class ProfileThemeColors(
 @Composable
 fun ProfileScreen(
     onEditProfileClick: () -> Unit,
-
     onCreatorStudioClick: () -> Unit,
     onSecurityClick: () -> Unit,
+    onStatClick: (Int) -> Unit,
     viewModel: ProfileViewModel,
     onThemeChanged: (String) -> Unit = {},
     onLogout: () -> Unit
@@ -144,9 +144,9 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                StatCard(modifier = Modifier.weight(1.0f), title = "ĐÃ ĐỌC", value = uiState.user.readCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
-                StatCard(modifier = Modifier.weight(1.0f), title = "YÊU THÍCH", value = uiState.user.favoriteCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
-                StatCard(modifier = Modifier.weight(1.0f), title = "ĐÃ TẢI", value = uiState.user.downloadedCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
+                StatCard(modifier = Modifier.weight(1.0f).clickable { onStatClick(1) }, title = "ĐÃ ĐỌC", value = uiState.user.readCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
+                StatCard(modifier = Modifier.weight(1.0f).clickable { onStatClick(0) }, title = "YÊU THÍCH", value = uiState.user.favoriteCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
+                StatCard(modifier = Modifier.weight(1.0f).clickable { onStatClick(2) }, title = "ĐÃ TẢI", value = uiState.user.downloadedCount.toString(), cardColor = themeColors.cardColor, accentColor = themeColors.accentColor, textColor = themeColors.titleTextColor)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -241,12 +241,6 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // --- HỖ TRỢ ---
-            SectionTitle(title = "HỖ TRỢ")
-            MenuItem(icon = Icons.Default.HelpOutline, title = "Trung tâm hỗ trợ", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor, onClick = { })
-            MenuItem(icon = Icons.Default.Description, title = "Điều khoản sử dụng", cardColor = themeColors.cardColor, textColor = themeColors.titleTextColor, onClick = { })
-
-            Spacer(modifier = Modifier.height(24.dp))
 
             // --- NÚT ĐĂNG XUẤT ---
             OutlinedButton(

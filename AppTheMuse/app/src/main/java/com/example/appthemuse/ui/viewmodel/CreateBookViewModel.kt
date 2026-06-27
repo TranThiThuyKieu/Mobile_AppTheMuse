@@ -77,7 +77,7 @@ class CreateBookViewModel(
     }
 
     fun publishBook() {
-        submitBook("Đang cập nhật")
+        submitBook("pending")
     }
 
     private fun submitBook(status: String) {
@@ -106,7 +106,7 @@ class CreateBookViewModel(
                     author_id = currentUser.uid,
                     author_name = authorName,
                     description = currentState.description,
-                    category_id = currentState.selectedCategory?.name ?: "Khác",
+                    category_id = currentState.selectedCategory?.id ?: "",
                     status = status,
                     created_at = Timestamp.now()
                 )
