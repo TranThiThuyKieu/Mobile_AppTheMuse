@@ -98,12 +98,8 @@ fun BookDetailScreen(
                     onReadClick = { chapterNum ->
                         navController.navigate("reading/$bookId/$chapterNum")
                     },
-                    onDownloadClick = {
-                        viewModel.downloadBook(state.book)
-                    },
-                    onWriteReviewClick = {
-                        showReviewDialog = true
-                    }
+                    onDownloadClick = { viewModel.downloadBook(state.book) },
+                    onWriteReviewClick = { showReviewDialog = true }
                 )
 
                 if (showReviewDialog) {
@@ -284,7 +280,7 @@ fun BookDetailContent(
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.5f))
         }
 
-        // --- PHẦN ĐÁNH GIÁ ---
+        // --- PHẦN ĐÁNH GIÁ (HIỂN THỊ DƯỚI CÙNG) ---
         item {
             Spacer(modifier = Modifier.height(32.dp))
             Row(
@@ -292,7 +288,11 @@ fun BookDetailContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Đánh giá (${reviews.size})", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Đánh giá (${reviews.size})",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
                 TextButton(onClick = onWriteReviewClick) {
                     Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(4.dp))
@@ -304,7 +304,7 @@ fun BookDetailContent(
 
         if (reviews.isEmpty()) {
             item {
-                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp), contentAlignment = Alignment.Center) {
                     Text("Chưa có đánh giá nào.", color = Color.Gray)
                 }
             }
@@ -313,15 +313,14 @@ fun BookDetailContent(
                 ReviewItem(review = review)
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
             }
+            item { Spacer(modifier = Modifier.height(32.dp)) }
         }
-        
-        item { Spacer(modifier = Modifier.height(32.dp)) }
     }
 }
 
 @Composable
 fun ReviewItem(review: ReviewUi) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    Row(modifier = Modifier.fillMaxWidth()) {
         AsyncImage(
             model = if (review.userAvatar.isNotEmpty()) review.userAvatar else "https://ui-avatars.com/api/?name=${review.userName}&background=random",
             contentDescription = null,
@@ -361,7 +360,7 @@ fun AddReviewDialog(onDismiss: () -> Unit, onSubmit: (Int, String) -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Đánh giá của bạn") },
+        title = { Text("Viết đánh giá") },
         text = {
             Column {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
@@ -380,7 +379,7 @@ fun AddReviewDialog(onDismiss: () -> Unit, onSubmit: (Int, String) -> Unit) {
                 OutlinedTextField(
                     value = comment,
                     onValueChange = { comment = it },
-                    label = { Text("Nhập nhận xét...") },
+                    label = { Text("Bình luận của bạn") },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3
                 )

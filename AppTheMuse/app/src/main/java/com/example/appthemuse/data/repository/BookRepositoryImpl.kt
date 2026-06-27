@@ -54,14 +54,8 @@ class BookRepositoryImpl(
 
     private suspend fun mapDocumentToBook(doc: DocumentSnapshot): Book {
         val docId = doc.id
-        
-        val chapterCount = (doc.get("chapter_count") as? Number)?.toInt()
-            ?: firestoreService.getChapterCount(docId)
-            
-        val rating = (doc.get("rating") as? Number)?.toDouble() 
-            ?: firestoreService.getAverageRating(docId)
-
-        val categoryId = doc.get("category_id")?.toString() ?: ""
+        val chapterCount = doc.get("chapter_count")?.toString()?.toIntOrNull() ?: firestoreService.getChapterCount(docId)
+        val rating = doc.get("rating")?.toString()?.toDoubleOrNull() ?: firestoreService.getAverageRating(docId)
         
         return Book(
             id = docId,
@@ -71,11 +65,11 @@ class BookRepositoryImpl(
             author_name = doc.getString("author_name") ?: doc.getString("tác_giả") ?: "Ẩn danh",
             chapter_count = chapterCount,
             rating = rating,
-            category_id = categoryId,
+            category_id = doc.get("category_id")?.toString() ?: "",
             cover_url = doc.getString("cover_url") ?: doc.getString("ảnh_bìa") ?: "",
             description = doc.getString("description") ?: doc.getString("mô_tả") ?: "",
             is_premium = doc.getBoolean("is_premium") ?: false,
-            view_count = (doc.get("view_count") as? Number)?.toLong() ?: 0L,
+            view_count = doc.get("view_count")?.toString()?.toLongOrNull() ?: 0L,
             status = doc.getString("status") ?: "",
             created_at = doc.getTimestamp("created_at")
         )
@@ -99,63 +93,42 @@ class BookRepositoryImpl(
         if (!imageBase64.isNullOrEmpty() && !imageBase64.startsWith("http")) {
             finalCoverUrl = firestoreService.uploadBookCoverToImgBB(imageBase64)
         }
-
         val categoryIdLong = book.category_id.toLongOrNull() ?: 0L
-
         val bookData = hashMapOf<String, Any>(
-            "title" to book.title,
-            "slug" to book.slug,
-            "author_id" to book.author_id,
-            "author_name" to book.author_name,
-            "chapter_count" to book.chapter_count,
-            "rating" to book.rating,
-            "category_id" to categoryIdLong,
-            "genres" to listOf(categoryIdLong),
-            "cover_url" to finalCoverUrl,
-            "description" to book.description,
-            "is_premium" to book.is_premium,
-            "view_count" to book.view_count,
-            "status" to book.status,
-            "created_at" to (book.created_at ?: Timestamp.now())
+            "title" to book.title, "slug" to book.slug, "author_id" to book.author_id,
+            "author_name" to book.author_name, "chapter_count" to book.chapter_count,
+            "rating" to book.rating, "category_id" to categoryIdLong, "genres" to listOf(categoryIdLong),
+            "cover_url" to finalCoverUrl, "description" to book.description, "is_premium" to book.is_premium,
+            "view_count" to book.view_count, "status" to book.status, "created_at" to (book.created_at ?: Timestamp.now())
         )
         return firestoreService.createBookRaw(bookData)
     }
 
     override suspend fun getBookById(bookId: String): Book? {
         val doc = firestoreService.getBookByDocumentId(bookId)
-        return if (doc != null && doc.exists()) {
-            mapDocumentToBook(doc)
-        } else {
-            null
-        }
+        return if (doc != null && doc.exists()) mapDocumentToBook(doc) else null
     }
 
     override suspend fun getChapters(bookId: String): List<Chapter> {
         return firestoreService.getChaptersRaw(bookId).map { doc ->
             Chapter(
                 id = doc.id,
-                book_id = (doc.get("book_id") as? Number)?.toInt() ?: 0,
+                book_id = doc.get("book_id")?.toString()?.toIntOrNull() ?: 0,
                 title = doc.getString("title") ?: "",
                 content = doc.getString("content") ?: "",
-                chapter_number = (doc.get("chapter_number") as? Number)?.toInt() ?: 0,
-                view_count = (doc.get("view_count") as? Number)?.toLong() ?: 0L,
+                chapter_number = doc.get("chapter_number")?.toString()?.toIntOrNull() ?: 0,
+                view_count = doc.get("view_count")?.toString()?.toLongOrNull() ?: 0L,
                 created_at = doc.getTimestamp("created_at"),
                 status = doc.getString("status") ?: "đã đăng"
             )
         }.sortedBy { it.chapter_number }
     }
 
-    override suspend fun getVoteCount(bookId: String): Int {
-        return firestoreService.getVoteCount(bookId)
-    }
-
-    override suspend fun getCommentCount(bookId: String): Int {
-        return firestoreService.getCommentCount(bookId)
-    }
+    override suspend fun getVoteCount(bookId: String): Int = firestoreService.getVoteCount(bookId)
+    override suspend fun getCommentCount(bookId: String): Int = firestoreService.getCommentCount(bookId)
 
     override suspend fun createChapter(bookId: String, title: String, content: String): String {
-        val chapterData = mapOf<String, Any>("title" to title, "content" to content)
-        return firestoreService.createChapterRaw(bookId, chapterData)
+        return firestoreService.createChapterRaw(bookId, mapOf("title" to title, "content" to content))
     }
 
     override suspend fun incrementViewCount(bookId: String) {
@@ -170,16 +143,14 @@ class BookRepositoryImpl(
         return try {
             val doc = firestoreService.getReadingProgress(userId, bookId)
             if (doc != null) {
-                val chapterNumber = (doc.get("chapter_number") as? Number)?.toInt() ?: 1
-                val scrollPosition = (doc.get("scroll_position") as? Number)?.toInt() ?: 0
+                val chapterNumber = doc.get("chapter_number")?.toString()?.toIntOrNull() ?: 1
+                val scrollPosition = doc.get("scroll_position")?.toString()?.toIntOrNull() ?: 0
                 Pair(chapterNumber, scrollPosition)
             } else null
         } catch (e: Exception) { null }
     }
 
-    override suspend fun toggleFavorite(userId: String, bookId: String) {
-        firestoreService.toggleFavorite(userId, bookId)
-    }
+    override suspend fun toggleFavorite(userId: String, bookId: String) = firestoreService.toggleFavorite(userId, bookId)
 
     override suspend fun isBookFavorite(userId: String, bookId: String): Boolean {
         return firestoreService.getFavoriteDocuments(userId).any { doc ->
@@ -203,20 +174,21 @@ class BookRepositoryImpl(
                     id = doc.id,
                     book_id = doc.get("book_id")?.toString() ?: "",
                     user_id = userId,
-                    rating = doc.getLong("rating")?.toInt() ?: 0,
+                    rating = doc.get("rating")?.toString()?.toIntOrNull() ?: 0,
                     comment = doc.getString("comment") ?: "",
                     created_at = doc.getTimestamp("created_at"),
                     is_hidden = doc.getBoolean("is_hidden") ?: false,
-                    user_name = userDoc?.getString("name") ?: "Người dùng",
-                    user_avatar = userDoc?.getString("avatar_url") ?: ""
+                    user_name = userDoc?.getString("name") ?: userDoc?.getString("tên_người_dùng") ?: "Người dùng",
+                    user_avatar = userDoc?.getString("avatar_url") ?: userDoc?.getString("ảnh_đại_diện") ?: ""
                 )
             }
         }.awaitAll()
     }
 
     override suspend fun addReview(bookId: String, userId: String, rating: Int, comment: String) {
+        val bookNumId = bookId.removePrefix("book").toIntOrNull()
         val reviewData = hashMapOf(
-            "book_id" to bookId,
+            "book_id" to (bookNumId ?: bookId),
             "user_id" to userId,
             "rating" to rating,
             "comment" to comment,
