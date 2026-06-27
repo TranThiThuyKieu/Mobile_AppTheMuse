@@ -51,6 +51,14 @@ class FirestoreService {
         firestore.collection("security_logs").document(email).set(data, com.google.firebase.firestore.SetOptions.merge()).await()
     }
 
+    suspend fun updateBookStatus(bookId: String, status: String) {
+        try {
+            firestore.collection("books").document(bookId).update("status", status).await()
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error updating book status: ${e.message}")
+        }
+    }
+
     suspend fun getAllBooksRaw(limit: Long): List<DocumentSnapshot> {
         return try {
             val snapshot = firestore.collection("books")

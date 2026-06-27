@@ -261,17 +261,6 @@ fun CreateBookScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // --- NÚT BẤM ---
-            OutlinedButton(
-                onClick = { viewModel.saveDraft() },
-                modifier = Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(24.dp),
-                border = BorderStroke(1.dp, themeColors.accentColor),
-                enabled = !uiState.isLoading
-            ) {
-                Text("Lưu bản nháp", color = themeColors.accentColor, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
 
             Button(
                 onClick = { viewModel.publishBook() },
