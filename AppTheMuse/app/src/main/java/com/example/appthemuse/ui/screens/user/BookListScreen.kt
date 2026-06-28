@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.appthemuse.ui.components.AppBottomBar
+import com.example.appthemuse.ui.components.HomeTopBar
 import com.example.appthemuse.ui.viewmodel.HomeViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
