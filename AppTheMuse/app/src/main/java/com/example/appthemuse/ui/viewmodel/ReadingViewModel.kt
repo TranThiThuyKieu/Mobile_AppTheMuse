@@ -1,6 +1,7 @@
 package com.example.appthemuse.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appthemuse.domain.repository.BookRepository
 import com.example.appthemuse.domain.repository.DownloadRepository
@@ -8,12 +9,11 @@ import com.example.appthemuse.ui.mapper.toBookUi
 import com.example.appthemuse.ui.mapper.toChapterUi
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.model.ChapterUi
+import com.example.appthemuse.utils.NetworkUtils
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 sealed class ReadingState {
     object Loading : ReadingState()
@@ -28,22 +28,17 @@ sealed class ReadingState {
 }
 
 class ReadingViewModel(
+    application: Application,
     private val bookRepository: BookRepository,
     private val downloadRepository: DownloadRepository
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow<ReadingState>(ReadingState.Loading)
     val uiState: StateFlow<ReadingState> = _uiState
     private val auth = FirebaseAuth.getInstance()
 
-    // Kiểm tra trạng thái kết nối thực tế với Firebase
-    private suspend fun isOnline(): Boolean {
-        return try {
-            val result = FirebaseFirestore.getInstance().collection(".info").document("connected").get().await()
-            result.getBoolean("connected") == true
-        } catch (e: Exception) {
-            false
-        }
+    private fun isOnline(): Boolean {
+        return NetworkUtils.isOnline(getApplication())
     }
 
     fun loadChapter(bookId: String, chapterNumber: Int) {
@@ -54,15 +49,13 @@ class ReadingViewModel(
             val localBook = downloadRepository.getBookById(bookId)
             val isDownloaded = localBook != null
 
-            // NẾU: Không có mạng VÀ truyện chưa được tải về máy -> KHÔNG CHO ĐỌC
             if (!online && !isDownloaded) {
                 _uiState.value = ReadingState.Error("Truyện này chưa được tải về. Vui lòng bật mạng để tiếp tục.")
                 return@launch
             }
 
             try {
-                if (isDownloaded && (!online || online)) { 
-                    // Ưu tiên lấy từ máy nếu đã tải (dù có mạng hay không để đảm bảo tốc độ)
+                if (isDownloaded) { 
                     val localChapters = downloadRepository.getChapters(bookId)
                     val currentChapter = localChapters.find { it.chapter_number == chapterNumber }
                         ?: localChapters.firstOrNull()
@@ -80,24 +73,27 @@ class ReadingViewModel(
                     }
                 }
 
-                // Nếu chưa tải và đang Online -> Lấy từ Firebase
-                val remoteBook = bookRepository.getBookById(bookId)
-                val remoteChapters = bookRepository.getChapters(bookId)
-                val currentChapter = remoteChapters.find { it.chapter_number == chapterNumber }
-                    ?: remoteChapters.firstOrNull()
+                if (online) {
+                    val remoteBook = bookRepository.getBookById(bookId)
+                    val remoteChapters = bookRepository.getChapters(bookId)
+                    val currentChapter = remoteChapters.find { it.chapter_number == chapterNumber }
+                        ?: remoteChapters.firstOrNull()
 
-                if (remoteBook != null && currentChapter != null) {
-                    _uiState.value = ReadingState.Success(
-                        book = remoteBook.toBookUi(),
-                        currentChapter = currentChapter.toChapterUi(),
-                        allChapters = remoteChapters.map { it.toChapterUi() },
-                        progressPercent = calculateProgress(chapterNumber, remoteChapters.size),
-                        isOnline = online
-                    )
-                    updateProgressOnServer(bookId, chapterNumber)
-                    try { bookRepository.incrementViewCount(bookId) } catch (e: Exception) {}
+                    if (remoteBook != null && currentChapter != null) {
+                        _uiState.value = ReadingState.Success(
+                            book = remoteBook.toBookUi(),
+                            currentChapter = currentChapter.toChapterUi(),
+                            allChapters = remoteChapters.map { it.toChapterUi() },
+                            progressPercent = calculateProgress(chapterNumber, remoteChapters.size),
+                            isOnline = online
+                        )
+                        updateProgressOnServer(bookId, chapterNumber)
+                        try { bookRepository.incrementViewCount(bookId) } catch (e: Exception) {}
+                    } else {
+                        _uiState.value = ReadingState.Error("Nội dung không khả dụng.")
+                    }
                 } else {
-                    _uiState.value = ReadingState.Error("Nội dung không khả dụng.")
+                    _uiState.value = ReadingState.Error("Không có kết nối mạng.")
                 }
             } catch (e: Exception) {
                 _uiState.value = ReadingState.Error("Lỗi: ${e.localizedMessage}")

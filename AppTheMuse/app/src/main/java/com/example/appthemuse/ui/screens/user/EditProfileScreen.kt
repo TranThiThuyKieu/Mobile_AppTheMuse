@@ -1,7 +1,6 @@
 package com.example.appthemuse.ui.screens.user
 
 import android.widget.Toast
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -11,7 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,12 +21,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.appthemuse.R
+import coil.compose.AsyncImage
 import com.example.appthemuse.ui.viewmodel.EditProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,36 +94,17 @@ fun EditProfileScreen(
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // --- KHU VỰC AVATAR & NÚT EDIT ---
-                Box(
-                    contentAlignment = Alignment.BottomEnd,
-                    modifier = Modifier.size(120.dp)
-                ) {
-                    // Bạn có thể đổi sang dùng AsyncImage (Coil) nếu lấy URL từ Firebase
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_avatar_placeholder), // Hãy chuẩn bị 1 file ảnh placeholder trong drawable
-                        contentDescription = "Avatar",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape)
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF5C6BC0)) // Màu xanh tía của nút edit bút chì
-                            .clickable { /* Xử lý chọn ảnh từ thư viện thiết bị nếu cần mở rộng */ },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Sửa ảnh",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
+                // --- KHU VỰC AVATAR ---
+                AsyncImage(
+                    model = if (uiState.userForm.avatarUrl.isNotEmpty()) uiState.userForm.avatarUrl
+                            else "https://ui-avatars.com/api/?name=${uiState.userForm.username}&background=random&size=200",
+                    contentDescription = "Avatar",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(120.dp)
+                        .clip(CircleShape)
+                        .background(Color.LightGray)
+                )
 
                 Spacer(modifier = Modifier.height(12.dp))
 
