@@ -38,9 +38,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavController
+import com.example.appthemuse.ui.components.HomeTopBar
 import com.example.appthemuse.ui.model.HistoryUi
 import java.text.SimpleDateFormat
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -176,18 +178,6 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun HomeTopBar(onSearchClick: () -> Unit) {
-    TopAppBar(
-        title = { Text("The Muse", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
-        actions = {
-            IconButton(onClick = onSearchClick) { Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onBackground) }
-            IconButton(onClick = {}) { Icon(Icons.Default.Notifications, contentDescription = "Alerts", tint = MaterialTheme.colorScheme.onBackground) }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-    )
-}
 
 @Composable
 fun SectionHeader(title: String, onSeeMoreClick: () -> Unit = {}) {
@@ -329,7 +319,7 @@ fun HistoryBookItem(
                         text = "Cập nhật ${
                             SimpleDateFormat(
                                 "dd/MM/yyyy",
-                                Locale.getDefault()
+                                LocalLocale.current.platformLocale
                             ).format(it.toDate())
                         }",
                         color = Color.Gray
