@@ -275,7 +275,12 @@ class FirestoreService {
      * Lấy danh sách lịch sử đọc của người dùng.
      */
     suspend fun getHistoryDocuments(userId: String): List<DocumentSnapshot> {
-        return firestore.collection("history").whereEqualTo("user_id", userId).get().await().documents
+        val docs = firestore.collection("history").whereEqualTo("user_id", userId).get().await().documents
+        return docs.groupBy { it.getString("book_id") }
+            .mapNotNull { (_, groupDocs) ->
+                groupDocs.maxByOrNull { it.getTimestamp("read_at")?.seconds ?: 0L }
+            }
+            .sortedByDescending { it.getTimestamp("read_at")?.seconds ?: 0L }
     }
 
     /**
@@ -302,7 +307,19 @@ class FirestoreService {
 
         if (existing != null) existing.reference.update(data).await() else progressRef.add(data).await()
 
-        firestore.collection("history").add(mapOf("user_id" to userId, "book_id" to bookId, "read_at" to Timestamp.now())).await()
+        val historyRef = firestore.collection("history")
+        val existingHistory = historyRef.whereEqualTo("user_id", userId).whereEqualTo("book_id", bookId).get().await().documents
+        
+        if (existingHistory.isNotEmpty()) {
+            existingHistory.first().reference.update("read_at", Timestamp.now()).await()
+            if (existingHistory.size > 1) {
+                for (i in 1 until existingHistory.size) {
+                    existingHistory[i].reference.delete().await()
+                }
+            }
+        } else {
+            historyRef.add(mapOf("user_id" to userId, "book_id" to bookId, "read_at" to Timestamp.now())).await()
+        }
     }
 
     /**

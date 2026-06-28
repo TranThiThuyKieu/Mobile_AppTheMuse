@@ -17,8 +17,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Search
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -88,15 +87,7 @@ fun ProfileScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Hồ sơ", color = themeColors.titleTextColor, fontWeight = FontWeight.Bold) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = themeColors.backgroundColor),
-                actions = {
-                    IconButton(onClick = { /* Tìm kiếm */ }) {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = themeColors.titleTextColor)
-                    }
-                    IconButton(onClick = { /* Thông báo */ }) {
-                        Icon(Icons.Default.Notifications, contentDescription = "Alerts", tint = themeColors.titleTextColor)
-                    }
-                }
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = themeColors.backgroundColor)
             )
         },
         containerColor = themeColors.backgroundColor
