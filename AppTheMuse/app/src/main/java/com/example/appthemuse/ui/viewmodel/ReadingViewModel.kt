@@ -37,13 +37,12 @@ class ReadingViewModel(
         viewModelScope.launch {
             _uiState.value = ReadingState.Loading
             try {
-                // 1. Tăng lượt xem cho sách
-                bookRepository.incrementViewCount(bookId)
-
+                // Ưu tiên kiểm tra dữ liệu đã tải (offline)
                 val localBook = downloadRepository.getBookById(bookId)
                 val chapters = if (localBook != null) {
                     downloadRepository.getChapters(bookId)
                 } else {
+                    // Nếu chưa tải, lấy từ Firebase (sẽ ném lỗi nếu không có mạng)
                     bookRepository.getChapters(bookId)
                 }
 
@@ -60,15 +59,26 @@ class ReadingViewModel(
                         progressPercent = progress
                     )
                     
-                    // 2. Lưu tiến độ đọc và lịch sử vào Firestore
-                    auth.currentUser?.uid?.let { userId ->
-                        bookRepository.updateReadingProgress(userId, bookId, chapterNumber, 0)
+                    // Cập nhật lượt xem và tiến độ lên Firebase trong background
+                    // Dùng try-catch để không làm gián đoạn việc đọc khi offline
+                    launch {
+                        try {
+                            bookRepository.incrementViewCount(bookId)
+                            auth.currentUser?.uid?.let { userId ->
+                                bookRepository.updateReadingProgress(userId, bookId, chapterNumber, 0)
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.d("ReadingVM", "Skip Firebase update: offline mode")
+                        }
                     }
                 } else {
-                    _uiState.value = ReadingState.Error("Không tìm thấy nội dung")
+                    _uiState.value = ReadingState.Error("Không tìm thấy nội dung. Vui lòng kiểm tra kết nối internet.")
                 }
             } catch (e: Exception) {
-                _uiState.value = ReadingState.Error(e.localizedMessage ?: "Lỗi tải chương")
+                val errorMsg = if (e.message?.contains("network", true) == true)
+                    "Không có internet. Vui lòng kết nối để đọc truyện này."
+                else "Lỗi tải nội dung: ${e.localizedMessage}"
+                _uiState.value = ReadingState.Error(errorMsg)
             }
         }
     }

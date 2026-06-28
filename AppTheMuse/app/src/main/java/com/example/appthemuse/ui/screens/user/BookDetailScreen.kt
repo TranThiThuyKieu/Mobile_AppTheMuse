@@ -1,5 +1,6 @@
 package com.example.appthemuse.ui.screens.user
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -17,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -33,6 +35,7 @@ import com.example.appthemuse.ui.model.ChapterUi
 import com.example.appthemuse.ui.model.ReviewUi
 import com.example.appthemuse.ui.viewmodel.BookDetailState
 import com.example.appthemuse.ui.viewmodel.BookDetailViewModel
+import com.example.appthemuse.utils.NetworkUtils
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -45,6 +48,7 @@ fun BookDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
+    val context = LocalContext.current
     var showReviewDialog by remember { mutableStateOf(false) }
 
     DisposableEffect(lifecycleOwner) {
@@ -68,7 +72,13 @@ fun BookDetailScreen(
                 },
                 actions = {
                     val isFavorite = (uiState as? BookDetailState.Success)?.isFavorite ?: false
-                    IconButton(onClick = { viewModel.toggleFavorite(bookId) }) {
+                    IconButton(onClick = { 
+                        if (NetworkUtils.isNetworkAvailable(context)) {
+                            viewModel.toggleFavorite(bookId)
+                        } else {
+                            Toast.makeText(context, "Vui lòng kết nối internet để yêu thích truyện", Toast.LENGTH_SHORT).show()
+                        }
+                    }) {
                         Icon(
                             if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Favorite",
@@ -96,13 +106,25 @@ fun BookDetailScreen(
                     lastReadChapterNumber = state.lastReadChapterNumber,
                     isFinished = state.isFinished,
                     onReadClick = { chapterNum ->
-                        navController.navigate("reading/$bookId/$chapterNum")
+                        if (state.isDownloaded || NetworkUtils.isNetworkAvailable(context)) {
+                            navController.navigate("reading/$bookId/$chapterNum")
+                        } else {
+                            Toast.makeText(context, "Không có internet, vui lòng kết nối internet để đọc truyện chưa tải", Toast.LENGTH_LONG).show()
+                        }
                     },
                     onDownloadClick = {
-                        viewModel.downloadBook(state.book)
+                        if (NetworkUtils.isNetworkAvailable(context)) {
+                            viewModel.downloadBook(state.book)
+                        } else {
+                            Toast.makeText(context, "Vui lòng kết nối internet để tải truyện", Toast.LENGTH_SHORT).show()
+                        }
                     },
                     onWriteReviewClick = {
-                        showReviewDialog = true
+                        if (NetworkUtils.isNetworkAvailable(context)) {
+                            showReviewDialog = true
+                        } else {
+                            Toast.makeText(context, "Vui lòng kết nối internet để bình luận", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 )
 

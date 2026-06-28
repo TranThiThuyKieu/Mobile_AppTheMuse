@@ -61,16 +61,10 @@ class FirestoreService {
 
     suspend fun getAllBooksRaw(limit: Long): List<DocumentSnapshot> {
         return try {
-            val snapshot = firestore.collection("books")
-                .limit(limit)
-                .get()
-                .await()
+            val snapshot = firestore.collection("books").limit(limit).get().await()
             snapshot.documents
         } catch (e: Exception) {
-            val snapshot = firestore.collection("sách")
-                .limit(limit)
-                .get()
-                .await()
+            val snapshot = firestore.collection("sách").limit(limit).get().await()
             snapshot.documents
         }
     }
@@ -79,16 +73,12 @@ class FirestoreService {
         return try {
             val snapshot = firestore.collection("books")
                 .orderBy("created_at", Query.Direction.DESCENDING)
-                .limit(limit)
-                .get()
-                .await()
+                .limit(limit).get().await()
             snapshot.documents
         } catch (e: Exception) {
             val snapshot = firestore.collection("sách")
                 .orderBy("ngày_tạo", Query.Direction.DESCENDING)
-                .limit(limit)
-                .get()
-                .await()
+                .limit(limit).get().await()
             snapshot.documents
         }
     }
@@ -97,16 +87,12 @@ class FirestoreService {
         return try {
             val snapshot = firestore.collection("books")
                 .orderBy("view_count", Query.Direction.DESCENDING)
-                .limit(limit)
-                .get()
-                .await()
+                .limit(limit).get().await()
             snapshot.documents
         } catch (e: Exception) {
             val snapshot = firestore.collection("sách")
                 .orderBy("lượt_xem", Query.Direction.DESCENDING)
-                .limit(limit)
-                .get()
-                .await()
+                .limit(limit).get().await()
             snapshot.documents
         }
     }
@@ -118,19 +104,14 @@ class FirestoreService {
     suspend fun getRecommendedBooksRaw(favoriteGenres: List<String>, limit: Long): List<DocumentSnapshot> {
         return try {
             if (favoriteGenres.isEmpty()) return getAllBooksRaw(limit)
-
             val snapshot = firestore.collection("books")
                 .whereArrayContainsAny("genres", favoriteGenres)
-                .limit(limit)
-                .get()
-                .await()
+                .limit(limit).get().await()
             snapshot.documents
         } catch (e: Exception) {
             val snapshot = firestore.collection("sách")
                 .whereArrayContainsAny("thể_loại", favoriteGenres)
-                .limit(limit)
-                .get()
-                .await()
+                .limit(limit).get().await()
             snapshot.documents
         }
     }
@@ -146,80 +127,62 @@ class FirestoreService {
     }
 
     suspend fun getUserById(userId: String): DocumentSnapshot? {
-        userCache[userId]?.let {
-            return it
-        }
+        userCache[userId]?.let { return it }
         val user = firestore.collection("users").document(userId).get().await()
         userCache[userId] = user
         return user
     }
 
     suspend fun getChapterCount(bookId: String): Int {
-        chapterCache[bookId]?.let {
-            return it
-        }
-        val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
-        val count = firestore.collection("chapters").whereEqualTo("book_id", bookNumId).get().await().size()
+        chapterCache[bookId]?.let { return it }
+        val count = getChaptersRaw(bookId).size
         chapterCache[bookId] = count
         return count
     }
 
     suspend fun getAverageRating(bookId: String): Double {
-        ratingCache[bookId]?.let {
-            return it
-        }
-        val bookNumId = bookId.removePrefix("book").toIntOrNull()
-
-        // Chỉ lọc theo book_id đơn giản
+        ratingCache[bookId]?.let { return it }
+        val bookNumId = bookId.removePrefix("book").toLongOrNull()
         val query = firestore.collection("reviews")
-            .whereIn("book_id", listOfNotNull(bookId, bookNumId))
+            .whereIn("book_id", listOfNotNull(bookId, bookNumId, bookNumId?.toString()))
 
         val snapshot = query.get().await()
-        val rating = if (snapshot.isEmpty) {
-            0.0
-        } else {
-            snapshot.documents.map {
-                it.getLong("rating")?.toDouble() ?: 0.0
-            }.average()
-        }
+        val rating = if (snapshot.isEmpty) 0.0 else snapshot.documents.map { it.getLong("rating")?.toDouble() ?: 0.0 }.average()
         ratingCache[bookId] = rating
         return rating
     }
 
     suspend fun getVoteCount(bookId: String): Int {
-        return try {
-            val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
-            val snapshot = firestore.collection("favorites")
-                .whereEqualTo("book_id", bookNumId)
-                .get()
-                .await()
-            snapshot.size()
-        } catch (e: Exception) {
-            0
-        }
+        val bookNumId = bookId.removePrefix("book").toLongOrNull()
+        return firestore.collection("favorites")
+            .whereIn("book_id", listOfNotNull(bookId, bookNumId, bookNumId?.toString()))
+            .get().await().size()
     }
 
     suspend fun getCommentCount(bookId: String): Int {
-        return try {
-            val bookNumId = bookId.removePrefix("book").toIntOrNull()
-            val snapshot = firestore.collection("reviews")
-                .whereIn("book_id", listOfNotNull(bookId, bookNumId))
-                .get()
-                .await()
-            snapshot.size()
-        } catch (e: Exception) {
-            0
-        }
+        val bookNumId = bookId.removePrefix("book").toLongOrNull()
+        return firestore.collection("reviews")
+            .whereIn("book_id", listOfNotNull(bookId, bookNumId, bookNumId?.toString()))
+            .get().await().size()
     }
 
     suspend fun getChaptersRaw(bookId: String): List<DocumentSnapshot> {
         return try {
-            val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: return emptyList()
-            val snapshot = firestore.collection("chapters")
-                .whereEqualTo("book_id", bookNumId)
-                .get()
-                .await()
-            snapshot.documents
+            val bookNumId = bookId.removePrefix("book").toLongOrNull()
+            val ids = listOfNotNull(bookId, bookNumId, bookNumId?.toString())
+            
+            // 1. Thử collection "chapters" với nhiều kiểu book_id
+            var snapshot = firestore.collection("chapters").whereIn("book_id", ids).get().await()
+            if (!snapshot.isEmpty) return snapshot.documents
+
+            // 2. Fallback: collection "chương" hoặc field "sách_id"
+            snapshot = firestore.collection("chương").whereIn("sách_id", ids).get().await()
+            if (!snapshot.isEmpty) return snapshot.documents
+
+            snapshot = firestore.collection("chapters").whereIn("sách_id", ids).get().await()
+            if (!snapshot.isEmpty) return snapshot.documents
+            
+            emptyList()
         } catch (e: Exception) {
             android.util.Log.e("FirestoreService", "getChaptersRaw error: ${e.message}")
             emptyList()
@@ -227,21 +190,18 @@ class FirestoreService {
     }
 
     suspend fun createChapterRaw(bookId: String, chapterData: Map<String, Any>): String {
-        val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: return ""
-        val existingCount = firestore.collection("chapters")
-            .whereEqualTo("book_id", bookNumId)
-            .get().await().size()
+        val bookNumId = bookId.removePrefix("book").toLongOrNull()
+        val existingCount = getChaptersRaw(bookId).size
         val nextChapterNumber = existingCount + 1
         val documentId = "${bookId}_chapter$nextChapterNumber"
         val dataWithNumber = chapterData.toMutableMap()
         dataWithNumber["chapter_number"] = nextChapterNumber
-        dataWithNumber["book_id"] = bookNumId
+        dataWithNumber["book_id"] = bookNumId ?: bookId
         dataWithNumber["created_at"] = Timestamp.now()
         dataWithNumber["view_count"] = 0L
         dataWithNumber["status"] = "đã đăng"
         firestore.collection("chapters").document(documentId).set(dataWithNumber).await()
-        firestore.collection("books").document(bookId)
-            .update("chapter_count", nextChapterNumber).await()
+        firestore.collection("books").document(bookId).update("chapter_count", nextChapterNumber).await()
         chapterCache.remove(bookId)
         return documentId
     }
@@ -250,20 +210,17 @@ class FirestoreService {
         if (keyword.isBlank()) return
         firestore.collection("users").document(userId)
             .collection("search_history").document(keyword)
-            .set(mapOf("keyword" to keyword,
-                "timestamp" to Timestamp.now()))
+            .set(mapOf("keyword" to keyword, "timestamp" to Timestamp.now()))
     }
 
     suspend fun getSearchHistory(userId: String): List<String> {
         return firestore.collection("users").document(userId)
             .collection("search_history").orderBy("timestamp", Query.Direction.DESCENDING)
-            .limit(7).get()
-            .await().documents.mapNotNull { it.getString("keyword") }
+            .limit(7).get().await().documents.mapNotNull { it.getString("keyword") }
     }
 
     suspend fun getFavoriteDocuments(userId: String): List<DocumentSnapshot> {
-        return firestore.collection("favorites").whereEqualTo("user_id", userId)
-            .get().await().documents
+        return firestore.collection("favorites").whereEqualTo("user_id", userId).get().await().documents
     }
 
     suspend fun getBookByDocumentId(bookId: String): DocumentSnapshot? {
@@ -272,75 +229,46 @@ class FirestoreService {
     }
 
     suspend fun getHistoryDocuments(userId: String): List<DocumentSnapshot> {
-        return firestore.collection("history").whereEqualTo("user_id", userId)
-            .get().await().documents
+        return firestore.collection("history").whereEqualTo("user_id", userId).get().await().documents
     }
 
-    suspend fun getReadingProgress(
-        userId: String,
-        bookId: String
-    ): DocumentSnapshot? {
-        val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
-        return firestore
-            .collection("reading_progress")
+    suspend fun getReadingProgress(userId: String, bookId: String): DocumentSnapshot? {
+        val bookNumId = bookId.removePrefix("book").toLongOrNull()
+        return firestore.collection("reading_progress")
             .whereEqualTo("user_id", userId)
-            .whereEqualTo("book_id", bookNumId)
-            .get()
-            .await()
-            .documents
-            .firstOrNull()
+            .whereIn("book_id", listOfNotNull(bookId, bookNumId, bookNumId?.toString()))
+            .get().await().documents.firstOrNull()
     }
 
     suspend fun updateReadingProgress(userId: String, bookId: String, chapterNumber: Int, scrollPosition: Int) {
-        val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
+        val bookNumId = bookId.removePrefix("book").toLongOrNull()
         val progressRef = firestore.collection("reading_progress")
-        val existing = progressRef
-            .whereEqualTo("user_id", userId)
-            .whereEqualTo("book_id", bookNumId)
-            .get()
-            .await()
-            .documents
-            .firstOrNull()
+        val existing = getReadingProgress(userId, bookId)
 
         val data = mapOf(
             "user_id" to userId,
-            "book_id" to bookNumId,
+            "book_id" to (bookNumId ?: bookId),
             "chapter_number" to chapterNumber,
             "scroll_position" to scrollPosition,
             "updated_at" to Timestamp.now()
         )
 
-        if (existing != null) {
-            existing.reference.update(data).await()
-        } else {
-            progressRef.add(data).await()
-        }
+        if (existing != null) existing.reference.update(data).await()
+        else progressRef.add(data).await()
 
-        firestore.collection("history").add(mapOf(
-            "user_id" to userId,
-            "book_id" to bookId,
-            "read_at" to Timestamp.now()
-        )).await()
+        firestore.collection("history").add(mapOf("user_id" to userId, "book_id" to bookId, "read_at" to Timestamp.now())).await()
     }
 
     suspend fun incrementViewCount(bookId: String) {
-        firestore.collection("books").document(bookId)
-            .update("view_count", FieldValue.increment(1))
-            .await()
+        firestore.collection("books").document(bookId).update("view_count", FieldValue.increment(1)).await()
     }
 
     suspend fun getBooksByAuthorRaw(authorId: String): List<DocumentSnapshot> {
         return try {
-            val snapshot = firestore.collection("books")
-                .whereEqualTo("author_id", authorId)
-                .get()
-                .await()
+            val snapshot = firestore.collection("books").whereEqualTo("author_id", authorId).get().await()
             snapshot.documents
         } catch (e: Exception) {
-            val snapshot = firestore.collection("sách")
-                .whereEqualTo("tác_giả_id", authorId)
-                .get()
-                .await()
+            val snapshot = firestore.collection("sách").whereEqualTo("tác_giả_id", authorId).get().await()
             snapshot.documents
         }
     }
@@ -355,98 +283,47 @@ class FirestoreService {
         connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
         val postData = "key=$apiKey&image=$urlEncodedImage"
         connection.outputStream.write(postData.toByteArray(Charsets.UTF_8))
-        val responseCode = connection.responseCode
-        if (responseCode == java.net.HttpURLConnection.HTTP_OK) {
+        if (connection.responseCode == java.net.HttpURLConnection.HTTP_OK) {
             val response = connection.inputStream.bufferedReader().use { it.readText() }
-            val jsonObject = org.json.JSONObject(response)
-            val dataObject = jsonObject.getJSONObject("data")
+            val dataObject = org.json.JSONObject(response).getJSONObject("data")
             return@withContext dataObject.getString("url")
-        } else {
-            val errorResponse = connection.errorStream?.bufferedReader()?.use { it.readText() }
-            throw Exception("Lỗi ImgBB: $responseCode - $errorResponse")
-        }
+        } else throw Exception("Lỗi ImgBB")
     }
 
     suspend fun createBookRaw(bookData: Map<String, Any>): String {
         val counterRef = firestore.collection("metadata").document("book_counter")
-        val counterSnapshot = counterRef.get().await()
-        var fallbackCount = 0L
-        if (!counterSnapshot.exists()) {
-            val countQuery = firestore.collection("books").count()
-            val aggregateSnapshot = countQuery.get(AggregateSource.SERVER).await()
-            fallbackCount = aggregateSnapshot.count
-        }
         return firestore.runTransaction { transaction ->
             val snapshot = transaction.get(counterRef)
-            val currentCount = if (snapshot.exists()) {
-                snapshot.getLong("count") ?: 0L
-            } else {
-                fallbackCount
-            }
-            val nextNumber = currentCount + 1
+            val nextNumber = (snapshot.getLong("count") ?: 0L) + 1
             val newId = "book$nextNumber"
-            val documentRef = firestore.collection("books").document(newId)
             val dataWithId = bookData.toMutableMap()
             dataWithId["id"] = nextNumber
-            if (snapshot.exists()) {
-                transaction.update(counterRef, "count", nextNumber)
-            } else {
-                transaction.set(counterRef, mapOf("count" to nextNumber))
-            }
-            transaction.set(documentRef, dataWithId)
+            transaction.set(counterRef, mapOf("count" to nextNumber))
+            transaction.set(firestore.collection("books").document(newId), dataWithId)
             newId
         }.await()
     }
 
     suspend fun deleteUserDocument(userId: String) {
-        try {
-            firestore.collection("users").document(userId).delete().await()
-        } catch (e: Exception) {
-            android.util.Log.e("FirestoreService", "Lỗi xóa user document: ${e.message}")
-            throw e
-        }
+        firestore.collection("users").document(userId).delete().await()
     }
 
     suspend fun toggleFavorite(userId: String, bookId: String) {
+        val bookNumId = bookId.removePrefix("book").toLongOrNull()
         val favoritesRef = firestore.collection("favorites")
+        val existing = favoritesRef.whereEqualTo("user_id", userId)
+            .whereIn("book_id", listOfNotNull(bookId, bookNumId, bookNumId?.toString()))
+            .get().await().documents.firstOrNull()
 
-        val stringQuery = favoritesRef
-            .whereEqualTo("user_id", userId)
-            .whereEqualTo("book_id", bookId)
-            .get().await()
-
-        val bookNumId = bookId.removePrefix("book").toIntOrNull()
-        val numberQuery = if (bookNumId != null) {
-            favoritesRef
-                .whereEqualTo("user_id", userId)
-                .whereEqualTo("book_id", bookNumId)
-                .get().await()
-        } else null
-
-        val existingDoc = stringQuery.documents.firstOrNull() ?: numberQuery?.documents?.firstOrNull()
-
-        if (existingDoc != null) {
-            existingDoc.reference.delete().await()
-        } else {
-            favoritesRef.add(mapOf(
-                "user_id" to userId,
-                "book_id" to bookId,
-                "created_at" to Timestamp.now()
-            )).await()
-        }
+        if (existing != null) existing.reference.delete().await()
+        else favoritesRef.add(mapOf("user_id" to userId, "book_id" to (bookNumId ?: bookId), "created_at" to Timestamp.now())).await()
     }
 
     suspend fun getReviewsRaw(bookId: String): List<DocumentSnapshot> {
-        val bookNumId = bookId.removePrefix("book").toIntOrNull()
-
-        // Lấy toàn bộ reviews của bookId này (không filter is_hidden hay orderBy để tránh lỗi Index)
-        val query = firestore.collection("reviews")
-            .whereIn("book_id", listOfNotNull(bookId, bookNumId))
-
-        val results = query.get().await().documents
-
-        // Lọc và sắp xếp thủ công bằng Kotlin
-        return results
+        val bookNumId = bookId.removePrefix("book").toLongOrNull()
+        return firestore.collection("reviews")
+            .whereIn("book_id", listOfNotNull(bookId, bookNumId, bookNumId?.toString()))
+            .get().await().documents
             .filter { it.getBoolean("is_hidden") == false }
             .sortedByDescending { it.getTimestamp("created_at") }
     }

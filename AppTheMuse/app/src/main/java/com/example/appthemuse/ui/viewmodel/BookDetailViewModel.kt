@@ -43,40 +43,50 @@ class BookDetailViewModel(
         viewModelScope.launch {
             _uiState.value = BookDetailState.Loading
             try {
-                // 1. Lấy dữ liệu cốt lõi từ Firestore
-                val book = bookRepository.getBookById(bookId)
+                // Kiểm tra xem truyện đã có trong máy chưa (hỗ trợ offline)
+                val localBook = downloadRepository.getBookById(bookId)
+                val isDownloaded = localBook != null
+                
+                // Lấy thông tin sách: Ưu tiên Firestore, nếu lỗi/mất mạng thì dùng bản local
+                val book = try {
+                    bookRepository.getBookById(bookId) ?: localBook
+                } catch (e: Exception) {
+                    localBook
+                }
+
                 if (book != null) {
-                    val chapters = bookRepository.getChapters(bookId)
-                    val reviews = bookRepository.getReviews(bookId).map {
-                        ReviewUi(
-                            id = it.id,
-                            userId = it.user_id,
-                            userName = it.user_name,
-                            userAvatar = it.user_avatar,
-                            rating = it.rating,
-                            comment = it.comment,
-                            createdAt = it.created_at
-                        )
+                    // Lấy danh sách chương: tương tự sách
+                    val chapters = try {
+                        if (isDownloaded) downloadRepository.getChapters(bookId)
+                        else bookRepository.getChapters(bookId)
+                    } catch (e: Exception) {
+                        if (isDownloaded) downloadRepository.getChapters(bookId)
+                        else throw e
                     }
+
+                    // Reviews và Favorite chỉ lấy được khi có mạng
+                    val reviews = try {
+                        bookRepository.getReviews(bookId).map {
+                            ReviewUi(
+                                id = it.id,
+                                userId = it.user_id,
+                                userName = it.user_name,
+                                userAvatar = it.user_avatar,
+                                rating = it.rating,
+                                comment = it.comment,
+                                createdAt = it.created_at
+                            )
+                        }
+                    } catch (e: Exception) { emptyList<ReviewUi>() }
+
                     val userId = auth.currentUser?.uid
-                    
-                    // 2. Kiểm tra yêu thích bằng hàm chuyên dụng để tăng tốc độ
                     val isFavorite = if (userId != null) {
-                        try {
-                            bookRepository.isBookFavorite(userId, bookId)
-                        } catch (e: Exception) { false }
+                        try { bookRepository.isBookFavorite(userId, bookId) } catch (e: Exception) { false }
                     } else false
                     
-                    val isDownloaded = try {
-                        downloadRepository.getBookById(bookId) != null
-                    } catch (e: Exception) {
-                        android.util.Log.e("BookDetailVM", "Room Database Error: ${e.message}")
-                        false 
-                    }
-                    
-                    var progressPercent = 0
                     var lastChapter = 1
                     var isFinished = false
+                    var progressPercent = 0
 
                     if (userId != null) {
                         try {
@@ -101,11 +111,10 @@ class BookDetailViewModel(
                         isFinished = isFinished
                     )
                 } else {
-                    _uiState.value = BookDetailState.Error("Không tìm thấy thông tin tác phẩm này.")
+                    _uiState.value = BookDetailState.Error("Không có kết nối internet và truyện này chưa được tải.")
                 }
             } catch (e: Exception) {
-                android.util.Log.e("BookDetailVM", "Load Error", e)
-                _uiState.value = BookDetailState.Error("Lỗi tải dữ liệu: ${e.localizedMessage}")
+                _uiState.value = BookDetailState.Error("Lỗi: ${e.localizedMessage}")
             }
         }
     }
@@ -115,11 +124,8 @@ class BookDetailViewModel(
         viewModelScope.launch {
             try {
                 bookRepository.addReview(bookId, userId, rating, comment)
-                // Reload data to show new review and updated average rating
                 loadBookDetail(bookId)
-            } catch (e: Exception) {
-                android.util.Log.e("BookDetailVM", "Add Review Error", e)
-            }
+            } catch (e: Exception) { }
         }
     }
 
@@ -131,16 +137,11 @@ class BookDetailViewModel(
                 if (currentState is BookDetailState.Success) {
                     val oldStatus = currentState.isFavorite
                     val newStatus = !oldStatus
-                    
-                    // Cập nhật UI ngay lập tức (Optimistic UI)
+
                     _uiState.value = currentState.copy(isFavorite = newStatus)
-                    
-                    // Gọi repository để cập nhật Firestore thực tế
                     bookRepository.toggleFavorite(userId, bookId)
                 }
-            } catch (e: Exception) {
-                android.util.Log.e("BookDetailVM", "Toggle Favorite Error", e)
-            }
+            } catch (e: Exception) { }
         }
     }
 
@@ -155,9 +156,7 @@ class BookDetailViewModel(
                 if (currentState is BookDetailState.Success) {
                     _uiState.value = currentState.copy(isDownloaded = true)
                 }
-            } catch (e: Exception) {
-                android.util.Log.e("BookDetailVM", "Download Error", e)
-            }
+            } catch (e: Exception) { }
         }
     }
 }
