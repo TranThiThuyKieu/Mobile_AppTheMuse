@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
+import com.example.appthemuse.ui.components.HomeTopBar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import com.example.appthemuse.ui.model.BookUi

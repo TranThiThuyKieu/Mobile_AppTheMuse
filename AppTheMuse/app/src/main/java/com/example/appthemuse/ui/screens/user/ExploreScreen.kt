@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.appthemuse.ui.components.HomeTopBar
 import com.example.appthemuse.ui.model.CategoryUi
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.viewmodel.HomeViewModel
@@ -26,7 +27,9 @@ fun ExploreScreen(viewModel: HomeViewModel, navController: NavController, onBook
     var selectedTab by remember {
         mutableStateOf("Tất cả")
     }
-
+    var showSearch by remember {
+        mutableStateOf(false)
+    }
     // Lọc danh sách sách theo tab
     val displayBooks = when (selectedTab) {
         "Hot" -> uiState.trendingBooks   // sách hot
@@ -34,7 +37,17 @@ fun ExploreScreen(viewModel: HomeViewModel, navController: NavController, onBook
         else -> uiState.allBooks          // tất cả sách
     }
     val limitedBooks = displayBooks.take(5)
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
+    // Thanh top bar
+    Scaffold(
+        topBar = {
+            HomeTopBar(
+                onSearchClick = {
+                    showSearch = true
+                }
+            )
+        }
+    ) { padding ->
+        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
         // Thể loại
         item {
             Text(text = "Tất cả thể loại", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
@@ -54,13 +67,13 @@ fun ExploreScreen(viewModel: HomeViewModel, navController: NavController, onBook
                 }
             }
         }
-        
+
         // Danh sách truyện
         item {
             Spacer(Modifier.height(16.dp))
             Text(text = "Tất cả truyện", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(16.dp))
         }
-        
+
         // Tab chọn loại sách
         item {
             Row(
@@ -108,6 +121,14 @@ fun ExploreScreen(viewModel: HomeViewModel, navController: NavController, onBook
         }
     }
 }
+    if (showSearch) {
+        SearchScreen(
+            viewModel = viewModel,
+            onClose = {
+                showSearch = false
+            }
+        )
+    }}
 // Hiển thị các thể loại sách
 @Composable
 fun CategoryCard(category: CategoryUi, books: List<BookUi>, onClick: () -> Unit) {
