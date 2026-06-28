@@ -38,6 +38,10 @@ fun AdminUserManagementScreen(
     viewModel: AdminUserViewModel,
     onViewProfile: (String) -> Unit,
     onLogout: () -> Unit,
+    onProfileClick: () -> Unit = {},
+    onEditProfileClick: () -> Unit = {},
+    onSecurityClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -57,7 +61,11 @@ fun AdminUserManagementScreen(
                 AdminDrawerContent(
                     adminName = uiState.adminName,
                     adminRole = uiState.adminRole,
-                    onLogout = onLogout
+                    onLogout = onLogout,
+                    onProfileClick = onProfileClick,
+                    onEditProfileClick = onEditProfileClick,
+                    onSecurityClick = onSecurityClick,
+                    onSettingsClick = onSettingsClick
                 )
             }
         }
@@ -222,93 +230,6 @@ private fun AdminUserHeader(onMenuClick: () -> Unit) {
 }
 
 @Composable
-private fun AdminDrawerContent(adminName: String, adminRole: String, onLogout: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxHeight()
-            .padding(20.dp)
-    ) {
-        // Admin Profile Info
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 24.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(AdminPrimary.copy(alpha = 0.1f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.AutoMirrored.Filled.MenuBook, contentDescription = null, tint = AdminPrimary)
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column {
-                Text(
-                    text = adminName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = adminRole,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Menu Items
-        DrawerMenuItem(icon = Icons.Default.Group, label = "Hồ sơ")
-        DrawerMenuItem(icon = Icons.Default.Edit, label = "Chỉnh sửa thông tin cá nhân")
-        DrawerMenuItem(icon = Icons.Default.Security, label = "Mật khẩu và bảo mật")
-        DrawerMenuItem(icon = Icons.Default.Settings, label = "Cài đặt")
-
-        Spacer(modifier = Modifier.weight(1f))
-        
-        // Logout Button at the bottom
-        DrawerMenuItem(
-            icon = Icons.AutoMirrored.Filled.ExitToApp, 
-            label = "Đăng xuất", 
-            textColor = StatusRed,
-            onClick = onLogout
-        )
-    }
-}
-
-@Composable
-private fun DrawerMenuItem(
-    icon: ImageVector, 
-    label: String,
-    textColor: Color = Color.DarkGray,
-    onClick: () -> Unit = {}
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = if (textColor == StatusRed) StatusRed else AdminPrimary,
-            modifier = Modifier.size(20.dp)
-        )
-        Spacer(modifier = Modifier.width(16.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = textColor
-        )
-    }
-}
-
-@Composable
 private fun UserAdminRow(
     user: UserAdminUi,
     onViewProfile: () -> Unit,
@@ -320,7 +241,7 @@ private fun UserAdminRow(
             .border(1.dp, Color(0xFFE5E7EB), RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(0.0.dp)
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(

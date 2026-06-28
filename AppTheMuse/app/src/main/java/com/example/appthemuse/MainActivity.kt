@@ -200,6 +200,12 @@ class MainActivity : ComponentActivity() {
                                 adminBookManagementViewModel = adminBookManagementViewModel,
                                 adminBookDetailViewModel = adminBookDetailViewModel,
                                 adminReviewModerationViewModel = adminReviewModerationViewModel,
+                                profileViewModel = profileViewModel,
+                                editProfileViewModel = editProfileViewModel,
+                                securityViewModel = securityViewModel,
+                                onThemeChanged = { themeName ->
+                                    isDarkTheme = (themeName == "Dark")
+                                },
                                 onLogout = {
                                     FirebaseAuth.getInstance().signOut()
                                     navController.navigate("welcome") {

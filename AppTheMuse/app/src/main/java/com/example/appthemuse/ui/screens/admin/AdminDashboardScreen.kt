@@ -43,6 +43,10 @@ private val AdminRed = Color(0xFFEF4444)
 fun AdminDashboardScreen(
     viewModel: AdminDashboardViewModel,
     onLogout: () -> Unit,
+    onProfileClick: () -> Unit,
+    onEditProfileClick: () -> Unit,
+    onSecurityClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -60,7 +64,11 @@ fun AdminDashboardScreen(
                 AdminDrawerContent(
                     adminName = uiState.adminName,
                     adminRole = uiState.adminRole,
-                    onLogout = onLogout
+                    onLogout = onLogout,
+                    onProfileClick = onProfileClick,
+                    onEditProfileClick = onEditProfileClick,
+                    onSecurityClick = onSecurityClick,
+                    onSettingsClick = onSettingsClick
                 )
             }
         }
@@ -185,7 +193,15 @@ fun AdminDashboardScreen(
 }
 
 @Composable
-private fun AdminDrawerContent(adminName: String, adminRole: String, onLogout: () -> Unit) {
+fun AdminDrawerContent(
+    adminName: String, 
+    adminRole: String, 
+    onLogout: () -> Unit,
+    onProfileClick: () -> Unit = {},
+    onEditProfileClick: () -> Unit = {},
+    onSecurityClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {}
+) {
     Column(
         modifier = Modifier
             .fillMaxHeight()
@@ -225,10 +241,10 @@ private fun AdminDrawerContent(adminName: String, adminRole: String, onLogout: (
         Spacer(modifier = Modifier.height(16.dp))
 
         // Menu Items
-        DrawerMenuItem(icon = Icons.Default.Group, label = "Hồ sơ")
-        DrawerMenuItem(icon = Icons.Default.Edit, label = "Chỉnh sửa thông tin cá nhân")
-        DrawerMenuItem(icon = Icons.Default.Security, label = "Mật khẩu và bảo mật")
-        DrawerMenuItem(icon = Icons.Default.Settings, label = "Cài đặt")
+        DrawerMenuItem(icon = Icons.Default.Group, label = "Hồ sơ", onClick = onProfileClick)
+        DrawerMenuItem(icon = Icons.Default.Edit, label = "Chỉnh sửa thông tin cá nhân", onClick = onEditProfileClick)
+        DrawerMenuItem(icon = Icons.Default.Security, label = "Mật khẩu và bảo mật", onClick = onSecurityClick)
+        DrawerMenuItem(icon = Icons.Default.Settings, label = "Cài đặt", onClick = onSettingsClick)
         
         Spacer(modifier = Modifier.weight(1f))
         
@@ -243,7 +259,7 @@ private fun AdminDrawerContent(adminName: String, adminRole: String, onLogout: (
 }
 
 @Composable
-private fun DrawerMenuItem(
+fun DrawerMenuItem(
     icon: ImageVector, 
     label: String, 
     textColor: Color = Color.DarkGray,

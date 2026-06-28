@@ -27,6 +27,10 @@ fun AdminMainScreen(
     adminBookManagementViewModel: AdminBookManagementViewModel,
     adminBookDetailViewModel: AdminBookDetailViewModel,
     adminReviewModerationViewModel: AdminReviewModerationViewModel,
+    profileViewModel: ProfileViewModel,
+    editProfileViewModel: EditProfileViewModel,
+    securityViewModel: SecurityViewModel,
+    onThemeChanged: (String) -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -37,7 +41,8 @@ fun AdminMainScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         bottomBar = {
-            if (currentRoute !in listOf("admin_user_detail/{userId}")) {
+            val bottomBarRoutes = listOf("admin_dashboard", "admin_users", "admin_books")
+            if (currentRoute in bottomBarRoutes) {
                 AdminBottomBar(navController = navController, currentRoute = currentRoute)
             }
         }
@@ -50,7 +55,11 @@ fun AdminMainScreen(
             composable("admin_dashboard") {
                 AdminDashboardScreen(
                     viewModel = adminDashboardViewModel,
-                    onLogout = onLogout
+                    onLogout = onLogout,
+                    onProfileClick = { navController.navigate("admin_profile") },
+                    onEditProfileClick = { navController.navigate("admin_edit_profile") },
+                    onSecurityClick = { navController.navigate("admin_security") },
+                    onSettingsClick = { navController.navigate("admin_settings") }
                 )
             }
             composable("admin_users") {
@@ -59,7 +68,11 @@ fun AdminMainScreen(
                     onViewProfile = { userId ->
                         navController.navigate("admin_user_detail/$userId")
                     },
-                    onLogout = onLogout
+                    onLogout = onLogout,
+                    onProfileClick = { navController.navigate("admin_profile") },
+                    onEditProfileClick = { navController.navigate("admin_edit_profile") },
+                    onSecurityClick = { navController.navigate("admin_security") },
+                    onSettingsClick = { navController.navigate("admin_settings") }
                 )
             }
             composable("admin_user_detail/{userId}") { backStack ->
@@ -73,9 +86,15 @@ fun AdminMainScreen(
             composable("admin_books") {
                 AdminBookManagementScreen(
                     viewModel = adminBookManagementViewModel,
+                    adminDashboardViewModel = adminDashboardViewModel,
                     onBookClick = { bookId ->
                         navController.navigate("admin_book_detail/$bookId")
-                    }
+                    },
+                    onLogout = onLogout,
+                    onProfileClick = { navController.navigate("admin_profile") },
+                    onEditProfileClick = { navController.navigate("admin_edit_profile") },
+                    onSecurityClick = { navController.navigate("admin_security") },
+                    onSettingsClick = { navController.navigate("admin_settings") }
                 )
             }
             composable("admin_reviews") {
@@ -95,6 +114,31 @@ fun AdminMainScreen(
                         adminReviewModerationViewModel.load(id)
                         navController.navigate("admin_reviews")
                     }
+                )
+            }
+            composable("admin_profile") {
+                AdminProfileScreen(
+                    viewModel = profileViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("admin_edit_profile") {
+                AdminEditProfileScreen(
+                    viewModel = editProfileViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("admin_security") {
+                AdminSecurityScreen(
+                    viewModel = securityViewModel,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable("admin_settings") {
+                AdminSettingsScreen(
+                    viewModel = profileViewModel,
+                    onThemeChanged = onThemeChanged,
+                    onBack = { navController.popBackStack() }
                 )
             }
         }
