@@ -65,6 +65,10 @@ class EditProfileViewModel(
         _uiState.update { it.copy(userForm = it.userForm.copy(username = newValue)) }
     }
 
+    fun onAvatarUrlChange(newValue: String) {
+        _uiState.update { it.copy(userForm = it.userForm.copy(avatarUrl = newValue)) }
+    }
+
     // Hàm gọi khi bấm "LƯU THAY ĐỔI"
     fun saveChanges() {
         val uid = userRepository.getCurrentUserUid() ?: return

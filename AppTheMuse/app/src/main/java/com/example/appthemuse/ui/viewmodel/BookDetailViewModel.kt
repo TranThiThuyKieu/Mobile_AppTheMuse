@@ -54,23 +54,38 @@ class BookDetailViewModel(
             val online = isOnline()
             val localBook = downloadRepository.getBookById(bookId)
 
+            if (!online && localBook == null) {
+                _uiState.value = BookDetailState.Error("Truyện chưa được tải về. Vui lòng kết nối mạng.")
+                return@launch
+            }
+
             try {
-                // Không chặn người dùng bằng `online`. Thử lấy data từ repo trước (Firestore tự cache).
-                val book = try { bookRepository.getBookById(bookId) } catch (e: Exception) { null } ?: localBook
+                val book = if (online) {
+                    try { bookRepository.getBookById(bookId) } catch (e: Exception) { null } ?: localBook
+                } else {
+                    localBook
+                }
                 
                 if (book != null) {
                     val userId = auth.currentUser?.uid
                     
-                    // Lấy danh sách chương: ưu tiên mạng, nếu lỗi thì lấy local
-                    val chapters = try {
-                        val remoteChapters = bookRepository.getChapters(bookId)
-                        if (remoteChapters.isNotEmpty()) remoteChapters else downloadRepository.getChapters(bookId)
-                    } catch (e: Exception) {
+                    val chapters = if (online) {
+                        try {
+                            val remoteChapters = bookRepository.getChapters(bookId)
+                            if (remoteChapters.isNotEmpty()) remoteChapters else downloadRepository.getChapters(bookId)
+                        } catch (e: Exception) {
+                            downloadRepository.getChapters(bookId)
+                        }
+                    } else {
                         downloadRepository.getChapters(bookId)
                     }
 
-                    val reviews = try { bookRepository.getReviews(bookId) } catch (e: Exception) { emptyList() }
-                    val isFavorite = if (userId != null) {
+                    val reviews = if (online) {
+                        try { bookRepository.getReviews(bookId) } catch (e: Exception) { emptyList() }
+                    } else {
+                        emptyList()
+                    }
+                    val isFavorite = if (userId != null && online) {
                         try { bookRepository.isBookFavorite(userId, bookId) } catch (e: Exception) { false }
                     } else false
                     
@@ -109,6 +124,7 @@ class BookDetailViewModel(
     }
 
     fun addReview(bookId: String, rating: Int, comment: String) {
+        if (!isOnline()) return
         viewModelScope.launch {
             try {
                 bookRepository.addReview(bookId, auth.currentUser?.uid ?: return@launch, rating, comment)
@@ -118,6 +134,7 @@ class BookDetailViewModel(
     }
 
     fun toggleFavorite(bookId: String) {
+        if (!isOnline()) return
         viewModelScope.launch {
             val currentState = _uiState.value as? BookDetailState.Success ?: return@launch
             _uiState.value = currentState.copy(isFavorite = !currentState.isFavorite)
@@ -128,12 +145,29 @@ class BookDetailViewModel(
     }
 
     fun downloadBook(bookUi: BookUi) {
+        if (!isOnline()) return
         viewModelScope.launch {
             try {
                 val book = bookRepository.getBookById(bookUi.id) ?: return@launch
                 downloadRepository.saveBook(book)
                 downloadRepository.saveChapters(book.id, bookRepository.getChapters(book.id))
                 (_uiState.value as? BookDetailState.Success)?.let { _uiState.value = it.copy(isDownloaded = true) }
+            } catch (e: Exception) {}
+        }
+    }
+
+    fun deleteBook(bookId: String) {
+        viewModelScope.launch {
+            try {
+                downloadRepository.deleteBook(bookId)
+                val currentState = _uiState.value as? BookDetailState.Success
+                if (currentState != null) {
+                    if (currentState.isOnline) {
+                        _uiState.value = currentState.copy(isDownloaded = false)
+                    } else {
+                        _uiState.value = BookDetailState.Error("Truyện chưa được tải về. Vui lòng kết nối mạng.")
+                    }
+                }
             } catch (e: Exception) {}
         }
     }

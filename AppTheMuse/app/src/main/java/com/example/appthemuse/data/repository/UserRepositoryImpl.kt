@@ -63,7 +63,12 @@ class UserRepositoryImpl(
 
             isBlocked = false,
 
-            favoriteGenres = emptyList()
+            favoriteGenres = emptyList(),
+
+            avatarUrl = data["avatar_url"]?.toString()
+                ?: data["avatarUrl"]?.toString()
+                ?: data["ảnh_đại_diện"]?.toString()
+                ?: ""
         )
     }
 
@@ -74,10 +79,12 @@ class UserRepositoryImpl(
 
         val updateData = mapOf(
             "username" to userUi.username,
+            "name" to userUi.username,
             "fullName" to userUi.fullName,
             "phoneNumber" to userUi.phoneNumber,
             "birthday" to userUi.birthday,
-            "gender" to userUi.gender
+            "gender" to userUi.gender,
+            "avatar_url" to userUi.avatarUrl
         )
 
         return firebaseUserService.updateUserProfile(

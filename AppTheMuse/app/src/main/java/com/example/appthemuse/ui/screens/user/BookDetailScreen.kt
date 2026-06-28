@@ -67,13 +67,17 @@ fun BookDetailScreen(
                     }
                 },
                 actions = {
-                    val isFavorite = (uiState as? BookDetailState.Success)?.isFavorite ?: false
-                    IconButton(onClick = { viewModel.toggleFavorite(bookId) }) {
-                        Icon(
-                            if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Favorite",
-                            tint = if (isFavorite) Color.Red else LocalContentColor.current
-                        )
+                    val successState = uiState as? BookDetailState.Success
+                    val isFavorite = successState?.isFavorite ?: false
+                    val isOnline = successState?.isOnline ?: true
+                    if (isOnline) {
+                        IconButton(onClick = { viewModel.toggleFavorite(bookId) }) {
+                            Icon(
+                                if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Favorite",
+                                tint = if (isFavorite) Color.Red else LocalContentColor.current
+                            )
+                        }
                     }
                 }
             )
@@ -95,10 +99,12 @@ fun BookDetailScreen(
                     progressPercent = state.book.progressPercent,
                     lastReadChapterNumber = state.lastReadChapterNumber,
                     isFinished = state.isFinished,
+                    isOnline = state.isOnline,
                     onReadClick = { chapterNum ->
                         navController.navigate("reading/$bookId/$chapterNum")
                     },
                     onDownloadClick = { viewModel.downloadBook(state.book) },
+                    onDeleteClick = { viewModel.deleteBook(bookId) },
                     onWriteReviewClick = { showReviewDialog = true }
                 )
 
@@ -131,8 +137,10 @@ fun BookDetailContent(
     progressPercent: Int,
     lastReadChapterNumber: Int,
     isFinished: Boolean,
+    isOnline: Boolean,
     onReadClick: (Int) -> Unit,
     onDownloadClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     onWriteReviewClick: () -> Unit
 ) {
     var isDescriptionExpanded by remember { mutableStateOf(false) }
@@ -234,19 +242,28 @@ fun BookDetailContent(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 if (!isDownloaded) {
-                    TextButton(onClick = onDownloadClick) {
-                        Icon(Icons.Default.Download, contentDescription = null)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Tải xuống để đọc offline")
+                    if (isOnline) {
+                        TextButton(onClick = onDownloadClick) {
+                            Icon(Icons.Default.Download, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Tải xuống để đọc offline")
+                        }
                     }
                 } else {
                     Row(
                         verticalAlignment = Alignment.CenterVertically, 
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Đã tải xuống", color = Color(0xFF4CAF50), fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        TextButton(onClick = onDeleteClick) {
+                            Icon(Icons.Default.Delete, contentDescription = "Xóa", tint = Color.Red, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Xóa", color = Color.Red)
+                        }
                     }
                 }
 
@@ -293,10 +310,12 @@ fun BookDetailContent(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
-                TextButton(onClick = onWriteReviewClick) {
-                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Viết đánh giá")
+                if (isOnline) {
+                    TextButton(onClick = onWriteReviewClick) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Viết đánh giá")
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -305,7 +324,10 @@ fun BookDetailContent(
         if (reviews.isEmpty()) {
             item {
                 Box(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp), contentAlignment = Alignment.Center) {
-                    Text("Chưa có đánh giá nào.", color = Color.Gray)
+                    Text(
+                        text = if (isOnline) "Chưa có đánh giá nào." else "Không thể tải bình luận khi ngoại tuyến.",
+                        color = Color.Gray
+                    )
                 }
             }
         } else {

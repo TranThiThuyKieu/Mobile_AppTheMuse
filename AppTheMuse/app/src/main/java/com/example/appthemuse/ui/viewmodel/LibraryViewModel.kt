@@ -98,6 +98,13 @@ class LibraryViewModel(
         }
     }
 
+    fun deleteBook(bookId: String) {
+        viewModelScope.launch {
+            downloadRepository.deleteBook(bookId)
+            loadDownloadedBooks()
+        }
+    }
+
     fun insertBook() {
         viewModelScope.launch {
             loadDownloadedBooks()

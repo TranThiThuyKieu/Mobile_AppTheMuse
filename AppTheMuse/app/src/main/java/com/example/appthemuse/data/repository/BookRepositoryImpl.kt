@@ -182,7 +182,7 @@ class BookRepositoryImpl(
                     comment = doc.getString("comment") ?: "",
                     created_at = doc.getTimestamp("created_at"),
                     is_hidden = doc.getBoolean("is_hidden") ?: false,
-                    user_name = userDoc?.getString("name") ?: userDoc?.getString("tên_người_dùng") ?: "Người dùng",
+                    user_name = userDoc?.getString("username") ?: userDoc?.getString("name") ?: userDoc?.getString("tên_người_dùng") ?: "Người dùng",
                     user_avatar = userDoc?.getString("avatar_url") ?: userDoc?.getString("ảnh_đại_diện") ?: ""
                 )
             }

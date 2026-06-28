@@ -48,8 +48,7 @@ class ProfileViewModel(
             if (uid != null) {
                 viewModelScope.launch {
                     try {
-                        val name = userRepository.getUserName(uid)
-                        _uiState.update { it.copy(user = it.user.copy(username = name)) }
+                        val profile = userRepository.getFullUserProfile(uid)
 
                         // Tải số liệu thống kê thực tế
                         val (readCount, favoriteCount, _) = userRepository.getUserStats(uid)
@@ -60,7 +59,7 @@ class ProfileViewModel(
                         _uiState.update { currentState ->
                             currentState.copy(
                                 isLoading = false,
-                                user = currentState.user.copy(
+                                user = (profile ?: currentState.user).copy(
                                     readCount = readCount,
                                     favoriteCount = favoriteCount,
                                     downloadedCount = downloadedCount

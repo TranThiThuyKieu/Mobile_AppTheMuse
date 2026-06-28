@@ -13,5 +13,6 @@ data class UserUi(
     val favoriteCount: Int = 0,
     val downloadedCount: Int = 0,
     val isBlocked: Boolean = false,
-    val favoriteGenres: List<String> = emptyList()
+    val favoriteGenres: List<String> = emptyList(),
+    val avatarUrl: String = ""
 )
