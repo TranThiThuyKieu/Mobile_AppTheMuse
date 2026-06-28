@@ -1,6 +1,7 @@
 package com.example.appthemuse.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appthemuse.domain.repository.BookRepository
 import com.example.appthemuse.domain.repository.DownloadRepository
@@ -8,6 +9,7 @@ import com.example.appthemuse.ui.mapper.toBookUi
 import com.example.appthemuse.ui.mapper.toChapterUi
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.model.ChapterUi
+import com.example.appthemuse.utils.NetworkUtils
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,57 +21,92 @@ sealed class ReadingState {
         val book: BookUi,
         val currentChapter: ChapterUi,
         val allChapters: List<ChapterUi>,
-        val progressPercent: Int
+        val progressPercent: Int,
+        val isOnline: Boolean = true
     ) : ReadingState()
     data class Error(val message: String) : ReadingState()
 }
 
 class ReadingViewModel(
+    application: Application,
     private val bookRepository: BookRepository,
     private val downloadRepository: DownloadRepository
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow<ReadingState>(ReadingState.Loading)
     val uiState: StateFlow<ReadingState> = _uiState
     private val auth = FirebaseAuth.getInstance()
 
+    private fun isOnline(): Boolean {
+        return NetworkUtils.isOnline(getApplication())
+    }
+
     fun loadChapter(bookId: String, chapterNumber: Int) {
         viewModelScope.launch {
             _uiState.value = ReadingState.Loading
-            try {
-                // 1. Tăng lượt xem cho sách
-                bookRepository.incrementViewCount(bookId)
+            
+            val online = isOnline()
+            val localBook = downloadRepository.getBookById(bookId)
+            val isDownloaded = localBook != null
 
-                val localBook = downloadRepository.getBookById(bookId)
-                val chapters = if (localBook != null) {
-                    downloadRepository.getChapters(bookId)
-                } else {
-                    bookRepository.getChapters(bookId)
+            if (!online && !isDownloaded) {
+                _uiState.value = ReadingState.Error("Truyện này chưa được tải về. Vui lòng bật mạng để tiếp tục.")
+                return@launch
+            }
+
+            try {
+                if (isDownloaded) { 
+                    val localChapters = downloadRepository.getChapters(bookId)
+                    val currentChapter = localChapters.find { it.chapter_number == chapterNumber }
+                        ?: localChapters.firstOrNull()
+
+                    if (currentChapter != null) {
+                        _uiState.value = ReadingState.Success(
+                            book = localBook.toBookUi(),
+                            currentChapter = currentChapter.toChapterUi(),
+                            allChapters = localChapters.map { it.toChapterUi() },
+                            progressPercent = calculateProgress(chapterNumber, localChapters.size),
+                            isOnline = online
+                        )
+                        if (online) updateProgressOnServer(bookId, chapterNumber)
+                        return@launch
+                    }
                 }
 
-                val book = localBook ?: bookRepository.getBookById(bookId)
-                val currentChapter = chapters.find { it.chapter_number == chapterNumber }
-                    ?: chapters.firstOrNull()
+                if (online) {
+                    val remoteBook = bookRepository.getBookById(bookId)
+                    val remoteChapters = bookRepository.getChapters(bookId)
+                    val currentChapter = remoteChapters.find { it.chapter_number == chapterNumber }
+                        ?: remoteChapters.firstOrNull()
 
-                if (book != null && currentChapter != null) {
-                    val progress = calculateProgress(chapterNumber, chapters.size)
-                    _uiState.value = ReadingState.Success(
-                        book = book.toBookUi(),
-                        currentChapter = currentChapter.toChapterUi(),
-                        allChapters = chapters.map { it.toChapterUi() },
-                        progressPercent = progress
-                    )
-                    
-                    // 2. Lưu tiến độ đọc và lịch sử vào Firestore
-                    auth.currentUser?.uid?.let { userId ->
-                        bookRepository.updateReadingProgress(userId, bookId, chapterNumber, 0)
+                    if (remoteBook != null && currentChapter != null) {
+                        _uiState.value = ReadingState.Success(
+                            book = remoteBook.toBookUi(),
+                            currentChapter = currentChapter.toChapterUi(),
+                            allChapters = remoteChapters.map { it.toChapterUi() },
+                            progressPercent = calculateProgress(chapterNumber, remoteChapters.size),
+                            isOnline = online
+                        )
+                        updateProgressOnServer(bookId, chapterNumber)
+                        try { bookRepository.incrementViewCount(bookId) } catch (e: Exception) {}
+                    } else {
+                        _uiState.value = ReadingState.Error("Nội dung không khả dụng.")
                     }
                 } else {
-                    _uiState.value = ReadingState.Error("Không tìm thấy nội dung")
+                    _uiState.value = ReadingState.Error("Không có kết nối mạng.")
                 }
             } catch (e: Exception) {
-                _uiState.value = ReadingState.Error(e.localizedMessage ?: "Lỗi tải chương")
+                _uiState.value = ReadingState.Error("Lỗi: ${e.localizedMessage}")
             }
+        }
+    }
+
+    private fun updateProgressOnServer(bookId: String, chapterNumber: Int) {
+        val userId = auth.currentUser?.uid ?: return
+        viewModelScope.launch {
+            try {
+                bookRepository.updateReadingProgress(userId, bookId, chapterNumber, 0)
+            } catch (e: Exception) { }
         }
     }
 

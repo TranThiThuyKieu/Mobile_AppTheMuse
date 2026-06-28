@@ -21,6 +21,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImage
 import com.example.appthemuse.ui.components.HomeTopBar
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.viewmodel.HomeViewModel
 import com.example.appthemuse.ui.viewmodel.LibraryViewModel
@@ -127,6 +129,7 @@ fun LibraryScreen(
                                 hasUpdate = hasUpdate,
                                 isUpdating = isUpdating,
                                 onUpdateClick = { viewModel.updateBookChapters(book.id) },
+                                onDeleteClick = { viewModel.deleteBook(book.id) },
                                 onClick = { onBookClick(book.id) }
                             )
                         }
@@ -149,6 +152,7 @@ fun DownloadedBookItem(
     hasUpdate: Boolean,
     isUpdating: Boolean,
     onUpdateClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     onClick: () -> Unit
 ) {
     Card(
@@ -211,6 +215,13 @@ fun DownloadedBookItem(
                         }
                     }
                 }
+            }
+            IconButton(onClick = onDeleteClick) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Xóa sách",
+                    tint = Color.Red
+                )
             }
         }
     }

@@ -67,13 +67,17 @@ fun BookDetailScreen(
                     }
                 },
                 actions = {
-                    val isFavorite = (uiState as? BookDetailState.Success)?.isFavorite ?: false
-                    IconButton(onClick = { viewModel.toggleFavorite(bookId) }) {
-                        Icon(
-                            if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                            contentDescription = "Favorite",
-                            tint = if (isFavorite) Color.Red else LocalContentColor.current
-                        )
+                    val successState = uiState as? BookDetailState.Success
+                    val isFavorite = successState?.isFavorite ?: false
+                    val isOnline = successState?.isOnline ?: true
+                    if (isOnline) {
+                        IconButton(onClick = { viewModel.toggleFavorite(bookId) }) {
+                            Icon(
+                                if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                                contentDescription = "Favorite",
+                                tint = if (isFavorite) Color.Red else LocalContentColor.current
+                            )
+                        }
                     }
                 }
             )
@@ -95,15 +99,13 @@ fun BookDetailScreen(
                     progressPercent = state.book.progressPercent,
                     lastReadChapterNumber = state.lastReadChapterNumber,
                     isFinished = state.isFinished,
+                    isOnline = state.isOnline,
                     onReadClick = { chapterNum ->
                         navController.navigate("reading/$bookId/$chapterNum")
                     },
-                    onDownloadClick = {
-                        viewModel.downloadBook(state.book)
-                    },
-                    onWriteReviewClick = {
-                        showReviewDialog = true
-                    }
+                    onDownloadClick = { viewModel.downloadBook(state.book) },
+                    onDeleteClick = { viewModel.deleteBook(bookId) },
+                    onWriteReviewClick = { showReviewDialog = true }
                 )
 
                 if (showReviewDialog) {
@@ -135,8 +137,10 @@ fun BookDetailContent(
     progressPercent: Int,
     lastReadChapterNumber: Int,
     isFinished: Boolean,
+    isOnline: Boolean,
     onReadClick: (Int) -> Unit,
     onDownloadClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     onWriteReviewClick: () -> Unit
 ) {
     var isDescriptionExpanded by remember { mutableStateOf(false) }
@@ -238,19 +242,28 @@ fun BookDetailContent(
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 if (!isDownloaded) {
-                    TextButton(onClick = onDownloadClick) {
-                        Icon(Icons.Default.Download, contentDescription = null)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Tải xuống để đọc offline")
+                    if (isOnline) {
+                        TextButton(onClick = onDownloadClick) {
+                            Icon(Icons.Default.Download, contentDescription = null)
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Tải xuống để đọc offline")
+                        }
                     }
                 } else {
                     Row(
                         verticalAlignment = Alignment.CenterVertically, 
-                        modifier = Modifier.padding(vertical = 8.dp)
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("Đã tải xuống", color = Color(0xFF4CAF50), fontWeight = FontWeight.Medium)
+                        Spacer(modifier = Modifier.width(16.dp))
+                        TextButton(onClick = onDeleteClick) {
+                            Icon(Icons.Default.Delete, contentDescription = "Xóa", tint = Color.Red, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Xóa", color = Color.Red)
+                        }
                     }
                 }
 
@@ -284,7 +297,7 @@ fun BookDetailContent(
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.5f))
         }
 
-        // --- PHẦN ĐÁNH GIÁ ---
+        // --- PHẦN ĐÁNH GIÁ (HIỂN THỊ DƯỚI CÙNG) ---
         item {
             Spacer(modifier = Modifier.height(32.dp))
             Row(
@@ -292,11 +305,17 @@ fun BookDetailContent(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Đánh giá (${reviews.size})", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                TextButton(onClick = onWriteReviewClick) {
-                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Viết đánh giá")
+                Text(
+                    text = "Đánh giá (${reviews.size})",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                if (isOnline) {
+                    TextButton(onClick = onWriteReviewClick) {
+                        Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Viết đánh giá")
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -304,8 +323,11 @@ fun BookDetailContent(
 
         if (reviews.isEmpty()) {
             item {
-                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Text("Chưa có đánh giá nào.", color = Color.Gray)
+                Box(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp), contentAlignment = Alignment.Center) {
+                    Text(
+                        text = if (isOnline) "Chưa có đánh giá nào." else "Không thể tải bình luận khi ngoại tuyến.",
+                        color = Color.Gray
+                    )
                 }
             }
         } else {
@@ -313,15 +335,14 @@ fun BookDetailContent(
                 ReviewItem(review = review)
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.3f))
             }
+            item { Spacer(modifier = Modifier.height(32.dp)) }
         }
-        
-        item { Spacer(modifier = Modifier.height(32.dp)) }
     }
 }
 
 @Composable
 fun ReviewItem(review: ReviewUi) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    Row(modifier = Modifier.fillMaxWidth()) {
         AsyncImage(
             model = if (review.userAvatar.isNotEmpty()) review.userAvatar else "https://ui-avatars.com/api/?name=${review.userName}&background=random",
             contentDescription = null,
@@ -361,7 +382,7 @@ fun AddReviewDialog(onDismiss: () -> Unit, onSubmit: (Int, String) -> Unit) {
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Đánh giá của bạn") },
+        title = { Text("Viết đánh giá") },
         text = {
             Column {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
@@ -380,7 +401,7 @@ fun AddReviewDialog(onDismiss: () -> Unit, onSubmit: (Int, String) -> Unit) {
                 OutlinedTextField(
                     value = comment,
                     onValueChange = { comment = it },
-                    label = { Text("Nhập nhận xét...") },
+                    label = { Text("Bình luận của bạn") },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 3
                 )

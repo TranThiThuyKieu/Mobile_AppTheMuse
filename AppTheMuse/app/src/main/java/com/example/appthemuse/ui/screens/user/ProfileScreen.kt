@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
@@ -31,9 +30,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.appthemuse.ui.viewmodel.ProfileViewModel
 
 // Định nghĩa cấu trúc bảng màu
@@ -111,26 +112,17 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // --- THÔNG TIN USER (AVATAR & NAME) ---
-            Box(contentAlignment = Alignment.BottomEnd) {
-                Box(
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .background(if (isAppInDarkMode) Color.Gray else themeColors.contentTextColor.copy(alpha = 0.2f))
-                ) {
-                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.fillMaxSize().padding(16.dp), tint = themeColors.titleTextColor)
-                }
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(themeColors.accentColor)
-                        .clickable { /* Edit avatar */ },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(14.dp), tint = Color.White)
-                }
-            }
+            AsyncImage(
+                model = if (uiState.user.avatarUrl.isNotEmpty()) uiState.user.avatarUrl
+                        else "https://ui-avatars.com/api/?name=${uiState.user.username}&background=random&size=200",
+                contentDescription = "Avatar",
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .background(Color.LightGray)
+                    .clickable { onEditProfileClick() },
+                contentScale = ContentScale.Crop
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
