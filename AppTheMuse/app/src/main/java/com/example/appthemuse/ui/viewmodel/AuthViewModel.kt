@@ -27,6 +27,10 @@ class AuthViewModel(
     val authState: State<AuthState> = _authState
 
     fun login(email: String, password: String) {
+        if (email.trim().isEmpty() || password.trim().isEmpty()) {
+            _authState.value = AuthState.Error("Vui lòng nhập đầy đủ thông tin!")
+            return
+        }
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             authRepository.login(email, password)
@@ -54,7 +58,16 @@ class AuthViewModel(
         }
     }
 
-    fun register(email: String, password: String, username: String) {
+    fun register(email: String, password: String, confirmPassword: String, username: String) {
+        if (username.isBlank() || email.isBlank() || password.isBlank()) {
+            _authState.value = AuthState.Error("Vui lòng nhập đầy đủ thông tin!")
+            return
+        }
+        if (password != confirmPassword) {
+            _authState.value = AuthState.Error("Mật khẩu xác nhận không trùng khớp!")
+            return
+        }
+
         // ✅ KIỂM TRA MẬT KHẨU MẠNH: 8 ký tự, 1 hoa, 1 thường, 1 số, 1 ký hiệu
         val passwordRegex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{8,}$".toRegex()
         if (!password.matches(passwordRegex)) {

@@ -10,7 +10,7 @@ import com.example.appthemuse.ui.mapper.toChapterUi
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.model.ChapterUi
 import com.example.appthemuse.utils.NetworkUtils
-import com.google.firebase.auth.FirebaseAuth
+import com.example.appthemuse.domain.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -30,12 +30,12 @@ sealed class ReadingState {
 class ReadingViewModel(
     application: Application,
     private val bookRepository: BookRepository,
-    private val downloadRepository: DownloadRepository
+    private val downloadRepository: DownloadRepository,
+    private val authRepository: AuthRepository
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow<ReadingState>(ReadingState.Loading)
     val uiState: StateFlow<ReadingState> = _uiState
-    private val auth = FirebaseAuth.getInstance()
 
     private fun isOnline(): Boolean {
         return NetworkUtils.isOnline(getApplication())
@@ -102,8 +102,8 @@ class ReadingViewModel(
     }
 
     private fun updateProgressOnServer(bookId: String, chapterNumber: Int) {
-        val userId = auth.currentUser?.uid ?: return
         viewModelScope.launch {
+            val userId = authRepository.getCurrentUserId() ?: return@launch
             try {
                 bookRepository.updateReadingProgress(userId, bookId, chapterNumber, 0)
             } catch (e: Exception) { }

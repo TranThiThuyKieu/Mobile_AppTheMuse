@@ -162,11 +162,7 @@ fun LoginScreen(
                 PrimaryButton(
                     text = "Đăng nhập",
                     onClick = {
-                        if (email.trim().isEmpty() || password.trim().isEmpty()) {
-                            Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show()
-                        } else {
-                            viewModel.login(email.trim(), password.trim())
-                        }
+                        viewModel.login(email.trim(), password.trim())
                     },
                     modifier = Modifier.fillMaxWidth(),
                 )

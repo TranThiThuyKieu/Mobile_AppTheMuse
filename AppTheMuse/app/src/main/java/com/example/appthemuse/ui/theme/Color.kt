@@ -15,3 +15,6 @@ val SurfaceVariantLight = Color(0xFFF3F4F6) // Thẻ thể loại chưa chọn (
 val SurfaceVariantDark = Color(0xFF1F2937)  // Thẻ thể loại chưa chọn (Dark)
 val PrimaryContainerLight = Color(0xFFEEF2FF)// Thẻ đã chọn (Light)
 val PrimaryContainerDark = Color(0xFF312E81) // Thẻ đã chọn (Dark)
+
+val GoldStar = Color(0xFFFFD700) // Màu vàng tươi dùng cho các biểu tượng đánh giá (Review Star)
+val SuccessGreen = Color(0xFF4CAF50) // Màu xanh lá báo trạng thái thành công (ví dụ: Đã tải xuống)

@@ -11,8 +11,8 @@ import com.example.appthemuse.ui.mapper.toChapterUi
 import com.example.appthemuse.ui.model.BookUi
 import com.example.appthemuse.ui.model.ChapterUi
 import com.example.appthemuse.ui.model.ReviewUi
+import com.example.appthemuse.domain.repository.AuthRepository
 import com.example.appthemuse.utils.NetworkUtils
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -36,12 +36,12 @@ class BookDetailViewModel(
     application: Application,
     private val bookRepository: BookRepository,
     private val libraryRepository: LibraryRepository,
-    private val downloadRepository: DownloadRepository
+    private val downloadRepository: DownloadRepository,
+    private val authRepository: AuthRepository
 ) : AndroidViewModel(application) {
 
     private val _uiState = MutableStateFlow<BookDetailState>(BookDetailState.Loading)
     val uiState: StateFlow<BookDetailState> = _uiState
-    private val auth = FirebaseAuth.getInstance()
 
     private fun isOnline(): Boolean {
         return NetworkUtils.isOnline(getApplication())
@@ -67,7 +67,7 @@ class BookDetailViewModel(
                 }
                 
                 if (book != null) {
-                    val userId = auth.currentUser?.uid
+                    val userId = authRepository.getCurrentUserId()
                     
                     val chapters = if (online) {
                         try {
@@ -127,7 +127,7 @@ class BookDetailViewModel(
         if (!isOnline()) return
         viewModelScope.launch {
             try {
-                bookRepository.addReview(bookId, auth.currentUser?.uid ?: return@launch, rating, comment)
+                bookRepository.addReview(bookId, authRepository.getCurrentUserId() ?: return@launch, rating, comment)
                 loadBookDetail(bookId)
             } catch (e: Exception) {}
         }
@@ -139,7 +139,7 @@ class BookDetailViewModel(
             val currentState = _uiState.value as? BookDetailState.Success ?: return@launch
             _uiState.value = currentState.copy(isFavorite = !currentState.isFavorite)
             try {
-                bookRepository.toggleFavorite(auth.currentUser?.uid ?: return@launch, bookId)
+                bookRepository.toggleFavorite(authRepository.getCurrentUserId() ?: return@launch, bookId)
             } catch (e: Exception) {}
         }
     }

@@ -189,13 +189,7 @@ fun RegisterScreen(
                     PrimaryButton(
                         text = "Đăng ký",
                         onClick = {
-                            if (username.isBlank() || email.isBlank() || password.isBlank()) {
-                                Toast.makeText(context, "Vui lòng nhập đầy đủ thông tin!", Toast.LENGTH_SHORT).show()
-                            } else if (password != confirmPassword) {
-                                Toast.makeText(context, "Mật khẩu xác nhận không trùng khớp!", Toast.LENGTH_SHORT).show()
-                            } else {
-                                viewModel.register(email, password, username)
-                            }
+                            viewModel.register(email, password, confirmPassword, username)
                         },
                         modifier = Modifier.fillMaxWidth(),
                     )

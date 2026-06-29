@@ -33,8 +33,11 @@ import com.example.appthemuse.ui.model.ChapterUi
 import com.example.appthemuse.ui.model.ReviewUi
 import com.example.appthemuse.ui.viewmodel.BookDetailState
 import com.example.appthemuse.ui.viewmodel.BookDetailViewModel
-import java.text.SimpleDateFormat
-import java.util.*
+import com.example.appthemuse.ui.components.ReviewItem
+import com.example.appthemuse.ui.components.AddReviewDialog
+import com.example.appthemuse.ui.components.ChapterItem
+import com.example.appthemuse.ui.theme.GoldStar
+import com.example.appthemuse.ui.theme.SuccessGreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -179,7 +182,7 @@ fun BookDetailContent(
                 Spacer(modifier = Modifier.height(12.dp))
                 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFD700), modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Star, contentDescription = null, tint = GoldStar, modifier = Modifier.size(18.dp))
                     Text(text = " ${String.format("%.1f", book.rating)}", style = MaterialTheme.typography.bodyMedium)
                     Spacer(modifier = Modifier.width(16.dp))
                     Icon(Icons.Default.RemoveRedEye, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -214,7 +217,7 @@ fun BookDetailContent(
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6C63FF)),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         val buttonText = when {
@@ -232,9 +235,9 @@ fun BookDetailContent(
                                 .weight(0.6f)
                                 .height(48.dp),
                             shape = RoundedCornerShape(8.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF6C63FF))
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
                         ) {
-                            Text(text = "Đọc lại", color = Color(0xFF6C63FF))
+                            Text(text = "Đọc lại", color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -255,9 +258,9 @@ fun BookDetailContent(
                         modifier = Modifier.padding(vertical = 8.dp),
                         horizontalArrangement = Arrangement.Center
                     ) {
-                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF4CAF50))
+                        Icon(Icons.Default.CheckCircle, contentDescription = null, tint = SuccessGreen)
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Đã tải xuống", color = Color(0xFF4CAF50), fontWeight = FontWeight.Medium)
+                        Text("Đã tải xuống", color = SuccessGreen, fontWeight = FontWeight.Medium)
                         Spacer(modifier = Modifier.width(16.dp))
                         TextButton(onClick = onDeleteClick) {
                             Icon(Icons.Default.Delete, contentDescription = "Xóa", tint = Color.Red, modifier = Modifier.size(18.dp))
@@ -340,132 +343,10 @@ fun BookDetailContent(
     }
 }
 
-@Composable
-fun ReviewItem(review: ReviewUi) {
-    Row(modifier = Modifier.fillMaxWidth()) {
-        AsyncImage(
-            model = if (review.userAvatar.isNotEmpty()) review.userAvatar else "https://ui-avatars.com/api/?name=${review.userName}&background=random",
-            contentDescription = null,
-            modifier = Modifier.size(40.dp).clip(CircleShape).background(Color.LightGray),
-            contentScale = ContentScale.Crop
-        )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(review.userName, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                Text(
-                    text = review.createdAt?.let { formatDate(it.toDate()) } ?: "",
-                    fontSize = 12.sp,
-                    color = Color.Gray
-                )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                repeat(5) { index ->
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = if (index < review.rating) Color(0xFFFFD700) else Color.LightGray,
-                        modifier = Modifier.size(14.dp)
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(review.comment, style = MaterialTheme.typography.bodyMedium)
-        }
-    }
-}
-
-@Composable
-fun AddReviewDialog(onDismiss: () -> Unit, onSubmit: (Int, String) -> Unit) {
-    var rating by remember { mutableIntStateOf(5) }
-    var comment by remember { mutableStateOf("") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Viết đánh giá") },
-        text = {
-            Column {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
-                    repeat(5) { index ->
-                        IconButton(onClick = { rating = index + 1 }) {
-                            Icon(
-                                imageVector = Icons.Default.Star,
-                                contentDescription = null,
-                                tint = if (index < rating) Color(0xFFFFD700) else Color.LightGray,
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                    }
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                OutlinedTextField(
-                    value = comment,
-                    onValueChange = { comment = it },
-                    label = { Text("Bình luận của bạn") },
-                    modifier = Modifier.fillMaxWidth(),
-                    minLines = 3
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = { onSubmit(rating, comment) }, enabled = comment.isNotBlank()) {
-                Text("Gửi")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Hủy") }
-        }
-    )
-}
-
-@Composable
-fun ChapterItem(chapter: ChapterUi, statusText: String, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "Chương ${chapter.chapter_number}: ${chapter.title}",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (statusText == "Đang đọc") FontWeight.Bold else FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = chapter.created_at?.let { formatDate(it.toDate()) } ?: "",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.Gray
-            )
-        }
-        
-        if (statusText.isNotEmpty()) {
-            Surface(
-                color = if (statusText == "Đang đọc") Color(0xFFE8EAF6) else Color(0xFFF5F5F5),
-                shape = RoundedCornerShape(4.dp)
-            ) {
-                Text(
-                    text = statusText,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (statusText == "Đang đọc") Color(0xFF3F51B5) else Color.Gray,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-}
-
 fun formatViewCount(count: Long): String {
     return when {
         count >= 1_000_000 -> "${String.format("%.1f", count / 1_000_000.0)}M"
         count >= 1000 -> "${String.format("%.1f", count / 1000.0)}K"
         else -> count.toString()
     }
-}
-
-fun formatDate(date: Date): String {
-    val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-    return sdf.format(date)
 }
