@@ -243,7 +243,7 @@ fun AdminSettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Cài đặt hệ thống", fontWeight = FontWeight.Bold) },
+                title = { Text("Chế độ hiển thị", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -259,45 +259,6 @@ fun AdminSettingsScreen(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Notifications Toggle
-            Column {
-                Text(
-                    text = "THÔNG BÁO",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = Color.Gray,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.NotificationsActive,
-                            contentDescription = null,
-                            tint = AdminPrimary,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Text(text = "Thông báo push", fontWeight = FontWeight.Medium)
-                    }
-                    Switch(
-                        checked = notificationsEnabled,
-                        onCheckedChange = { notificationsEnabled = it },
-                        colors = SwitchDefaults.colors(
-                            checkedThumbColor = Color.White,
-                            checkedTrackColor = AdminPrimary
-                        )
-                    )
-                }
-            }
-
             // Theme Selection (Like User Profile)
             Column {
                 Text(

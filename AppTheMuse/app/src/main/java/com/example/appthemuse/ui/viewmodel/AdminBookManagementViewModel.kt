@@ -53,8 +53,9 @@ class AdminBookManagementViewModel(
         changeBookStatus(bookId, BookStatus.Ongoing)
     }
 
-    fun hideBook(bookId: String) {
-        changeBookStatus(bookId, BookStatus.Hidden)
+    fun toggleHideBook(book: AdminBookUi) {
+        val newStatus = if (book.statusValue == "hidden") BookStatus.Ongoing else BookStatus.Hidden
+        changeBookStatus(book.id, newStatus)
     }
 
     private fun changeBookStatus(bookId: String, status: BookStatus) {
