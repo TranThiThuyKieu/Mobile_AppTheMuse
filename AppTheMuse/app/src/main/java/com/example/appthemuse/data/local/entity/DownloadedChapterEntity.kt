@@ -19,7 +19,7 @@ import androidx.room.PrimaryKey
 )
 data class DownloadedChapterEntity(
     @PrimaryKey
-    val id: String, // bookId_chapterNumber
+    val id: String,
     val bookId: String,
     val title: String,
     val content: String,
