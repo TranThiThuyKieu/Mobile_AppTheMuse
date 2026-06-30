@@ -32,6 +32,7 @@ fun AdminMainScreen(
     securityViewModel: SecurityViewModel,
     onThemeChanged: (String) -> Unit,
     onLogout: () -> Unit,
+    onNavigateToReading: (String, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val navController = rememberNavController()

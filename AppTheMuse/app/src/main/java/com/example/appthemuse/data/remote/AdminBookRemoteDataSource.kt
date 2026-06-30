@@ -61,14 +61,14 @@ class AdminBookRemoteDataSource(
             .get()
             .await()
 
-        val chapters = firestore.collection(FirebaseConstants.BOOKS)
-            .document(bookId)
-            .collection(FirebaseConstants.CHAPTERS)
-            .orderBy(ChapterFields.CHAPTER_NUMBER, Query.Direction.ASCENDING)
+        val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
+        val chapters = firestore.collection(FirebaseConstants.CHAPTERS)
+            .whereEqualTo("book_id", bookNumId)
             .get()
             .await()
             .documents
             .map { it.toAdminChapter(bookId) }
+            .sortedBy { it.chapterNumber }
 
         return AdminBookDetail(
             book = bookDocument.toAdminBook(),
@@ -118,9 +118,9 @@ class AdminBookRemoteDataSource(
         val bookId = id
         val reviewsDeferred = async { getReviews(bookId, includeHidden = true) }
         val chaptersDeferred = async {
-            firestore.collection(FirebaseConstants.BOOKS)
-                .document(bookId)
-                .collection(FirebaseConstants.CHAPTERS)
+            val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
+            firestore.collection(FirebaseConstants.CHAPTERS)
+                .whereEqualTo("book_id", bookNumId)
                 .get()
                 .await()
                 .size()
