@@ -190,15 +190,15 @@ class BookRepositoryImpl(
     }
 
     override suspend fun addReview(bookId: String, userId: String, rating: Int, comment: String) {
-        val bookNumId = bookId.removePrefix("book").toIntOrNull()
+        val bookNumId = bookId.removePrefix("book").toLongOrNull() ?: return
         val reviewData = hashMapOf(
-            "book_id" to (bookNumId ?: bookId),
+            "book_id" to bookNumId,
             "user_id" to userId,
             "rating" to rating,
             "comment" to comment,
             "created_at" to Timestamp.now(),
             "is_hidden" to false
         )
-        firestoreService.addReview(reviewData)
+        firestoreService.addReview(bookNumId, reviewData)
     }
 }

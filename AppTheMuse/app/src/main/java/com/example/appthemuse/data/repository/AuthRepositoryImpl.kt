@@ -18,13 +18,19 @@ class AuthRepositoryImpl(
             // 1. Kiểm tra tài khoản có bị khóa không
             val lockStatus = isAccountLocked(email)
             if (lockStatus.getOrDefault(false)) {
-                return Result.failure(Exception("Tài khoản của bạn đã bị khóa do đăng nhập sai quá nhiều lần. Vui lòng quay lại sau 24h."))
+                return Result.failure(Exception("Tài khoản của bạn đã bị khóa vĩnh viễn. Vui lòng liên hệ Admin để mở khóa!"))
             }
 
             try {
                 val firebaseUser = authService.loginWithEmail(email, password)
                 if (firebaseUser != null) {
                     val doc = firestoreService.getUserDocument(firebaseUser.uid)
+                    
+                    val isBlocked = doc.getBoolean("is_blocked") ?: false
+                    if (isBlocked) {
+                        authService.signOut()
+                        return Result.failure(Exception("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin để mở khóa!"))
+                    }
                     
                     // Reset số lần đăng nhập sai khi thành công
                     firestoreService.updateSecurityLog(email, mapOf("failed_attempts" to 0))
@@ -41,9 +47,9 @@ class AuthRepositoryImpl(
                 
                 if (attempts >= 5) {
                     updateData["is_locked"] = true
-                    updateData["locked_at"] = Timestamp.now()
+                    // Remove locked_at so it doesn't auto-unlock after 24h
                     firestoreService.updateSecurityLog(email, updateData)
-                    return Result.failure(Exception("Bạn đã nhập sai 5 lần. Tài khoản đã bị khóa 24h để bảo mật!"))
+                    return Result.failure(Exception("Bạn đã nhập sai 5 lần. Tài khoản đã bị khóa vĩnh viễn, vui lòng liên hệ Admin!"))
                 }
                 
                 firestoreService.updateSecurityLog(email, updateData)
@@ -274,19 +280,7 @@ class AuthRepositoryImpl(
             if (!log.exists()) return Result.success(false)
             
             val isLocked = log.getBoolean("is_locked") ?: false
-            if (isLocked) {
-                val lockedAt = log.getTimestamp("locked_at")
-                if (lockedAt != null) {
-                    val cal = Calendar.getInstance()
-                    cal.time = lockedAt.toDate()
-                    cal.add(Calendar.HOUR, 24)
-                    // Tự động mở khóa sau 24h
-                    if (Timestamp.now().toDate().after(cal.time)) {
-                        firestoreService.updateSecurityLog(email, mapOf("is_locked" to false, "failed_attempts" to 0))
-                        return Result.success(false)
-                    }
-                }
-            }
+            // Không tự động mở khóa sau 24h nữa, yêu cầu admin mở khóa
             Result.success(isLocked)
         } catch (e: Exception) {
             Result.success(false)

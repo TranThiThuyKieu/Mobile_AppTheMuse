@@ -47,6 +47,7 @@ fun AdminReview.toUi(): AdminReviewUi {
     return AdminReviewUi(
         id = id,
         userId = userId,
+        userName = userName,
         ratingText = "$rating/5",
         comment = comment.ifBlank { "Khong co noi dung" },
         isHidden = isHidden,
