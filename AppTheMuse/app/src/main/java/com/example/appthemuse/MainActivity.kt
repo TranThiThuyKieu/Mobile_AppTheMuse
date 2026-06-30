@@ -211,6 +211,9 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate("welcome") {
                                         popUpTo(0) { inclusive = true }
                                     }
+                                },
+                                onNavigateToReading = { bookId, chapterNum ->
+                                    navController.navigate("reading/$bookId/$chapterNum")
                                 }
                             )
                         }

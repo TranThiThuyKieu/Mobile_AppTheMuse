@@ -20,6 +20,7 @@ data class AdminBookUi(
 data class AdminChapterUi(
     val id: String,
     val title: String,
+    val chapterNumber: Int,
     val chapterNumberText: String,
     val stateText: String,
     val createdAtText: String

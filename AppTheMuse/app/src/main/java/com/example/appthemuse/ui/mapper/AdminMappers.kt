@@ -37,6 +37,7 @@ fun AdminChapter.toUi(): AdminChapterUi {
     return AdminChapterUi(
         id = id,
         title = title.ifBlank { "Chuong $chapterNumber" },
+        chapterNumber = chapterNumber,
         chapterNumberText = "Chuong $chapterNumber",
         stateText = if (isDraft) "Ban nhap" else "Da dang",
         createdAtText = createdAt.formatDate()

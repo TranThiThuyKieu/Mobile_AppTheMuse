@@ -61,14 +61,14 @@ class AdminBookRemoteDataSource(
             .get()
             .await()
 
-        val chapters = firestore.collection(FirebaseConstants.BOOKS)
-            .document(bookId)
-            .collection(FirebaseConstants.CHAPTERS)
-            .orderBy(ChapterFields.CHAPTER_NUMBER, Query.Direction.ASCENDING)
+        val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
+        val chapters = firestore.collection(FirebaseConstants.CHAPTERS)
+            .whereEqualTo("book_id", bookNumId)
             .get()
             .await()
             .documents
             .map { it.toAdminChapter(bookId) }
+            .sortedBy { it.chapterNumber }
 
         return AdminBookDetail(
             book = bookDocument.toAdminBook(),
@@ -77,22 +77,21 @@ class AdminBookRemoteDataSource(
     }
 
     suspend fun getReviews(bookId: String, includeHidden: Boolean): List<AdminReview> {
-        var query: Query = firestore.collection(FirebaseConstants.BOOKS)
-            .document(bookId)
-            .collection(FirebaseConstants.REVIEWS)
-            .orderBy(ReviewFields.CREATED_AT, Query.Direction.DESCENDING)
+        val bookNumId = bookId.removePrefix("book").toIntOrNull()
+        val query = firestore.collection(FirebaseConstants.REVIEWS)
+            .whereIn("book_id", listOfNotNull(bookId, bookNumId))
 
+        val docs = query.get().await().documents
+        var reviews = docs.map { it.toAdminReview(bookId) }
         if (!includeHidden) {
-            query = query.whereEqualTo(ReviewFields.IS_HIDDEN, false)
+            reviews = reviews.filter { !it.isHidden }
         }
 
-        return query.get().await().documents.map { it.toAdminReview(bookId) }
+        return reviews.sortedByDescending { it.createdAt }
     }
 
     suspend fun setReviewHidden(bookId: String, reviewId: String, hidden: Boolean) {
-        firestore.collection(FirebaseConstants.BOOKS)
-            .document(bookId)
-            .collection(FirebaseConstants.REVIEWS)
+        firestore.collection(FirebaseConstants.REVIEWS)
             .document(reviewId)
             .update(ReviewFields.IS_HIDDEN, hidden)
             .await()
@@ -102,9 +101,9 @@ class AdminBookRemoteDataSource(
         val bookId = id
         val reviewsDeferred = async { getReviews(bookId, includeHidden = true) }
         val chaptersDeferred = async {
-            firestore.collection(FirebaseConstants.BOOKS)
-                .document(bookId)
-                .collection(FirebaseConstants.CHAPTERS)
+            val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
+            firestore.collection(FirebaseConstants.CHAPTERS)
+                .whereEqualTo("book_id", bookNumId)
                 .get()
                 .await()
                 .size()
