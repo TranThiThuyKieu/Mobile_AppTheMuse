@@ -59,7 +59,7 @@ fun AdminDashboardScreen(
         drawerContent = {
             ModalDrawerSheet(
                 modifier = Modifier.width(300.dp),
-                drawerContainerColor = Color.White
+                drawerContainerColor = MaterialTheme.colorScheme.surface
             ) {
                 AdminDrawerContent(
                     adminName = uiState.adminName,
@@ -233,7 +233,7 @@ fun AdminDrawerContent(
                 Text(
                     text = adminRole,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -262,7 +262,7 @@ fun AdminDrawerContent(
 fun DrawerMenuItem(
     icon: ImageVector, 
     label: String, 
-    textColor: Color = Color.DarkGray,
+    textColor: Color = MaterialTheme.colorScheme.onSurface,
     onClick: () -> Unit = {}
 ) {
     Row(

@@ -27,7 +27,6 @@ import coil.compose.AsyncImage
 import com.example.appthemuse.ui.model.AdminBookUi
 
 private val AdminPrimary = Color(0xFF6C63FF)
-private val BackgroundGrey = Color(0xFFF3F4F6)
 
 @Composable
 fun AdminStatCard(
@@ -38,12 +37,12 @@ fun AdminStatCard(
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = BackgroundGrey.copy(alpha = 0.5f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = title, style = MaterialTheme.typography.labelMedium, color = Color.Gray)
+            Text(text = title, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = Color.DarkGray)
+            Text(text = value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
         }
     }
 }
@@ -81,7 +80,7 @@ fun AdminBookRow(
         "pending" -> Color(0xFFFACC15) // Vàng
         "ongoing" -> Color(0xFF3B82F6) // Xanh dương
         "completed" -> Color(0xFF22C55E) // Xanh lá
-        else -> Color.Gray
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Card(
@@ -89,7 +88,7 @@ fun AdminBookRow(
             .fillMaxWidth()
             .border(1.dp, AdminPrimary.copy(alpha = 0.2f), RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -103,7 +102,7 @@ fun AdminBookRow(
                 Text(
                     text = book.createdAtText,
                     style = MaterialTheme.typography.labelSmall,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -121,7 +120,7 @@ fun AdminBookRow(
                     modifier = Modifier
                         .size(width = 80.dp, height = 110.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(BackgroundGrey),
+                        .background(MaterialTheme.colorScheme.surfaceVariant),
                     contentScale = ContentScale.Crop
                 )
 
@@ -132,7 +131,7 @@ fun AdminBookRow(
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        color = Color(0xFF1F2937)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     
                     Spacer(modifier = Modifier.height(4.dp))
@@ -142,13 +141,13 @@ fun AdminBookRow(
                             Icons.Default.MenuBook,
                             contentDescription = null,
                             modifier = Modifier.size(14.dp),
-                            tint = Color.Gray
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "${book.chapterCountText} CHƯƠNG",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -175,7 +174,7 @@ fun AdminBookRow(
                         Text(
                             text = book.authorId,
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color.DarkGray,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -196,9 +195,9 @@ fun AdminBookRow(
                         .weight(1f)
                         .height(44.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BackgroundGrey)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
-                    Text(text = "Xem", color = Color(0xFF1F2937), fontWeight = FontWeight.Bold)
+                    Text(text = "Xem", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                 }
 
                 // Hide/Block Button
@@ -207,12 +206,12 @@ fun AdminBookRow(
                     modifier = Modifier
                         .size(44.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(BackgroundGrey)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Icon(
                         Icons.Default.Block,
                         contentDescription = "Ẩn",
-                        tint = Color.Gray,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }
