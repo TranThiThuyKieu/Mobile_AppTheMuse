@@ -30,7 +30,6 @@ import kotlinx.coroutines.launch
 private val AdminPrimary = Color(0xFF6C63FF)
 private val StatusGreen = Color(0xFF22C55E)
 private val StatusRed = Color(0xFFEF4444)
-private val BackgroundGrey = Color(0xFFF3F4F6)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,7 +55,7 @@ fun AdminUserManagementScreen(
         drawerContent = {
             ModalDrawerSheet(
                 modifier = Modifier.width(300.dp),
-                drawerContainerColor = Color.White
+                drawerContainerColor = MaterialTheme.colorScheme.surface
             ) {
                 AdminDrawerContent(
                     adminName = uiState.adminName,
@@ -73,7 +72,7 @@ fun AdminUserManagementScreen(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.background)
         ) {
             // Header with Menu Button
             AdminUserHeader(
@@ -91,7 +90,7 @@ fun AdminUserManagementScreen(
                     text = "Quản lý người dùng",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 
                 Spacer(Modifier.height(20.dp))
@@ -104,12 +103,12 @@ fun AdminUserManagementScreen(
                         .fillMaxWidth()
                         .height(56.dp)
                         .clip(RoundedCornerShape(12.dp)),
-                    placeholder = { Text("Tìm thành viên theo tên, email...", color = Color.Gray) },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                    placeholder = { Text("Tìm thành viên theo tên, email...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                     colors = TextFieldDefaults.colors(
-                        focusedContainerColor = BackgroundGrey,
-                        unfocusedContainerColor = BackgroundGrey,
-                        disabledContainerColor = BackgroundGrey,
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                     ),
@@ -128,12 +127,12 @@ fun AdminUserManagementScreen(
                             onClick = { showFilterMenu = true },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = BackgroundGrey),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                             elevation = null
                         ) {
-                            Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFF4B5563))
+                            Icon(Icons.Default.FilterList, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
                             Spacer(Modifier.width(8.dp))
-                            Text("Lọc", color = Color(0xFF4B5563))
+                            Text("Lọc", color = MaterialTheme.colorScheme.onSurface)
                         }
                         DropdownMenu(expanded = showFilterMenu, onDismissRequest = { showFilterMenu = false }) {
                             listOf("Tất cả", "Hoạt động", "Đã khóa").forEach { status ->
@@ -153,12 +152,12 @@ fun AdminUserManagementScreen(
                             onClick = { showSortMenu = true },
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = BackgroundGrey),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                             elevation = null
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFF4B5563))
+                            Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onSurface)
                             Spacer(Modifier.width(8.dp))
-                            Text("Sắp xếp", color = Color(0xFF4B5563))
+                            Text("Sắp xếp", color = MaterialTheme.colorScheme.onSurface)
                         }
                         DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
                             listOf("Mới nhất", "Tên A-Z").forEach { option ->
@@ -238,9 +237,9 @@ private fun UserAdminRow(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color(0xFFE5E7EB), RoundedCornerShape(16.dp)),
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -270,7 +269,7 @@ private fun UserAdminRow(
                             .size(14.dp)
                             .align(Alignment.BottomEnd)
                             .clip(CircleShape)
-                            .background(Color.White)
+                            .background(MaterialTheme.colorScheme.surface)
                             .padding(2.dp)
                     ) {
                         Box(
@@ -287,17 +286,17 @@ private fun UserAdminRow(
                         text = user.username,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1F2937)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "@${user.email.split("@").firstOrNull() ?: user.username}",
                         style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF6B7280)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 IconButton(onClick = { /* More options */ }) {
-                    Icon(Icons.Default.MoreHoriz, contentDescription = null, tint = Color(0xFF9CA3AF))
+                    Icon(Icons.Default.MoreHoriz, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -311,7 +310,7 @@ private fun UserAdminRow(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Trạng thái", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF6B7280))
+                Text("Trạng thái", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = (if (user.isBlocked) StatusRed else StatusGreen).copy(alpha = 0.1f)
@@ -338,10 +337,10 @@ private fun UserAdminRow(
                     onClick = onViewProfile,
                     modifier = Modifier.weight(1f).height(48.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BackgroundGrey),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     elevation = null
                 ) {
-                    Text("Xem hồ sơ", color = Color(0xFF1F2937), fontWeight = FontWeight.Bold)
+                    Text("Xem hồ sơ", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
                 }
                 
                 IconButton(
@@ -368,7 +367,7 @@ private fun InfoRow(label: String, value: String) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, color = Color(0xFF6B7280))
-        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = Color(0xFF1F2937))
+        Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
     }
 }

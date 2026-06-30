@@ -24,7 +24,6 @@ import com.example.appthemuse.ui.viewmodel.AdminDashboardViewModel
 import kotlinx.coroutines.launch
 
 private val AdminPrimary = Color(0xFF6C63FF)
-private val BackgroundGrey = Color(0xFFF3F4F6)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,7 +51,7 @@ fun AdminBookManagementScreen(
         drawerContent = {
             ModalDrawerSheet(
                 modifier = Modifier.width(300.dp),
-                drawerContainerColor = Color.White
+                drawerContainerColor = MaterialTheme.colorScheme.surface
             ) {
                 AdminDrawerContent(
                     adminName = dashboardState.adminName,
@@ -72,7 +71,7 @@ fun AdminBookManagementScreen(
                     onMenuClick = { scope.launch { drawerState.open() } }
                 )
             },
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
             LazyColumn(
                 modifier = Modifier
@@ -88,12 +87,12 @@ fun AdminBookManagementScreen(
                             text = "Quản lý sách",
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1F2937)
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
                             text = "Quản lý và biên tập danh mục sách trong hệ thống.",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -107,11 +106,11 @@ fun AdminBookManagementScreen(
                             .fillMaxWidth()
                             .height(56.dp)
                             .clip(RoundedCornerShape(12.dp)),
-                        placeholder = { Text("Tìm chương, tác giả hoặc sách...", color = Color.Gray) },
-                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                        placeholder = { Text("Tìm chương, tác giả hoặc sách...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                         colors = TextFieldDefaults.colors(
-                            focusedContainerColor = BackgroundGrey,
-                            unfocusedContainerColor = BackgroundGrey,
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
                         ),
@@ -129,24 +128,24 @@ fun AdminBookManagementScreen(
                             onClick = { /* Lọc theo thể loại */ },
                             modifier = Modifier.weight(1.2f).height(44.dp),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = BackgroundGrey),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                             elevation = null
                         ) {
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = Color.DarkGray)
+                            Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
                             Spacer(Modifier.width(4.dp))
-                            Text("Tất cả thể loại", color = Color.DarkGray, fontSize = 13.sp)
+                            Text("Tất cả thể loại", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                         }
                         
                         Button(
                             onClick = { /* Sắp xếp */ },
                             modifier = Modifier.weight(0.8f).height(44.dp),
                             shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = BackgroundGrey),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                             elevation = null
                         ) {
-                            Icon(Icons.Default.History, contentDescription = null, tint = Color.DarkGray, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.History, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("Mới nhất", color = Color.DarkGray, fontSize = 13.sp)
+                            Text("Mới nhất", color = MaterialTheme.colorScheme.onSurface, fontSize = 13.sp)
                         }
                     }
                 }
@@ -158,7 +157,7 @@ fun AdminBookManagementScreen(
                             text = "TRẠNG THÁI",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(Modifier.height(8.dp))
                         Box(modifier = Modifier.fillMaxWidth()) {
@@ -166,7 +165,7 @@ fun AdminBookManagementScreen(
                                 onClick = { showStatusMenu = true },
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = BackgroundGrey.copy(alpha = 0.5f))
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                             ) {
                                 Row(
                                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
@@ -175,9 +174,9 @@ fun AdminBookManagementScreen(
                                 ) {
                                     Text(
                                         text = uiState.selectedStatus?.label ?: "Tất cả trạng thái",
-                                        color = Color.DarkGray
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
-                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = Color.Gray)
+                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                             DropdownMenu(
@@ -212,7 +211,7 @@ fun AdminBookManagementScreen(
                         onClick = { viewModel.refresh() },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = BackgroundGrey)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                     ) {
                         Icon(Icons.Default.FilterList, contentDescription = null, tint = AdminPrimary)
                         Spacer(Modifier.width(8.dp))
