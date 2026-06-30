@@ -37,14 +37,16 @@ class ReadingViewModel(
     private val _uiState = MutableStateFlow<ReadingState>(ReadingState.Loading)
     val uiState: StateFlow<ReadingState> = _uiState
 
+    // Kiểm tra kết nối mạng
     private fun isOnline(): Boolean {
         return NetworkUtils.isOnline(getApplication())
     }
 
+    // Tải thông tin chương truyện
     fun loadChapter(bookId: String, chapterNumber: Int) {
         viewModelScope.launch {
             _uiState.value = ReadingState.Loading
-            
+
             val online = isOnline()
             val localBook = downloadRepository.getBookById(bookId)
             val isDownloaded = localBook != null
@@ -55,7 +57,7 @@ class ReadingViewModel(
             }
 
             try {
-                if (isDownloaded) { 
+                if (isDownloaded) {
                     val localChapters = downloadRepository.getChapters(bookId)
                     val currentChapter = localChapters.find { it.chapter_number == chapterNumber }
                         ?: localChapters.firstOrNull()
@@ -101,6 +103,7 @@ class ReadingViewModel(
         }
     }
 
+    // update tiến độ
     private fun updateProgressOnServer(bookId: String, chapterNumber: Int) {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId() ?: return@launch
@@ -110,6 +113,7 @@ class ReadingViewModel(
         }
     }
 
+    // Tính phần trăm tiến độ đọc
     private fun calculateProgress(current: Int, total: Int): Int {
         if (total == 0) return 0
         return ((current.toFloat() / total.toFloat()) * 100).toInt()

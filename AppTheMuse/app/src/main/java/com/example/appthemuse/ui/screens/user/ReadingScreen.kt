@@ -48,7 +48,7 @@ fun ReadingScreen(
 
     ModalNavigationDrawer(
         drawerState = drawerState,
-        gesturesEnabled = false, // Chỉ cho phép hiện khi nhấn nút 3 gạch
+        gesturesEnabled = false,
         drawerContent = {
             ModalDrawerSheet(
                 modifier = Modifier.width(300.dp)
@@ -118,13 +118,13 @@ fun ReadingScreen(
                     ReadingBottomBar(
                         hasPrevious = state.currentChapter.chapter_number > 1,
                         hasNext = state.currentChapter.chapter_number < state.allChapters.size,
-                        onPrevious = { 
+                        onPrevious = {
                             scope.launch { drawerState.close() }
-                            viewModel.loadChapter(bookId, state.currentChapter.chapter_number - 1) 
+                            viewModel.loadChapter(bookId, state.currentChapter.chapter_number - 1)
                         },
-                        onNext = { 
+                        onNext = {
                             scope.launch { drawerState.close() }
-                            viewModel.loadChapter(bookId, state.currentChapter.chapter_number + 1) 
+                            viewModel.loadChapter(bookId, state.currentChapter.chapter_number + 1)
                         }
                     )
                 }
@@ -214,5 +214,3 @@ fun ReadingContent(
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
-
-

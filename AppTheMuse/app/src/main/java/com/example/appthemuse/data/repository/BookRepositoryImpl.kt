@@ -101,6 +101,7 @@ class BookRepositoryImpl(
         documents.map { async { mapDocumentToBook(it) } }.awaitAll()
     }
 
+    // Tạo sách mới và upload ảnh bìa lên ImgBB
     override suspend fun createBook(book: Book, imageBase64: String?): String {
         var finalCoverUrl = book.cover_url
         if (!imageBase64.isNullOrEmpty() && !imageBase64.startsWith("http")) {
@@ -117,11 +118,13 @@ class BookRepositoryImpl(
         return firestoreService.createBookRaw(bookData)
     }
 
+    // Lấy thông tin sách theo ID
     override suspend fun getBookById(bookId: String): Book? {
         val doc = firestoreService.getBookByDocumentId(bookId)
         return if (doc != null && doc.exists()) mapDocumentToBook(doc) else null
     }
 
+    // Lấy danh sách chương của sách
     override suspend fun getChapters(bookId: String): List<Chapter> {
         return firestoreService.getChaptersRaw(bookId).map { doc ->
             Chapter(
@@ -137,21 +140,28 @@ class BookRepositoryImpl(
         }.sortedBy { it.chapter_number }
     }
 
+    // Lấy tổng số lượt bình chọn
     override suspend fun getVoteCount(bookId: String): Int = firestoreService.getVoteCount(bookId)
+
+    // Lấy tổng số lượng bình luận
     override suspend fun getCommentCount(bookId: String): Int = firestoreService.getCommentCount(bookId)
 
+    // Tạo chương truyện mới
     override suspend fun createChapter(bookId: String, title: String, content: String): String {
         return firestoreService.createChapterRaw(bookId, mapOf("title" to title, "content" to content))
     }
 
+    // Tăng số lượt xem của sách
     override suspend fun incrementViewCount(bookId: String) {
         try { firestoreService.incrementViewCount(bookId) } catch (e: Exception) { }
     }
 
+    // Cập nhật tiến độ đọc lên server
     override suspend fun updateReadingProgress(userId: String, bookId: String, chapterNumber: Int, scrollPosition: Int) {
         try { firestoreService.updateReadingProgress(userId, bookId, chapterNumber, scrollPosition) } catch (e: Exception) { }
     }
 
+    // Lấy tiến độ đọc của người dùng
     override suspend fun getReadingProgress(userId: String, bookId: String): Pair<Int, Int>? {
         return try {
             val doc = firestoreService.getReadingProgress(userId, bookId)
@@ -163,8 +173,10 @@ class BookRepositoryImpl(
         } catch (e: Exception) { null }
     }
 
+    // Thêm/Xóa yêu thích truyện
     override suspend fun toggleFavorite(userId: String, bookId: String) = firestoreService.toggleFavorite(userId, bookId)
 
+    // Kiểm tra truyện đã yêu thích chưa
     override suspend fun isBookFavorite(userId: String, bookId: String): Boolean {
         return firestoreService.getFavoriteDocuments(userId).any { doc ->
             val idRaw = doc.get("book_id")
@@ -177,6 +189,7 @@ class BookRepositoryImpl(
         }
     }
 
+    // Lấy danh sách đánh giá kèm thông tin user
     override suspend fun getReviews(bookId: String): List<Review> = coroutineScope {
         val documents = firestoreService.getReviewsRaw(bookId)
         documents.map { doc ->
@@ -198,6 +211,7 @@ class BookRepositoryImpl(
         }.awaitAll()
     }
 
+    // Thêm đánh giá mới cho truyện
     override suspend fun addReview(bookId: String, userId: String, rating: Int, comment: String) {
         val bookNumId = bookId.removePrefix("book").toLongOrNull() ?: return
         val reviewData = hashMapOf(

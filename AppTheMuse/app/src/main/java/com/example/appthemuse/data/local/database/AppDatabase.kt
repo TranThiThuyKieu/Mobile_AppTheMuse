@@ -8,10 +8,10 @@ import com.example.appthemuse.data.local.entity.DownloadedChapterEntity
 
 @Database(
     entities = [DownloadedBookEntity::class, DownloadedChapterEntity::class],
-    version = 3, // Nâng cấp version để đồng bộ schema description
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
-    // Cung cấp DAO để thao tác với dữ liệu sách đã tải
+    // Khởi tạo đối tượng DAO cho cơ sở dữ liệu
     abstract fun downloadedBookDao(): DownloadedBookDao
 }
