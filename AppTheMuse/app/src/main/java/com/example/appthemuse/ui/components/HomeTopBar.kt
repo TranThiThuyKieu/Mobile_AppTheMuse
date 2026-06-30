@@ -21,10 +21,6 @@ fun HomeTopBar(title: String = "The Muse", onSearchClick: () -> Unit, onNotifica
             IconButton(onClick = onSearchClick) {
                 Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onBackground)
             }
-            // Nút thông báo
-            IconButton(onClick = onNotificationClick) {
-                Icon(Icons.Default.Notifications, contentDescription = "Notification", tint = MaterialTheme.colorScheme.onBackground)
-            }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     )

@@ -48,12 +48,12 @@ class HomeViewModel(
             
             try {
                 // Luôn thử tải dữ liệu. Firestore sẽ tự lấy từ Cache nếu Offline.
-                val trending = bookRepository.getTrendingBooks().map { it.toBookUi() }
-                val recent = bookRepository.getRecentBooks().map { it.toBookUi() }
-                val recommended = bookRepository.getRecommendedBooks(favoriteGenres).map { it.toBookUi() }
+                val trending = bookRepository.getTrendingBooks().map { it.toBookUi() }.filter { it.status != "hidden" && it.status != "pending" }
+                val recent = bookRepository.getRecentBooks().map { it.toBookUi() }.filter { it.status != "hidden" && it.status != "pending" }
+                val recommended = bookRepository.getRecommendedBooks(favoriteGenres).map { it.toBookUi() }.filter { it.status != "hidden" && it.status != "pending" }
                 val categories = bookRepository.getCategories().map { it.toCategoryUi() }
-                val newRelease = bookRepository.getNewReleaseBooks().map { it.toBookUi() }
-                val allBooks = bookRepository.getAllBooks().map { it.toBookUi() }
+                val newRelease = bookRepository.getNewReleaseBooks().map { it.toBookUi() }.filter { it.status != "hidden" && it.status != "pending" }
+                val allBooks = bookRepository.getAllBooks().map { it.toBookUi() }.filter { it.status != "hidden" && it.status != "pending" }
 
                 _uiState.value = HomeUiState(
                     isLoading = false,

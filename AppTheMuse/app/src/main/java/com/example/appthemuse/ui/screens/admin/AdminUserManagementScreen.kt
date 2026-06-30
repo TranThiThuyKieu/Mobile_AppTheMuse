@@ -217,14 +217,6 @@ private fun AdminUserHeader(onMenuClick: () -> Unit) {
             modifier = Modifier.padding(start = 4.dp)
         )
         Spacer(modifier = Modifier.weight(1f))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.Search, contentDescription = "Tìm kiếm", tint = MaterialTheme.colorScheme.onBackground)
-            }
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.Notifications, contentDescription = "Thông báo", tint = MaterialTheme.colorScheme.onBackground)
-            }
-        }
     }
 }
 

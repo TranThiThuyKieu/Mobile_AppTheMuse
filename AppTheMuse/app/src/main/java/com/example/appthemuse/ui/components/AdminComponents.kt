@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -209,8 +210,8 @@ fun AdminBookRow(
                         .background(MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Icon(
-                        Icons.Default.Block,
-                        contentDescription = "Ẩn",
+                        if (book.statusValue == "hidden") Icons.Default.Visibility else Icons.Default.Block,
+                        contentDescription = if (book.statusValue == "hidden") "Hiện" else "Ẩn",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )

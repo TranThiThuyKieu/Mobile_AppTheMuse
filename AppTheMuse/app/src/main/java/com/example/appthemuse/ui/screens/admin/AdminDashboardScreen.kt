@@ -244,7 +244,7 @@ fun AdminDrawerContent(
         DrawerMenuItem(icon = Icons.Default.Group, label = "Hồ sơ", onClick = onProfileClick)
         DrawerMenuItem(icon = Icons.Default.Edit, label = "Chỉnh sửa thông tin cá nhân", onClick = onEditProfileClick)
         DrawerMenuItem(icon = Icons.Default.Security, label = "Mật khẩu và bảo mật", onClick = onSecurityClick)
-        DrawerMenuItem(icon = Icons.Default.Settings, label = "Cài đặt", onClick = onSettingsClick)
+        DrawerMenuItem(icon = Icons.Default.Settings, label = "Chế độ hiển thị", onClick = onSettingsClick)
         
         Spacer(modifier = Modifier.weight(1f))
         
@@ -306,14 +306,6 @@ private fun AdminDashboardHeader(onMenuClick: () -> Unit) {
             modifier = Modifier.padding(start = 4.dp)
         )
         Spacer(modifier = Modifier.weight(1f))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.Search, contentDescription = "Tìm kiếm", tint = MaterialTheme.colorScheme.onBackground)
-            }
-            IconButton(onClick = {}) {
-                Icon(Icons.Default.Notifications, contentDescription = "Thông báo", tint = MaterialTheme.colorScheme.onBackground)
-            }
-        }
     }
 }
 
