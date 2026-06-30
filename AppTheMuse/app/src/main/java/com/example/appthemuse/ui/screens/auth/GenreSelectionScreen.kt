@@ -21,6 +21,7 @@ import com.example.appthemuse.ui.components.PrimaryButton
 import com.example.appthemuse.ui.viewmodel.GenreState
 import com.example.appthemuse.ui.viewmodel.GenreViewModel
 
+// Màn hình chọn thể loại sách yêu thích
 @Composable
 fun GenreSelectionScreen(
     viewModel: GenreViewModel,
@@ -31,10 +32,12 @@ fun GenreSelectionScreen(
     val selectedGenres = rememberSaveable { mutableStateListOf<String>() }
     val context = LocalContext.current
 
+    // Tải danh sách thể loại khi vào màn hình
     LaunchedEffect(Unit) {
         viewModel.fetchCategories()
     }
 
+    // Xử lý khi lưu thành công hoặc lỗi
     LaunchedEffect(genreState) {
         when (genreState) {
             is GenreState.Success -> {
@@ -62,11 +65,13 @@ fun GenreSelectionScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Hiển thị vòng xoay khi đang tải dữ liệu
             if (genresList.isEmpty() || genreState is GenreState.Loading) {
                 Box(modifier = Modifier.weight(1.0f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else {
+                // Danh sách các thể loại
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     modifier = Modifier.weight(1.0f),
@@ -84,11 +89,8 @@ fun GenreSelectionScreen(
                                 .height(60.dp)
                                 .background(boxBg, shape = RoundedCornerShape(12.dp))
                                 .clickable {
-                                    if (isSelected) {
-                                        selectedGenres.remove(genre.name)
-                                    } else {
-                                        selectedGenres.add(genre.name)
-                                    }
+                                    if (isSelected) selectedGenres.remove(genre.name)
+                                    else selectedGenres.add(genre.name)
                                 },
                             contentAlignment = Alignment.Center
                         ) {
@@ -99,7 +101,7 @@ fun GenreSelectionScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
+            // Nút tiếp tục
             PrimaryButton(
                 text = "Tiếp tục (${selectedGenres.size}/3)",
                 onClick = {
