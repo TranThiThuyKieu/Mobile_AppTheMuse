@@ -207,6 +207,7 @@ class MainActivity : ComponentActivity() {
                                     isDarkTheme = (themeName == "Dark")
                                 },
                                 onLogout = {
+                                    authViewModel.resetState()
                                     FirebaseAuth.getInstance().signOut()
                                     navController.navigate("welcome") {
                                         popUpTo(0) { inclusive = true }
@@ -374,6 +375,7 @@ class MainActivity : ComponentActivity() {
                                     isDarkTheme = (themeName == "Dark")
                                 },
                                 onLogout = {
+                                    authViewModel.resetState()
                                     navController.navigate("welcome") {
                                         popUpTo(0) { inclusive = true }
                                     }

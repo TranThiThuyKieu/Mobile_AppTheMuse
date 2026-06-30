@@ -221,10 +221,12 @@ fun CreatorBookDetailScreen(
 
                         val isPending = book.status.lowercase() == "pending"
                         val isCompleted = book.status.lowercase() == "completed" || book.status.lowercase() == "hoàn thành"
+                        val isHidden = book.status.lowercase() == "hidden"
+                        val isOngoing = book.status.lowercase() == "ongoing" || book.status.lowercase() == "đang cập nhật"
 
                         // --- NÚT BẤM ---
-                        // Nút Đăng chương mới: Ẩn nếu trạng thái là chờ xác nhận hoặc đã hoàn thành
-                        if (!isPending && !isCompleted) {
+                        // Nút Đăng chương mới: chỉ hiện khi ONGOING (không ẩn, không pending, không hoàn thành)
+                        if (isOngoing) {
                             Button(
                                 onClick = { onPostChapterClick(book.id, uiState.chapters.size + 1) },
                                 modifier = Modifier
@@ -240,8 +242,8 @@ fun CreatorBookDetailScreen(
                             Spacer(modifier = Modifier.height(12.dp))
                         }
 
-                        // Nếu truyện chưa hoàn thành và không phải chờ xác nhận thì hiện nút Đánh dấu hoàn thành
-                        if (!isPending && !isCompleted) {
+                        // Nếu ongoing thì hiện nút Đánh dấu hoàn thành
+                        if (isOngoing) {
                             OutlinedButton(
                                 onClick = { viewModel.updateBookStatus(bookId, "completed") },
                                 modifier = Modifier
@@ -257,12 +259,10 @@ fun CreatorBookDetailScreen(
                             Spacer(modifier = Modifier.height(12.dp))
                         }
 
-                        // Nút Ẩn / Hiện tác phẩm
-                        val isHidden = book.status.lowercase() == "hidden"
+                        // Nút Ẩn / Hiện tác phẩm: luôn hiển thị ở mọi trạng thái
                         OutlinedButton(
-                            onClick = { 
-                                val newStatus = if (isHidden) "ongoing" else "hidden"
-                                viewModel.updateBookStatus(bookId, newStatus) 
+                            onClick = {
+                                viewModel.toggleHideBook(bookId, book.status, book.previousStatus)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -271,15 +271,15 @@ fun CreatorBookDetailScreen(
                             border = BorderStroke(1.dp, themeColors.positiveColor.copy(alpha = 0.5f))
                         ) {
                             Icon(
-                                if (isHidden) Icons.Default.Visibility else Icons.Default.VisibilityOff, 
-                                contentDescription = null, 
-                                tint = themeColors.positiveColor, 
+                                if (isHidden) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = null,
+                                tint = themeColors.positiveColor,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                if (isHidden) "HIỆN TÁC PHẨM" else "ẨN TÁC PHẨM", 
-                                color = themeColors.positiveColor, 
+                                if (isHidden) "HIỆN TÁC PHẨM" else "ẨN TÁC PHẨM",
+                                color = themeColors.positiveColor,
                                 fontWeight = FontWeight.Medium
                             )
                         }

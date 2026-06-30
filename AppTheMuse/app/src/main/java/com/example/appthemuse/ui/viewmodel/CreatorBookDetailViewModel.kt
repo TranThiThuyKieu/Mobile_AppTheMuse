@@ -78,10 +78,30 @@ class CreatorBookDetailViewModel(
         viewModelScope.launch {
             try {
                 bookRepository.updateBookStatus(bookId, status)
-                // Reload the book details to reflect the updated status
                 loadBookDetails(bookId)
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = "Không thể cập nhật trạng thái: ${e.message}") }
+            }
+        }
+    }
+
+    /**
+     * Ẩn sách: lưu trạng thái hiện tại, rồi set hidden.
+     * Bỏ ẩn: khôi phục đúng trạng thái trước đó (pending vẫn là pending, ongoing vẫn là ongoing).
+     */
+    fun toggleHideBook(bookId: String, currentStatus: String, previousStatus: String) {
+        viewModelScope.launch {
+            try {
+                if (currentStatus.lowercase() == "hidden") {
+                    // Bỏ ẩn → khôi phục trạng thái cũ
+                    bookRepository.unhideBook(bookId, previousStatus)
+                } else {
+                    // Ẩn → lưu trạng thái hiện tại vào previous_status
+                    bookRepository.hideBook(bookId, currentStatus)
+                }
+                loadBookDetails(bookId)
+            } catch (e: Exception) {
+                _uiState.update { it.copy(error = "Không thể cập nhật: ${e.message}") }
             }
         }
     }

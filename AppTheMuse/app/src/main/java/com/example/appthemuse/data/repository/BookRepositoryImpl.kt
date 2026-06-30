@@ -26,6 +26,14 @@ class BookRepositoryImpl(
         firestoreService.updateBookStatus(bookId, status)
     }
 
+    override suspend fun hideBook(bookId: String, currentStatus: String) {
+        firestoreService.hideBook(bookId, currentStatus)
+    }
+
+    override suspend fun unhideBook(bookId: String, previousStatus: String) {
+        firestoreService.unhideBook(bookId, previousStatus)
+    }
+
     override suspend fun getRecentBooks(limit: Long): List<Book> = coroutineScope {
         val documents = firestoreService.getRecentBooksRaw(limit)
         documents.map { async { mapDocumentToBook(it) } }.awaitAll()
@@ -75,6 +83,7 @@ class BookRepositoryImpl(
             is_premium = doc.getBoolean("is_premium") ?: false,
             view_count = doc.get("view_count")?.toString()?.toLongOrNull() ?: 0L,
             status = doc.getString("status") ?: "",
+            previousStatus = doc.getString("previous_status") ?: "",
             created_at = doc.getTimestamp("created_at")
         )
     }
