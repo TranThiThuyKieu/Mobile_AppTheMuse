@@ -3,6 +3,7 @@ package com.example.appthemuse.ui.screens.admin
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -21,6 +22,7 @@ fun AdminBookDetailScreen(
     viewModel: AdminBookDetailViewModel,
     onBack: () -> Unit,
     onOpenReviews: (String) -> Unit,
+    onChapterClick: (Int) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -123,7 +125,9 @@ fun AdminBookDetailScreen(
 
             items(uiState.chapters, key = { it.id }) { chapter ->
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onChapterClick(chapter.chapterNumber) },
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 ) {
