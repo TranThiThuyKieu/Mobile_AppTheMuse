@@ -59,6 +59,7 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
     }
 
     Scaffold(
+        // Thanh Top Bar
         topBar = { HomeTopBar(onSearchClick = {
             showSearch = true
         }) },
@@ -73,6 +74,7 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
                 modifier = Modifier.fillMaxSize().padding(paddingValues).background(MaterialTheme.colorScheme.background),
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
+                // Sách Trending
                 if (uiState.trendingBooks.isNotEmpty()) {
                     item {
                         Text(
@@ -82,7 +84,7 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(16.dp)
                         )
-                        val pagerState = rememberPagerState(pageCount = { uiState.trendingBooks.size })
+                        val pagerState = rememberPagerState(pageCount = { minOf(uiState.trendingBooks.size, 5) })
                         HorizontalPager(state = pagerState) { page ->
                             val book = uiState.trendingBooks[page]
                             BannerItem(book = book, onClick = { onBookClick(book.id) })
@@ -105,8 +107,8 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
                 items(uiState.recommendedBooks.take(2)) { book ->
                     VerticalBookItem(book = book, onClick = { onBookClick(book.id) })
                 }
+                // Chuyển sang trang hiển thị tất cả truyện mới cập nhật
                 if (uiState.recentBooks.isNotEmpty()) {
-                    // Chuyển sang trang hiển thị tất cả truyện mới cập nhật
                     item {
                         SectionHeader(title="Mới cập nhật", onSeeMoreClick={
                                 navController.navigate("book/Sách mới/new")
@@ -116,7 +118,7 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
                             contentPadding = PaddingValues(horizontal = 16.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(uiState.recentBooks) { book ->
+                            items(uiState.recentBooks.take(10)) { book ->
                                 RecentBookCard(book = book, onClick = { onBookClick(book.id) })
                             }
                         }
@@ -167,7 +169,7 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
             }
         }
     }
-    // Hiển thị kết quả tìm kiếm
+    // Hiển thị màn hình tìm kiếm nếu showSearch = true
     if (showSearch) {
         SearchScreen(
             viewModel = viewModel,
@@ -178,7 +180,7 @@ fun HomeScreen(viewModel: HomeViewModel, navController: NavController, onBookCli
     }
 }
 
-
+// Header cho từng section trong HomeScreen : tiêu đề, nút xem thêm điều hướng sang màn hình sách đầy đủ
 @Composable
 fun SectionHeader(title: String, onSeeMoreClick: () -> Unit = {}) {
     Row(modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
@@ -188,14 +190,16 @@ fun SectionHeader(title: String, onSeeMoreClick: () -> Unit = {}) {
         Text("Xem thêm →", color = MaterialTheme.colorScheme.primary, fontSize = 14.sp, modifier = Modifier.clickable { onSeeMoreClick() })
     }
 }
-
+// Card banner hiển thị sách trending
 @Composable
 fun BannerItem(book: BookUi, onClick: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth().height(180.dp).padding(horizontal = 16.dp).clickable { onClick() },
         shape = RoundedCornerShape(12.dp)) {
         Box {
+            // Ảnh bìa sách
             AsyncImage(model = book.cover_url, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
+            // Title
             Text(
                 text = book.title,
                 color = Color.White,
@@ -205,7 +209,7 @@ fun BannerItem(book: BookUi, onClick: () -> Unit) {
         }
     }
 }
-
+// Card hiển thị sách dạng list dọc
 @Composable
 fun VerticalBookItem(book: BookUi, onClick: () -> Unit) {
     Card(
@@ -233,7 +237,7 @@ fun VerticalBookItem(book: BookUi, onClick: () -> Unit) {
         }
     }
 }
-
+// Card nhỏ hiển thị sách mới cập nhật
 @Composable
 fun RecentBookCard(book: BookUi, onClick: () -> Unit) {
     Card(modifier = Modifier.width(160.dp).clickable { onClick() },

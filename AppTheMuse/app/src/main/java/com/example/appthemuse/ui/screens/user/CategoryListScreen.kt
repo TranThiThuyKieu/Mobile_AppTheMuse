@@ -35,12 +35,14 @@ fun CategoryListScreen(viewModel: HomeViewModel, navController: NavController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: ""
     Scaffold(
+        // Thanh top bar
         topBar = {
             HomeTopBar(onSearchClick = {
                     showSearch = true
                 }
             )
         },
+        // Thanh bottom navigation
         bottomBar = {
             AppBottomBar(navController = navController, currentRoute = currentRoute)
         }
@@ -54,6 +56,7 @@ fun CategoryListScreen(viewModel: HomeViewModel, navController: NavController) {
             // Duyệt qua danh sách category
             items(uiState.categories) { category ->
                 Card(modifier = Modifier.fillMaxWidth().padding(12.dp)
+                    // Khi click category, điều hướng sang trang danh sách sách thuộc thể loại đó
                         .clickable {
                             navController.navigate("book/${category.name}/${category.id.removePrefix("cate")}")
                         }

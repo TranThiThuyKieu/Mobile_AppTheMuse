@@ -42,23 +42,28 @@ fun BookListScreen(title: String, type: String, viewModel: HomeViewModel,
         }
     }
     Scaffold(
+        // Thanh top bar
         topBar = {
             HomeTopBar(onSearchClick = {
                     showSearch = true
                 }
             )
         },
+        // Thanh bottom navigation
         bottomBar = {
             AppBottomBar(navController = navController, currentRoute = currentRoute)
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).padding(16.dp)) {
+            // Tiêu đề trạng thái / loại sách
             Text("TRẠNG THÁI", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(10.dp))
+            // Hiển thị title
             Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFEAEAEA)) {
                 Text(text = title, modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp))
             }
             Spacer(Modifier.height(16.dp))
+            // Danh sách sách
             LazyColumn {
                 items(books) {
                     VerticalBookItem(book = it, onClick = {

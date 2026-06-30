@@ -32,15 +32,16 @@ class HomeViewModel(
     private val bookRepository: BookRepository,
     private val favoriteGenres: List<String> = emptyList()
 ) : AndroidViewModel(application) {
+    // State chính của màn Home
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState
 
     init { loadHomeData() }
-
+    // Kiểm tra trạng thái mạng (online/offline)
     private fun checkOnlineStatus(): Boolean {
         return NetworkUtils.isOnline(getApplication())
     }
-
+    // Load toàn bộ dữ liệu cho màn Home
     fun loadHomeData() {
         viewModelScope.launch {
             val online = checkOnlineStatus()
@@ -54,7 +55,7 @@ class HomeViewModel(
                 val categories = bookRepository.getCategories().map { it.toCategoryUi() }
                 val newRelease = bookRepository.getNewReleaseBooks().map { it.toBookUi() }.filter { it.status != "hidden" && it.status != "pending" }
                 val allBooks = bookRepository.getAllBooks().map { it.toBookUi() }.filter { it.status != "hidden" && it.status != "pending" }
-
+                // Cập nhật toàn bộ UI state
                 _uiState.value = HomeUiState(
                     isLoading = false,
                     trendingBooks = trending,
@@ -75,37 +76,41 @@ class HomeViewModel(
             }
         }
     }
-
+    // Tìm kiếm sách
     fun searchBooks(keyword: String, filterType: String, status: String?, star: Int?) {
         val source = _uiState.value.allBooks
         if (source.isEmpty()) return
         var results = source
+        // Lọc theo keyword
         if (keyword.isNotBlank()) {
             results = when (filterType) {
                 "author" -> results.filter { it.author_name.contains(keyword, true) }
                 else -> results.filter { it.title.contains(keyword, true) }
             }
         }
+        // Lọc theo trạng thái sách
         status?.let { selectedStatus ->
             results = results.filter { it.status.equals(selectedStatus, true) }
         }
+        // Lọc theo rating
         star?.let { selectedStar ->
             results = results.filter { it.rating.toInt() >= selectedStar }
         }
+        // Cập nhật kết quả tìm kiếm cho UI
         _uiState.value = _uiState.value.copy(searchResults = results)
     }
-
+    // Xóa kết quả search
     fun clearSearch() {
         _uiState.value = _uiState.value.copy(searchResults = emptyList())
     }
-
+    // Load lịch sử tìm kiếm từ DB
     fun loadSearchHistory(userId: String) {
         viewModelScope.launch {
             val history = bookRepository.getSearchHistory(userId)
             _uiState.value = _uiState.value.copy(searchHistory = history)
         }
     }
-
+    // Lưu từ khóa tìm kiếm vào DB
     fun saveSearchHistory(userId: String, keyword: String) {
         viewModelScope.launch {
             bookRepository.saveSearchHistory(userId, keyword)

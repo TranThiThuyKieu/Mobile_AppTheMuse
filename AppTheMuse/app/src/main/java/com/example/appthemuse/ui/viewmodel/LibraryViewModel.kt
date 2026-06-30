@@ -28,9 +28,10 @@ class LibraryViewModel(
     private val downloadRepository: DownloadRepository,
     private val bookRepository: BookRepository
 ) : ViewModel() {
+    // State chính của màn Library
     private val _uiState = MutableStateFlow(LibraryUiState())
     val uiState: StateFlow<LibraryUiState> = _uiState
-    
+    // Load danh sách sách yêu thích
     fun loadFavoriteBooks(userId: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
@@ -38,14 +39,14 @@ class LibraryViewModel(
             _uiState.value = _uiState.value.copy(favoriteBooks = books, isLoading = false)
         }
     }
-    
+    // Load lịch sử đọc sách
     fun loadHistoryBooks(userId: String) {
         viewModelScope.launch {
             val books = repository.getHistoryBooks(userId)
             _uiState.value = _uiState.value.copy(historyBooks = books)
         }
     }
-    
+    // Load sách đã tải
     fun loadDownloadedBooks() {
         viewModelScope.launch {
             // 1. Hiển thị sách từ Room ngay lập tức (Cực nhanh, không cần mạng)
@@ -70,7 +71,7 @@ class LibraryViewModel(
             }
         }
     }
-
+    // Update sách đã tải
     fun updateBookChapters(bookId: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(

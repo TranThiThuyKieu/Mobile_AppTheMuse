@@ -16,7 +16,7 @@ import kotlinx.coroutines.coroutineScope
 class BookRepositoryImpl(
     private val firestoreService: FirestoreService
 ) : BookRepository {
-
+    // Lấy danh sách sách trending
     override suspend fun getTrendingBooks(limit: Long): List<Book> = coroutineScope {
         val documents = firestoreService.getTrendingBooksRaw(limit)
         documents.map { async { mapDocumentToBook(it) } }.awaitAll()
@@ -33,17 +33,17 @@ class BookRepositoryImpl(
     override suspend fun unhideBook(bookId: String, previousStatus: String) {
         firestoreService.unhideBook(bookId, previousStatus)
     }
-
+    // Lấy danh sách sách mới nhất
     override suspend fun getRecentBooks(limit: Long): List<Book> = coroutineScope {
         val documents = firestoreService.getRecentBooksRaw(limit)
         documents.map { async { mapDocumentToBook(it) } }.awaitAll()
     }
-
+    // Lấy danh sách sách gợi ý theo thể loại yêu thích
     override suspend fun getRecommendedBooks(favoriteGenres: List<String>, limit: Long): List<Book> = coroutineScope {
         val documents = firestoreService.getRecommendedBooksRaw(favoriteGenres, limit)
         documents.map { async { mapDocumentToBook(it) } }.awaitAll()
     }
-
+    // Lấy danh sách thể loại sách
     override suspend fun getCategories(): List<Category> {
         return firestoreService.getCategoriesListRaw().map { doc ->
             Category(
@@ -53,17 +53,17 @@ class BookRepositoryImpl(
             )
         }
     }
-
+    // Lấy danh sách sách mới phát hành
     override suspend fun getNewReleaseBooks(limit: Long): List<Book> = coroutineScope {
         val documents = firestoreService.getNewReleaseBooksRaw(limit)
         documents.map { async { mapDocumentToBook(it) } }.awaitAll()
     }
-
+    // Lấy tất cả sách
     override suspend fun getAllBooks(limit: Long): List<Book> = coroutineScope {
         val documents = firestoreService.getAllBooksRaw(limit)
         documents.map { async { mapDocumentToBook(it) } }.awaitAll()
     }
-
+    // Map dữ liệu Firestore sang model Book
     private suspend fun mapDocumentToBook(doc: DocumentSnapshot): Book {
         val docId = doc.id
         val chapterCount = doc.get("chapter_count")?.toString()?.toIntOrNull() ?: firestoreService.getChapterCount(docId)
@@ -87,15 +87,15 @@ class BookRepositoryImpl(
             created_at = doc.getTimestamp("created_at")
         )
     }
-
+    // Lưu lịch sử tìm kiếm
     override suspend fun saveSearchHistory(userId: String, keyword: String) {
         firestoreService.addSearchHistory(userId, keyword)
     }
-
+    // Lấy lịch sử tìm kiếm
     override suspend fun getSearchHistory(userId: String): List<String> {
         return firestoreService.getSearchHistory(userId)
     }
-
+    // Lấy sách theo tác giả
     override suspend fun getBooksByAuthor(authorId: String): List<Book> = coroutineScope {
         val documents = firestoreService.getBooksByAuthorRaw(authorId)
         documents.map { async { mapDocumentToBook(it) } }.awaitAll()

@@ -11,7 +11,7 @@ import com.google.firebase.Timestamp
 class DownloadedRepositoryImpl(
     private val dao: DownloadedBookDao
 ) : DownloadRepository {
-    
+    // Lấy danh sách sách đã tải về từ database
     override suspend fun getDownloadedBooks(): List<Book> {
         return dao.getAllBooks().map {
             Book(
@@ -28,7 +28,7 @@ class DownloadedRepositoryImpl(
             )
         }
     }
-
+    // Lưu thông tin sách vào database local
     override suspend fun saveBook(book: Book) {
         dao.insertBook(
             DownloadedBookEntity(
@@ -45,7 +45,7 @@ class DownloadedRepositoryImpl(
             )
         )
     }
-
+    // Lấy thông tin sách đã tải theo ID
     override suspend fun getBookById(bookId: String): Book? {
         return dao.getBookById(bookId)?.let {
             Book(
