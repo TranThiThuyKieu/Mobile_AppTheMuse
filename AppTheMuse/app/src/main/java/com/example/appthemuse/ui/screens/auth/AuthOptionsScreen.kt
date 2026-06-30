@@ -25,6 +25,7 @@ import com.example.appthemuse.ui.viewmodel.AuthViewModel
 import com.example.appthemuse.utils.AuthUtils
 import kotlinx.coroutines.launch
 
+// Màn hình lựa chọn: Cho người dùng chọn vào bằng Google, Email hoặc tạo tài khoản mới
 @Composable
 fun AuthOptionsScreen(
     viewModel: AuthViewModel,
@@ -36,6 +37,7 @@ fun AuthOptionsScreen(
     val coroutineScope = rememberCoroutineScope()
     val authState by viewModel.authState
 
+    // Xử lý khi đăng nhập thành công hoặc lỗi
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.LoginSuccess -> {
@@ -52,13 +54,11 @@ fun AuthOptionsScreen(
         }
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        // Giao diện khi đang tải
         if (authState is AuthState.Loading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                CircularProgressIndicator()
             }
         } else {
             Column(
@@ -66,64 +66,32 @@ fun AuthOptionsScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_logo_the_muse),
-                    contentDescription = "Logo The Muse",
-                    modifier = Modifier.size(50.dp)
-                )
-
+                Image(painter = painterResource(id = R.drawable.ic_logo_the_muse), contentDescription = null, modifier = Modifier.size(50.dp))
                 Spacer(modifier = Modifier.height(24.dp))
 
+                // Tiêu đề
                 Text(
                     text = buildAnnotatedString {
                         append("Chào mừng bạn\nđến với ")
-                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) {
-                            append("The Muse")
-                        }
+                        withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)) { append("The Muse") }
                     },
                     style = MaterialTheme.typography.titleLarge.copy(fontSize = 28.sp),
-                    color = MaterialTheme.colorScheme.onBackground,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 36.sp
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Text(
-                    text = "Hành trình vào thế giới ngôn từ của bạn bắt đầu tại đây.",
-                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f),
-                    textAlign = TextAlign.Center,
-                    lineHeight = 22.sp
+                    textAlign = TextAlign.Center
                 )
 
                 Spacer(modifier = Modifier.height(40.dp))
 
-                GoogleButton(
-                    onClick = {
-                        coroutineScope.launch {
-                            val idToken = AuthUtils.triggerGoogleSignIn(context, autoSelect = true)
-                            if (idToken != null) {
-                                viewModel.loginWithGoogle(idToken)
-                            }
-                        }
+                // Các nút bấm hành động
+                GoogleButton(onClick = {
+                    coroutineScope.launch {
+                        val idToken = AuthUtils.triggerGoogleSignIn(context, autoSelect = true)
+                        if (idToken != null) viewModel.loginWithGoogle(idToken)
                     }
-                )
-
+                })
                 Spacer(modifier = Modifier.height(16.dp))
-
-                PrimaryButton(
-                    text = "ĐĂNG NHẬP",
-                    onClick = onNavigateToLoginEmail,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-
+                PrimaryButton(text = "ĐĂNG NHẬP", onClick = onNavigateToLoginEmail, modifier = Modifier.fillMaxWidth())
                 Spacer(modifier = Modifier.height(16.dp))
-
-                SecondaryButton(
-                    text = "TẠO TÀI KHOẢN",
-                    onClick = onNavigateToRegister
-                )
+                SecondaryButton(text = "TẠO TÀI KHOẢN", onClick = onNavigateToRegister)
             }
         }
     }

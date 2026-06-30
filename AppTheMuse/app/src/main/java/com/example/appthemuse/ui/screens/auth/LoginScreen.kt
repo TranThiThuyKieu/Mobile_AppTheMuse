@@ -14,7 +14,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.appthemuse.R
@@ -25,6 +24,7 @@ import com.example.appthemuse.ui.viewmodel.AuthViewModel
 import com.example.appthemuse.utils.AuthUtils
 import kotlinx.coroutines.launch
 
+// Màn hình Đăng nhập
 @Composable
 fun LoginScreen(
     viewModel: AuthViewModel,
@@ -37,24 +37,21 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val authState by viewModel.authState
-    
+
     var showForgotDialog by remember { mutableStateOf(false) }
     var forgotEmail by remember { mutableStateOf("") }
 
+    // Xử lý kết quả
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.LoginSuccess -> {
                 val successState = authState as AuthState.LoginSuccess
-                Toast.makeText(context, "Chào mừng ${successState.user.username} trở lại!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Chào mừng ${successState.user.username}!", Toast.LENGTH_SHORT).show()
                 viewModel.resetState()
-                if (successState.user.role == "admin") {
-                    onNavigateToAdmin()
-                } else {
-                    onNavigateToHome(successState.hasGenres)
-                }
+                if (successState.user.role == "admin") onNavigateToAdmin() else onNavigateToHome(successState.hasGenres)
             }
             is AuthState.PasswordResetSent -> {
-                Toast.makeText(context, "Link đặt lại mật khẩu đã được gửi vào Email của bạn!", Toast.LENGTH_LONG).show()
+                Toast.makeText(context, "Link đặt lại mật khẩu đã gửi!", Toast.LENGTH_LONG).show()
                 viewModel.resetState()
                 showForgotDialog = false
             }
@@ -66,39 +63,25 @@ fun LoginScreen(
         }
     }
 
+    // Dialog quên mật khẩu
     if (showForgotDialog) {
         AlertDialog(
             onDismissRequest = { showForgotDialog = false },
             title = { Text("Quên mật khẩu") },
             text = {
                 Column {
-                    Text("Nhập email để nhận link đặt lại mật khẩu (Giới hạn 5 lần/ngày).")
+                    Text("Nhập email để nhận link đặt lại.")
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = forgotEmail,
-                        onValueChange = { forgotEmail = it },
-                        label = { Text("Email") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    OutlinedTextField(value = forgotEmail, onValueChange = { forgotEmail = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
                 }
             },
-            confirmButton = {
-                TextButton(onClick = { viewModel.forgotPassword(forgotEmail) }) {
-                    Text("Gửi link")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showForgotDialog = false }) {
-                    Text("Hủy")
-                }
-            }
+            confirmButton = { TextButton(onClick = { viewModel.forgotPassword(forgotEmail) }) { Text("Gửi link") } },
+            dismissButton = { TextButton(onClick = { showForgotDialog = false }) { Text("Hủy") } }
         )
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        // Loading UI
         if (authState is AuthState.Loading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -109,12 +92,9 @@ fun LoginScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Header
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_logo_the_muse),
-                        contentDescription = "Logo",
-                        modifier = Modifier.size(32.dp)
-                    )
+                    Image(painter = painterResource(id = R.drawable.ic_logo_the_muse), contentDescription = null, modifier = Modifier.size(32.dp))
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = "The Muse", fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 }
@@ -123,75 +103,43 @@ fun LoginScreen(
                 Text(text = "Chào mừng trở lại", fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 Text(text = "Đăng nhập để tiếp tục đọc truyện", fontSize = 14.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
 
+                // Input fields
                 Spacer(modifier = Modifier.height(32.dp))
-
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text("Email hoặc tên đăng nhập") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
+                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email/Tên đăng nhập") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 Spacer(modifier = Modifier.height(16.dp))
-
                 OutlinedTextField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = { Text("Mật khẩu") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    value = password, onValueChange = { password = it }, label = { Text("Mật khẩu") },
+                    visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth(), singleLine = true
                 )
 
+                // Forgot password
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
                     Text(
-                        text = "Quên mật khẩu?",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 13.sp,
-                        modifier = Modifier.padding(vertical = 8.dp).clickable { 
-                            forgotEmail = email
-                            showForgotDialog = true 
-                        }
+                        text = "Quên mật khẩu?", color = MaterialTheme.colorScheme.primary, fontSize = 13.sp,
+                        modifier = Modifier.padding(vertical = 8.dp).clickable { forgotEmail = email; showForgotDialog = true }
                     )
                 }
 
+                // Action buttons
                 Spacer(modifier = Modifier.height(8.dp))
-
-                PrimaryButton(
-                    text = "Đăng nhập",
-                    onClick = {
-                        viewModel.login(email.trim(), password.trim())
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                PrimaryButton(text = "Đăng nhập", onClick = { viewModel.login(email.trim(), password.trim()) }, modifier = Modifier.fillMaxWidth())
 
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(text = "Hoặc đăng nhập với", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.4f))
                 Spacer(modifier = Modifier.height(16.dp))
-
-                GoogleButton(
-                    onClick = {
-                        coroutineScope.launch {
-                            val idToken = AuthUtils.triggerGoogleSignIn(context, autoSelect = false)
-                            if (idToken != null) {
-                                viewModel.loginWithGoogle(idToken)
-                            }
-                        }
+                GoogleButton(onClick = {
+                    coroutineScope.launch {
+                        val idToken = AuthUtils.triggerGoogleSignIn(context, autoSelect = false)
+                        if (idToken != null) viewModel.loginWithGoogle(idToken)
                     }
-                )
+                })
 
+                // Register link
                 Spacer(modifier = Modifier.height(24.dp))
-
                 Row {
                     Text(text = "Chưa có tài khoản? ")
-                    Text(
-                        text = "Đăng ký ngay",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clickable { onNavigateToRegister() }
-                    )
+                    Text(text = "Đăng ký ngay", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, modifier = Modifier.clickable { onNavigateToRegister() })
                 }
             }
         }

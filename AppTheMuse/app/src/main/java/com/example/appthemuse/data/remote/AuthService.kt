@@ -11,6 +11,7 @@ class AuthService {
         setLanguageCode("vi")
     }
 
+    // Đăng nhập bằng Email và Mật khẩu
     suspend fun loginWithEmail(email: String, password: String): FirebaseUser? {
         val result = firebaseAuth.signInWithEmailAndPassword(email, password).await()
         val user = result.user
@@ -25,10 +26,11 @@ class AuthService {
         return user
     }
 
+    // Đăng ký tài khoản mới bằng Email
     suspend fun registerWithEmail(email: String, password: String): FirebaseUser? {
         val result = firebaseAuth.createUserWithEmailAndPassword(email, password).await()
         val user = result.user
-        
+
         try {
             user?.sendEmailVerification()?.await()
         } catch (e: Exception) {
@@ -37,13 +39,16 @@ class AuthService {
         return user
     }
 
+    // Đăng nhập bằng tài khoản Google
     suspend fun loginWithGoogle(idToken: String): FirebaseUser? {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         return firebaseAuth.signInWithCredential(credential).await().user
     }
 
+    // Lấy ID người dùng hiện tại
     fun getCurrentUserId(): String? = firebaseAuth.currentUser?.uid
 
+    // Kiểm tra trạng thái xác thực email
     suspend fun isEmailVerified(): Boolean {
         return try {
             val user = firebaseAuth.currentUser
@@ -54,6 +59,7 @@ class AuthService {
         }
     }
 
+    // Gửi lại email xác thực tài khoản
     suspend fun sendEmailVerification() {
         val user = firebaseAuth.currentUser
         if (user != null) {
@@ -64,14 +70,17 @@ class AuthService {
         }
     }
 
+    // Xóa tài khoản hiện tại khỏi Firebase Auth
     suspend fun deleteCurrentUser() {
         firebaseAuth.currentUser?.delete()?.await()
     }
 
+    // Gửi email khôi phục mật khẩu khi quên
     suspend fun sendPasswordResetEmail(email: String) {
         firebaseAuth.sendPasswordResetEmail(email).await()
     }
 
+    // Đăng xuất tài khoản
     fun signOut() {
         firebaseAuth.signOut()
     }

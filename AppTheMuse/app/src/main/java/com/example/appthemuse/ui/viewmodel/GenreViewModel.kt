@@ -28,6 +28,7 @@ class GenreViewModel(
     private val _categories = mutableStateOf<List<Category>>(emptyList())
     val categories: State<List<Category>> = _categories
 
+    // Lấy danh sách tất cả thể loại sách từ Repository
     fun fetchCategories() {
         viewModelScope.launch {
             try {
@@ -39,6 +40,7 @@ class GenreViewModel(
         }
     }
 
+    // Lưu danh sách các thể loại sách yêu thích của user
     fun saveFavoriteGenres(genres: List<String>) {
         _genreState.value = GenreState.Loading
         viewModelScope.launch {
@@ -55,6 +57,7 @@ class GenreViewModel(
         }
     }
 
+    // Đặt lại trạng thái ban đầu của màn hình
     fun resetState() {
         _genreState.value = GenreState.Idle
     }

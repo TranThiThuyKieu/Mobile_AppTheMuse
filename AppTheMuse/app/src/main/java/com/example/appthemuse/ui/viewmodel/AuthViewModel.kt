@@ -19,6 +19,7 @@ sealed interface AuthState {
     object PasswordResetSent : AuthState
 }
 
+// ViewModel xử lý Đăng nhập, Đăng ký, Quên mật khẩu
 class AuthViewModel(
     private val authRepository: AuthRepository
 ) : ViewModel() {
@@ -26,9 +27,11 @@ class AuthViewModel(
     private val _authState = mutableStateOf<AuthState>(AuthState.Idle)
     val authState: State<AuthState> = _authState
 
+    // Đăng nhập bằng email và mật khẩu
     fun login(email: String, password: String) {
         val trimmedEmail = email.trim()
         val trimmedPassword = password.trim()
+
         if (trimmedEmail.isEmpty() || trimmedPassword.isEmpty()) {
             _authState.value = AuthState.Error("Vui lòng nhập đầy đủ thông tin!")
             return
@@ -36,30 +39,22 @@ class AuthViewModel(
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             authRepository.login(trimmedEmail, trimmedPassword)
-                .onSuccess { domainUser ->
-                    val userUi = domainUser.toUserUi()
-                    checkGenresAndNavigate(userUi)
-                }
-                .onFailure { error ->
-                    _authState.value = AuthState.Error(error.message ?: "Đăng nhập thất bại")
-                }
+                .onSuccess { domainUser -> checkGenresAndNavigate(domainUser.toUserUi()) }
+                .onFailure { error -> _authState.value = AuthState.Error(error.message ?: "Đăng nhập thất bại") }
         }
     }
 
+    // Đăng nhập bằng Google
     fun loginWithGoogle(idToken: String) {
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             authRepository.loginWithGoogle(idToken)
-                .onSuccess { domainUser ->
-                    val userUi = domainUser.toUserUi()
-                    checkGenresAndNavigate(userUi)
-                }
-                .onFailure { error ->
-                    _authState.value = AuthState.Error(error.message ?: "Đăng nhập Google thất bại")
-                }
+                .onSuccess { domainUser -> checkGenresAndNavigate(domainUser.toUserUi()) }
+                .onFailure { error -> _authState.value = AuthState.Error(error.message ?: "Đăng nhập Google thất bại") }
         }
     }
 
+    // Đăng ký tài khoản mới
     fun register(email: String, password: String, confirmPassword: String, username: String) {
         if (username.isBlank() || email.isBlank() || password.isBlank()) {
             _authState.value = AuthState.Error("Vui lòng nhập đầy đủ thông tin!")
@@ -70,26 +65,22 @@ class AuthViewModel(
             return
         }
 
-        // ✅ KIỂM TRA MẬT KHẨU MẠNH: 8 ký tự, 1 hoa, 1 thường, 1 số, 1 ký hiệu
+        // Kiểm tra độ mạnh mật khẩu (8 ký tự, chữ hoa, chữ thường, số, ký tự đặc biệt)
         val passwordRegex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!])(?=\\S+$).{8,}$".toRegex()
         if (!password.matches(passwordRegex)) {
-            _authState.value = AuthState.Error("Mật khẩu phải từ 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt!")
+            _authState.value = AuthState.Error("Mật khẩu chưa đủ mạnh!")
             return
         }
 
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             authRepository.register(email, password, username)
-                .onSuccess {
-                    _authState.value = AuthState.WaitingForVerification
-                }
-                .onFailure { error ->
-                    _authState.value = AuthState.Error(error.message ?: "Đăng ký thất bại")
-                }
+                .onSuccess { _authState.value = AuthState.WaitingForVerification }
+                .onFailure { error -> _authState.value = AuthState.Error(error.message ?: "Đăng ký thất bại") }
         }
     }
 
-    // ✅ QUÊN MẬT KHẨU VỚI GIỚI HẠN 5 LẦN
+    // Gửi email khôi phục mật khẩu
     fun forgotPassword(email: String) {
         if (email.isBlank()) {
             _authState.value = AuthState.Error("Vui lòng nhập Email!")
@@ -98,25 +89,19 @@ class AuthViewModel(
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             authRepository.sendPasswordResetEmail(email)
-                .onSuccess {
-                    _authState.value = AuthState.PasswordResetSent
-                }
-                .onFailure { error ->
-                    _authState.value = AuthState.Error(error.message ?: "Lỗi gửi yêu cầu")
-                }
+                .onSuccess { _authState.value = AuthState.PasswordResetSent }
+                .onFailure { error -> _authState.value = AuthState.Error(error.message ?: "Lỗi gửi yêu cầu") }
         }
     }
 
+    // Kiểm tra xem user đã chọn thể loại truyện chưa 
     private suspend fun checkGenresAndNavigate(userUi: UserUi) {
         authRepository.checkUserGenresSelected(userUi.id)
-            .onSuccess { hasGenres ->
-                _authState.value = AuthState.LoginSuccess(user = userUi, hasGenres = hasGenres)
-            }
-            .onFailure {
-                _authState.value = AuthState.LoginSuccess(user = userUi, hasGenres = false)
-            }
+            .onSuccess { hasGenres -> _authState.value = AuthState.LoginSuccess(user = userUi, hasGenres = hasGenres) }
+            .onFailure { _authState.value = AuthState.LoginSuccess(user = userUi, hasGenres = false) }
     }
 
+    // Gửi email xác thực tài khoản
     fun sendVerifyEmail(onResult: (Boolean, String?) -> Unit = { _, _ -> }) {
         viewModelScope.launch {
             authRepository.sendEmailVerification()
@@ -125,6 +110,7 @@ class AuthViewModel(
         }
     }
 
+    // Kiểm tra trạng thái xác thực email
     fun checkEmailVerified(onVerified: () -> Unit) {
         viewModelScope.launch {
             val isVerified = authRepository.isEmailVerified()
@@ -142,7 +128,7 @@ class AuthViewModel(
         }
     }
 
-    // ✅ HỦY ĐĂNG KÝ VÀ XÓA TÀI KHOẢN (Khi hết giờ hoặc bấm Hủy)
+    // Xóa tài khoản chưa xác thực nếu quá hạn
     fun deleteAccountIfExpired(onComplete: () -> Unit = {}) {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId()
@@ -154,6 +140,7 @@ class AuthViewModel(
         }
     }
 
+    // Khôi phục trạng thái ban đầu
     fun resetState() {
         _authState.value = AuthState.Idle
     }
