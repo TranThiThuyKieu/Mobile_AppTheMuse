@@ -29,6 +29,7 @@ data class AdminChapterUi(
 data class AdminReviewUi(
     val id: String,
     val userId: String,
+    val userName: String,
     val ratingText: String,
     val comment: String,
     val isHidden: Boolean,

@@ -27,13 +27,15 @@ class AuthViewModel(
     val authState: State<AuthState> = _authState
 
     fun login(email: String, password: String) {
-        if (email.trim().isEmpty() || password.trim().isEmpty()) {
+        val trimmedEmail = email.trim()
+        val trimmedPassword = password.trim()
+        if (trimmedEmail.isEmpty() || trimmedPassword.isEmpty()) {
             _authState.value = AuthState.Error("Vui lòng nhập đầy đủ thông tin!")
             return
         }
         _authState.value = AuthState.Loading
         viewModelScope.launch {
-            authRepository.login(email, password)
+            authRepository.login(trimmedEmail, trimmedPassword)
                 .onSuccess { domainUser ->
                     val userUi = domainUser.toUserUi()
                     checkGenresAndNavigate(userUi)

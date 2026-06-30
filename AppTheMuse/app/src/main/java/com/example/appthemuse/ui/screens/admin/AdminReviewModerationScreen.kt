@@ -92,7 +92,7 @@ fun AdminReviewModerationScreen(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(text = "User: ${review.userId}", fontWeight = FontWeight.SemiBold)
+                            Text(text = "Người dùng: ${review.userName.ifBlank { review.userId }}", fontWeight = FontWeight.SemiBold)
                             Text(text = review.ratingText)
                         }
                         Text(text = review.comment)

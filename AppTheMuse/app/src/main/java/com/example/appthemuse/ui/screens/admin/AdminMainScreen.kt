@@ -98,9 +98,10 @@ fun AdminMainScreen(
                     onSettingsClick = { navController.navigate("admin_settings") }
                 )
             }
-            composable("admin_reviews") {
+            composable("admin_reviews/{bookId}") { backStack ->
+                val bookId = backStack.arguments?.getString("bookId") ?: ""
                 AdminReviewModerationScreen(
-                    bookId = "",
+                    bookId = bookId,
                     viewModel = adminReviewModerationViewModel,
                     onBack = { navController.popBackStack() }
                 )
@@ -112,11 +113,7 @@ fun AdminMainScreen(
                     viewModel = adminBookDetailViewModel,
                     onBack = { navController.popBackStack() },
                     onOpenReviews = { id ->
-                        adminReviewModerationViewModel.load(id)
-                        navController.navigate("admin_reviews")
-                    },
-                    onChapterClick = { chapterNum ->
-                        onNavigateToReading(bookId, chapterNum)
+                        navController.navigate("admin_reviews/$id")
                     }
                 )
             }

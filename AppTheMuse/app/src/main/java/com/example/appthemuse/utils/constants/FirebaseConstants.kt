@@ -28,6 +28,7 @@ object FirebaseConstants {
     }
 
     object ReviewFields {
+        const val BOOK_ID = "book_id"
         const val USER_ID = "user_id"
         const val RATING = "rating"
         const val COMMENT = "comment"

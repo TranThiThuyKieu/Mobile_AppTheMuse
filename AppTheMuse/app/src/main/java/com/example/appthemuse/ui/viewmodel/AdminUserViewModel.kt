@@ -68,6 +68,16 @@ class AdminUserViewModel : ViewModel() {
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val snapshot = firestore.collection("users").get().await()
+                
+                // Fetch security logs to check for permanent locks (due to 5 failed passwords)
+                val securityLogsSnapshot = try {
+                    firestore.collection("security_logs").get().await()
+                } catch (e: Exception) { null }
+                
+                val lockedEmails = securityLogsSnapshot?.documents
+                    ?.filter { it.getBoolean("is_locked") == true }
+                    ?.map { it.id } ?: emptyList()
+
                 val sdf = SimpleDateFormat("MMM dd, yyyy", Locale.US)
                 
                 val userList = snapshot.documents.mapNotNull { doc ->
@@ -75,7 +85,10 @@ class AdminUserViewModel : ViewModel() {
                     val username = doc.getString("username") ?: return@mapNotNull null
                     val email = doc.getString("email") ?: ""
                     val role = doc.getString("role") ?: "user"
-                    val isBlocked = doc.getBoolean("is_blocked") ?: false
+                    
+                    // User is considered blocked if they are blocked in users collection OR permanently locked in security_logs
+                    val isBlockedInUsers = doc.getBoolean("is_blocked") ?: false
+                    val isBlocked = isBlockedInUsers || lockedEmails.contains(email)
                     
                     val timestamp = doc.getTimestamp("created_at")
                     val joinDate = if (timestamp != null) sdf.format(timestamp.toDate()) else "Oct 12, 2023"
@@ -137,8 +150,22 @@ class AdminUserViewModel : ViewModel() {
     fun toggleBlockUser(user: UserAdminUi) {
         viewModelScope.launch {
             try {
+                val newStatus = !user.isBlocked
                 firestore.collection("users").document(user.uid)
-                    .update("is_blocked", !user.isBlocked).await()
+                    .update("is_blocked", newStatus).await()
+                    
+                // Also update security_logs to sync lock status and reset attempts
+                if (user.email.isNotEmpty()) {
+                    val updateData = mutableMapOf<String, Any>(
+                        "is_locked" to newStatus
+                    )
+                    if (!newStatus) {
+                        updateData["failed_attempts"] = 0
+                    }
+                    firestore.collection("security_logs").document(user.email)
+                        .set(updateData, com.google.firebase.firestore.SetOptions.merge()).await()
+                }
+                    
                 loadUsers()
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }

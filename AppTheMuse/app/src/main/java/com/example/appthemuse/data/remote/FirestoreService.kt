@@ -31,6 +31,18 @@ class FirestoreService {
     }
 
     /**
+     * Lấy ID người dùng từ email.
+     */
+    suspend fun getUserIdByEmail(email: String): String? {
+        return try {
+            val snapshot = firestore.collection("users").whereEqualTo("email", email).get().await()
+            snapshot.documents.firstOrNull()?.id
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
      * Lưu trữ hoặc cập nhật thông tin người dùng vào Firestore.
      */
     suspend fun saveUserDocument(userId: String, userData: Map<String, Any>) {
@@ -415,9 +427,19 @@ class FirestoreService {
     }
 
     /**
-     * Thêm một đánh giá mới cho sách.
+     * Thêm một đánh giá mới cho sách với document ID dạng review_{bookNumId}_{thứ_tự}.
+     * Ví dụ: review_10_1, review_10_2, review_11_1, ...
      */
-    suspend fun addReview(reviewData: Map<String, Any>) {
-        firestore.collection("reviews").add(reviewData).await()
+    suspend fun addReview(bookNumId: Long, reviewData: Map<String, Any>) {
+        val reviewsRef = firestore.collection("reviews")
+        // Đếm số review hiện tại của cuốn sách này để tính thứ tự tiếp theo
+        val existingCount = reviewsRef
+            .whereEqualTo("book_id", bookNumId)
+            .get().await().size()
+        val nextIndex = existingCount + 1
+        val documentId = "review_${bookNumId}_${nextIndex}"
+
+        // Lưu với document ID đã tạo
+        reviewsRef.document(documentId).set(reviewData).await()
     }
 }

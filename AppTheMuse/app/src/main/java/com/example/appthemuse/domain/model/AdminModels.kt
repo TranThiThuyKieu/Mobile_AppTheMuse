@@ -44,6 +44,7 @@ data class AdminReview(
     val id: String,
     val bookId: String,
     val userId: String,
+    val userName: String,
     val rating: Int,
     val comment: String,
     val isHidden: Boolean,

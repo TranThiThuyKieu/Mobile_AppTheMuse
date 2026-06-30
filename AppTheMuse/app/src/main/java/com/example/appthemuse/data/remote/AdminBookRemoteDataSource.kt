@@ -76,18 +76,35 @@ class AdminBookRemoteDataSource(
         )
     }
 
-    suspend fun getReviews(bookId: String, includeHidden: Boolean): List<AdminReview> {
-        val bookNumId = bookId.removePrefix("book").toIntOrNull()
+    suspend fun getReviews(bookId: String, includeHidden: Boolean): List<AdminReview> = coroutineScope {
+        val numericPart = bookId.replace(Regex("[^0-9]"), "").toIntOrNull()
+        val possibleIds = listOfNotNull(
+            bookId,
+            bookId.toLongOrNull(),
+            bookId.toIntOrNull(),
+            numericPart,
+            numericPart?.toLong()
+        ).distinct()
+
         val query = firestore.collection(FirebaseConstants.REVIEWS)
-            .whereIn("book_id", listOfNotNull(bookId, bookNumId))
+            .whereIn(ReviewFields.BOOK_ID, possibleIds)
 
-        val docs = query.get().await().documents
-        var reviews = docs.map { it.toAdminReview(bookId) }
-        if (!includeHidden) {
-            reviews = reviews.filter { !it.isHidden }
-        }
+        val documents = query.get().await().documents
 
-        return reviews.sortedByDescending { it.createdAt }
+        documents.map { doc ->
+            async {
+                val userId = doc.getString(ReviewFields.USER_ID).orEmpty()
+                val userName = try {
+                    val userDoc = firestore.collection("users").document(userId).get().await()
+                    userDoc.getString("username") ?: userDoc.getString("name") ?: "Người dùng"
+                } catch (e: Exception) {
+                    "Người dùng"
+                }
+                doc.toAdminReview(bookId, userName)
+            }
+        }.awaitAll()
+            .filter { includeHidden || !it.isHidden }
+            .sortedByDescending { it.createdAt }
     }
 
     suspend fun setReviewHidden(bookId: String, reviewId: String, hidden: Boolean) {
@@ -141,11 +158,12 @@ class AdminBookRemoteDataSource(
         )
     }
 
-    private fun DocumentSnapshot.toAdminReview(bookId: String): AdminReview {
+    private fun DocumentSnapshot.toAdminReview(bookId: String, userName: String = ""): AdminReview {
         return AdminReview(
             id = id,
             bookId = bookId,
             userId = getString(ReviewFields.USER_ID).orEmpty(),
+            userName = userName,
             rating = getLong(ReviewFields.RATING)?.toInt() ?: 0,
             comment = getString(ReviewFields.COMMENT).orEmpty(),
             isHidden = getBoolean(ReviewFields.IS_HIDDEN) ?: false,
