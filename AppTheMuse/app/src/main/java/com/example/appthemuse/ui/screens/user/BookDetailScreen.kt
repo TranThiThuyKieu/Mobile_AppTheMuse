@@ -50,6 +50,7 @@ fun BookDetailScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     var showReviewDialog by remember { mutableStateOf(false) }
 
+    // Tự động tải lại chi tiết sách khi màn hình được hiển thị lại
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -178,9 +179,9 @@ fun BookDetailContent(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )
-                
+
                 Spacer(modifier = Modifier.height(12.dp))
-                
+
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Star, contentDescription = null, tint = GoldStar, modifier = Modifier.size(18.dp))
                     Text(text = " ${String.format("%.1f", book.rating)}", style = MaterialTheme.typography.bodyMedium)
@@ -210,9 +211,9 @@ fun BookDetailContent(
 
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     Button(
-                        onClick = { 
-                            if (isFinished) onReadClick(1) 
-                            else onReadClick(lastReadChapterNumber) 
+                        onClick = {
+                            if (isFinished) onReadClick(1)
+                            else onReadClick(lastReadChapterNumber)
                         },
                         modifier = Modifier
                             .weight(1f)
@@ -227,7 +228,7 @@ fun BookDetailContent(
                         }
                         Text(text = buttonText, fontWeight = FontWeight.Bold)
                     }
-                    
+
                     if (progressPercent > 0 && !isFinished) {
                         OutlinedButton(
                             onClick = { onReadClick(1) },
@@ -241,9 +242,9 @@ fun BookDetailContent(
                         }
                     }
                 }
-                
+
                 Spacer(modifier = Modifier.height(8.dp))
-                
+
                 if (!isDownloaded) {
                     if (isOnline) {
                         TextButton(onClick = onDownloadClick) {
@@ -254,7 +255,7 @@ fun BookDetailContent(
                     }
                 } else {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically, 
+                        verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(vertical = 8.dp),
                         horizontalArrangement = Arrangement.Center
                     ) {
@@ -274,7 +275,7 @@ fun BookDetailContent(
             }
         }
 
-        // --- DANH SÁCH CHƯƠNG ---
+        // Danh sach chuong
         item {
             Text(
                 text = "Danh sách chương",
@@ -291,16 +292,16 @@ fun BookDetailContent(
                 chapter.chapter_number == lastReadChapterNumber && progressPercent > 0 -> "Đang đọc"
                 else -> ""
             }
-            
+
             ChapterItem(
-                chapter = chapter, 
+                chapter = chapter,
                 statusText = readingStatus,
                 onClick = { onReadClick(chapter.chapter_number) }
             )
             HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.5f))
         }
 
-        // --- PHẦN ĐÁNH GIÁ (HIỂN THỊ DƯỚI CÙNG) ---
+        // Danh gia
         item {
             Spacer(modifier = Modifier.height(32.dp))
             Row(
@@ -342,7 +343,7 @@ fun BookDetailContent(
         }
     }
 }
-
+// luot xem
 fun formatViewCount(count: Long): String {
     return when {
         count >= 1_000_000 -> "${String.format("%.1f", count / 1_000_000.0)}M"

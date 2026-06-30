@@ -43,14 +43,16 @@ class BookDetailViewModel(
     private val _uiState = MutableStateFlow<BookDetailState>(BookDetailState.Loading)
     val uiState: StateFlow<BookDetailState> = _uiState
 
+    // Kiểm tra kết nối mạng
     private fun isOnline(): Boolean {
         return NetworkUtils.isOnline(getApplication())
     }
 
+    // Tải chi tiết sách
     fun loadBookDetail(bookId: String) {
         viewModelScope.launch {
             _uiState.value = BookDetailState.Loading
-            
+
             val online = isOnline()
             val localBook = downloadRepository.getBookById(bookId)
 
@@ -65,10 +67,10 @@ class BookDetailViewModel(
                 } else {
                     localBook
                 }
-                
+
                 if (book != null) {
                     val userId = authRepository.getCurrentUserId()
-                    
+
                     val chapters = if (online) {
                         try {
                             val remoteChapters = bookRepository.getChapters(bookId)
@@ -88,7 +90,7 @@ class BookDetailViewModel(
                     val isFavorite = if (userId != null && online) {
                         try { bookRepository.isBookFavorite(userId, bookId) } catch (e: Exception) { false }
                     } else false
-                    
+
                     var lastChapter = 1
                     var progressPercent = 0
                     var isFinished = false
@@ -123,6 +125,7 @@ class BookDetailViewModel(
         }
     }
 
+    // Thêm đánh giá mới
     fun addReview(bookId: String, rating: Int, comment: String) {
         if (!isOnline()) return
         viewModelScope.launch {
@@ -133,6 +136,7 @@ class BookDetailViewModel(
         }
     }
 
+    // Thêm/Xóa yêu thích
     fun toggleFavorite(bookId: String) {
         if (!isOnline()) return
         viewModelScope.launch {
@@ -144,6 +148,7 @@ class BookDetailViewModel(
         }
     }
 
+    // Tải truyện về máy
     fun downloadBook(bookUi: BookUi) {
         if (!isOnline()) return
         viewModelScope.launch {
@@ -156,6 +161,7 @@ class BookDetailViewModel(
         }
     }
 
+    // Xóa truyện khỏi máy
     fun deleteBook(bookId: String) {
         viewModelScope.launch {
             try {
