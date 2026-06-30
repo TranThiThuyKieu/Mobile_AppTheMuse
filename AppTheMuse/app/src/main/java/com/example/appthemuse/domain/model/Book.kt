@@ -16,6 +16,7 @@ data class Book(
     val is_premium: Boolean = false,
     val view_count: Long = 0L,
     val status: String = "",
+    val previousStatus: String = "", // Trạng thái trước khi ẩn, dùng để khôi phục khi bỏ ẩn
     val created_at: Timestamp? = null,
     val progressPercent: Int = 0,
     val lastReadAt: Timestamp? = null

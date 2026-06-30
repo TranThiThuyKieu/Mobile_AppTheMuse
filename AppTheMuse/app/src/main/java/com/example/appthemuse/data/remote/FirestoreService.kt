@@ -101,6 +101,33 @@ class FirestoreService {
     }
 
     /**
+     * Ẩn sách: lưu trạng thái hiện tại vào previous_status rồi set status = "hidden".
+     */
+    suspend fun hideBook(bookId: String, currentStatus: String) {
+        try {
+            firestore.collection("books").document(bookId).update(
+                mapOf("previous_status" to currentStatus, "status" to "hidden")
+            ).await()
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error hiding book: ${e.message}")
+        }
+    }
+
+    /**
+     * Bỏ ẩn sách: khôi phục trạng thái từ previous_status, xóa previous_status.
+     */
+    suspend fun unhideBook(bookId: String, previousStatus: String) {
+        val restoreStatus = if (previousStatus.isBlank()) "ongoing" else previousStatus
+        try {
+            firestore.collection("books").document(bookId).update(
+                mapOf("status" to restoreStatus, "previous_status" to "")
+            ).await()
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreService", "Error unhiding book: ${e.message}")
+        }
+    }
+
+    /**
      * Lấy danh sách toàn bộ sách (hỗ trợ fallback sang collection tiếng Việt).
      */
     suspend fun getAllBooksRaw(limit: Long): List<DocumentSnapshot> {

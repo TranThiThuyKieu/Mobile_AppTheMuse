@@ -22,6 +22,8 @@ interface BookRepository {
     suspend fun getCommentCount(bookId: String): Int
     suspend fun createChapter(bookId: String, title: String, content: String): String
     suspend fun updateBookStatus(bookId: String, status: String)
+    suspend fun hideBook(bookId: String, currentStatus: String)
+    suspend fun unhideBook(bookId: String, previousStatus: String)
     
     // Progress and View Count
     suspend fun incrementViewCount(bookId: String)
