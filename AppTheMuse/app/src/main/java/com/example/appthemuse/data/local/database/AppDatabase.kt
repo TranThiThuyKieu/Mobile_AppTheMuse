@@ -12,5 +12,6 @@ import com.example.appthemuse.data.local.entity.DownloadedChapterEntity
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
+    // Cung cấp DAO để thao tác với dữ liệu sách đã tải
     abstract fun downloadedBookDao(): DownloadedBookDao
 }

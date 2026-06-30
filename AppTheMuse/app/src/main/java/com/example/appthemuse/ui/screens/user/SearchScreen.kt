@@ -148,7 +148,7 @@ fun SearchScreen(viewModel: HomeViewModel, onClose: () -> Unit) {
         if (showFilter) {
             FilterBottomSheet(
                 onApply = { type, selectedStatus, selectedStar ->
-                    // update filter state
+                    // cập nhật filter state
                     filterType = type
                     status = selectedStatus
                     star = selectedStar

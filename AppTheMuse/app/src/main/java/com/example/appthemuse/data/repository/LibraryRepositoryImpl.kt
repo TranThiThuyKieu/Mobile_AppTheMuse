@@ -13,11 +13,12 @@ import kotlinx.coroutines.coroutineScope
 class LibraryRepositoryImpl(
     private val firestoreService: FirestoreService
 ) : LibraryRepository {
-
+    // Lấy danh sách sách yêu thích
     override suspend fun getFavoriteBooks(userId: String): List<Book> = coroutineScope {
         val favoriteDocs = firestoreService.getFavoriteDocuments(userId)
         favoriteDocs.map { favorite ->
             async {
+                // Chuẩn hóa bookId về dạng "bookX"
                 val bookIdRaw = favorite.get("book_id")
                 val finalId = when (bookIdRaw) {
                     is Number -> "book${bookIdRaw.toInt()}"
@@ -26,30 +27,32 @@ class LibraryRepositoryImpl(
                 }
 
                 val bookDoc = firestoreService.getBookByDocumentId(finalId) ?: return@async null
+                // Map sang model Book
                 mapDocumentToBook(bookDoc)
             }
         }.awaitAll().filterNotNull()
     }
-
+    // Lấy lịch sử đọc sách
     override suspend fun getHistoryBooks(userId: String): List<HistoryUi> = coroutineScope {
         val historyDocs = firestoreService.getHistoryDocuments(userId)
         historyDocs.map { history ->
             async {
+                // Chuẩn hóa bookId
                 val bookIdRaw = history.get("book_id")
                 val finalId = when (bookIdRaw) {
                     is Number -> "book${bookIdRaw.toInt()}"
                     is String -> if (bookIdRaw.startsWith("book")) bookIdRaw else "book$bookIdRaw"
                     else -> return@async null
                 }
-
+                // Lấy sách
                 val bookDoc = firestoreService.getBookByDocumentId(finalId) ?: return@async null
-
+                // Lấy tiến độ đọc
                 val progressDoc = firestoreService.getReadingProgress(userId, finalId)
                 val currentChapter = progressDoc?.getLong("chapter_number")?.toInt() ?: 1
                 
                 val book = mapDocumentToBook(bookDoc)
                 val totalChapters = book.chapter_count
-
+                // Tính % tiến độ
                 val percent = if (totalChapters > 0) {
                     ((currentChapter.toFloat() / totalChapters.toFloat()) * 100).toInt().coerceIn(0, 100)
                 } else 0
@@ -62,7 +65,7 @@ class LibraryRepositoryImpl(
             }
         }.awaitAll().filterNotNull().sortedByDescending { it.lastReadAt }
     }
-
+    // Map Firestore Document sang Book model
     private suspend fun mapDocumentToBook(doc: DocumentSnapshot): Book {
         val docId = doc.id
         

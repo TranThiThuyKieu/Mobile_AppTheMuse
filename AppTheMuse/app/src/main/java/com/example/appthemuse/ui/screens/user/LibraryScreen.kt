@@ -44,7 +44,7 @@ fun LibraryScreen(
     }
     // Route hiện tại của Navigation
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-
+    // Khi userId thay đổi thì load lại dữ liệu
     LaunchedEffect(userId) {
         viewModel.loadFavoriteBooks(userId)
         viewModel.loadHistoryBooks(userId)
@@ -52,6 +52,7 @@ fun LibraryScreen(
     }
 
     Scaffold(
+        // Thanh top bar
         topBar = {
             HomeTopBar(
                 onSearchClick = {
@@ -138,6 +139,7 @@ fun LibraryScreen(
             }
         }
     }
+    // Hiển thị màn hình tìm kiếm nếu showSearch = true
     if (showSearch) {
         SearchScreen(viewModel = homeViewModel, onClose = {
             showSearch = false
@@ -145,7 +147,6 @@ fun LibraryScreen(
         )
     }
 }
-
 @Composable
 fun DownloadedBookItem(
     book: BookUi,

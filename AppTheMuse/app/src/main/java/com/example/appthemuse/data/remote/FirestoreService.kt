@@ -161,10 +161,42 @@ class FirestoreService {
     }
 
     /**
-     * Lấy danh sách sách gần đây (wrapper của getAllBooksRaw).
+     * Lấy danh sách sách cập nhật gần đây.
+     * Giải pháp: Tìm các chương (chapters) mới nhất, lấy ra ID sách tương ứng. 
+     * Cách này giúp phân biệt "Truyện mới cập nhật chương" và "Truyện mới tạo".
      */
     suspend fun getRecentBooksRaw(limit: Long): List<DocumentSnapshot> {
-        return getAllBooksRaw(limit)
+        return try {
+            // Lấy danh sách các chương mới nhất
+            val recentChapters = firestore.collection("chapters")
+                .orderBy("created_at", Query.Direction.DESCENDING)
+                .limit(limit * 3) // Lấy dư ra để gộp các chương của cùng 1 truyện
+                .get().await().documents
+
+            // Lấy ra danh sách Document ID sách duy nhất (vd: book1, book2)
+            val bookDocIds = recentChapters.mapNotNull { doc ->
+                val numId = doc.getLong("book_id")
+                if (numId != null) "book$numId" else null
+            }.distinct().take(limit.toInt())
+
+            if (bookDocIds.isEmpty()) {
+                // Nếu chưa có chương nào trên toàn hệ thống, fallback lấy sách mới tạo
+                return firestore.collection("books").orderBy("created_at", Query.Direction.DESCENDING).limit(limit).get().await().documents
+            }
+
+            // Firestore giới hạn toán tử whereIn tối đa 10 phần tử mỗi lần truy vấn
+            val books = mutableListOf<DocumentSnapshot>()
+            bookDocIds.chunked(10).forEach { chunk ->
+                val docs = firestore.collection("books").whereIn(com.google.firebase.firestore.FieldPath.documentId(), chunk).get().await().documents
+                books.addAll(docs)
+            }
+
+            // Sắp xếp lại kết quả trả về theo đúng thứ tự truyện có chương mớ  i nhất
+            books.sortedBy { bookDocIds.indexOf(it.id) }
+        } catch (e: Exception) {
+            // Fallback an toàn nếu có lỗi
+            firestore.collection("books").orderBy("created_at", Query.Direction.DESCENDING).limit(limit).get().await().documents
+        }
     }
 
     /**

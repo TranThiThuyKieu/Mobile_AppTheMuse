@@ -23,10 +23,11 @@ import java.util.Date
 class AdminBookRemoteDataSource(
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
+    // Lấy danh sách sách, có thể lọc theo trạng thái.
     suspend fun getBooks(status: BookStatus? = null): List<AdminBook> = coroutineScope {
         var query: Query = firestore.collection(FirebaseConstants.BOOKS)
             .orderBy(BookFields.CREATED_AT, Query.Direction.DESCENDING)
-
+        // Lọc theo trạng thái
         if (status != null) {
             query = query.whereEqualTo(BookFields.STATUS, status.value)
         }
@@ -36,7 +37,7 @@ class AdminBookRemoteDataSource(
             async { document.toAdminBook() }
         }.awaitAll()
     }
-
+    // Thống kê số lượng sách theo từng trạng thái
     suspend fun getBookStats(): AdminBookStats {
         val books = getBooks()
         return AdminBookStats(
@@ -47,20 +48,20 @@ class AdminBookRemoteDataSource(
             hiddenBooks = books.count { it.status == BookStatus.Hidden }
         )
     }
-
+    // Cập nhật trạng thái của một cuốn sách
     suspend fun updateBookStatus(bookId: String, status: BookStatus) {
         firestore.collection(FirebaseConstants.BOOKS)
             .document(bookId)
             .update(BookFields.STATUS, status.value)
             .await()
     }
-
+    // Lấy thông tin chi tiết của sách và danh sách chương
     suspend fun getBookDetail(bookId: String): AdminBookDetail {
         val bookDocument = firestore.collection(FirebaseConstants.BOOKS)
             .document(bookId)
             .get()
             .await()
-
+        // Chuyển đổi id từ "book*" thành số nguyên
         val bookNumId = bookId.removePrefix("book").toIntOrNull() ?: 0
         val chapters = firestore.collection(FirebaseConstants.CHAPTERS)
             .whereEqualTo("book_id", bookNumId)
@@ -75,8 +76,9 @@ class AdminBookRemoteDataSource(
             chapters = chapters
         )
     }
-
+    // Lấy danh sách đánh giá của sách, có thể bao gồm hoặc ẩn các đánh giá bị khóa
     suspend fun getReviews(bookId: String, includeHidden: Boolean): List<AdminReview> = coroutineScope {
+        // Tạo các định dạng ID có thể có của sách để truy vấn.
         val numericPart = bookId.replace(Regex("[^0-9]"), "").toIntOrNull()
         val possibleIds = listOfNotNull(
             bookId,
@@ -90,7 +92,7 @@ class AdminBookRemoteDataSource(
             .whereIn(ReviewFields.BOOK_ID, possibleIds)
 
         val documents = query.get().await().documents
-
+        // Chuyển dữ liệu đánh giá sang đối tượng AdminReview và bổ sung tên người dùng
         documents.map { doc ->
             async {
                 val userId = doc.getString(ReviewFields.USER_ID).orEmpty()
@@ -106,14 +108,14 @@ class AdminBookRemoteDataSource(
             .filter { includeHidden || !it.isHidden }
             .sortedByDescending { it.createdAt }
     }
-
+    // Hiển thị hoặc ẩn một đánh giá.
     suspend fun setReviewHidden(bookId: String, reviewId: String, hidden: Boolean) {
         firestore.collection(FirebaseConstants.REVIEWS)
             .document(reviewId)
             .update(ReviewFields.IS_HIDDEN, hidden)
             .await()
     }
-
+    // Chuyển dữ liệu Firestore thành đối tượng AdminBook
     private suspend fun DocumentSnapshot.toAdminBook(): AdminBook = coroutineScope {
         val bookId = id
         val reviewsDeferred = async { getReviews(bookId, includeHidden = true) }
@@ -146,7 +148,7 @@ class AdminBookRemoteDataSource(
             createdAt = getDateCompat(BookFields.CREATED_AT)
         )
     }
-
+    // Chuyển dữ liệu Firestore thành đối tượng AdminChapter
     private fun DocumentSnapshot.toAdminChapter(bookId: String): AdminChapter {
         return AdminChapter(
             id = id,
@@ -157,7 +159,7 @@ class AdminBookRemoteDataSource(
             createdAt = getDateCompat(ChapterFields.CREATED_AT)
         )
     }
-
+    // Chuyển dữ liệu Firestore thành đối tượng AdminReview
     private fun DocumentSnapshot.toAdminReview(bookId: String, userName: String = ""): AdminReview {
         return AdminReview(
             id = id,
@@ -170,7 +172,7 @@ class AdminBookRemoteDataSource(
             createdAt = getDateCompat(ReviewFields.CREATED_AT)
         )
     }
-
+    // Chuyển dữ liệu thời gian từ Firestore sang kiểu Date
     private fun DocumentSnapshot.getDateCompat(field: String): Date? {
         return when (val value = get(field)) {
             is Timestamp -> value.toDate()

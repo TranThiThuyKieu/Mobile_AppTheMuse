@@ -14,6 +14,7 @@ fun AppBottomBar(
     navController: NavController,
     currentRoute: String?) {
     NavigationBar {
+        // Tab trang chủ
         NavigationBarItem(
             selected = currentRoute == "home",
             onClick = {
@@ -24,6 +25,7 @@ fun AppBottomBar(
             icon = { Icon(Icons.Default.Home, null) },
             label = { Text("Trang chủ") }
         )
+        // Tab khám phá
         NavigationBarItem(selected = currentRoute == "explore", onClick = {
                 navController.navigate("explore") {
                     launchSingleTop = true
@@ -32,6 +34,7 @@ fun AppBottomBar(
             icon = { Icon(Icons.Default.Explore, null) },
             label = { Text("Khám phá") }
         )
+        // Tab tủ sách
         NavigationBarItem(selected = currentRoute == "bookshelf", onClick = {
                 navController.navigate("bookshelf") {
                     launchSingleTop = true
@@ -40,6 +43,7 @@ fun AppBottomBar(
             icon = { Icon(Icons.Default.Book, null) },
             label = { Text("Tủ sách") }
         )
+        // Tab hồ sơ
         NavigationBarItem(
             selected = currentRoute == "profile", onClick = {
                 navController.navigate("profile") {
